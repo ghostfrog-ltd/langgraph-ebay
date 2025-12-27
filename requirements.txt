@@ -1,0 +1,18 @@
+# Core orchestration (no LLM required)
+langgraph==1.0.5
+langgraph-checkpoint==3.0.1
+langgraph-prebuilt==1.0.5
+langgraph-sdk==0.3.1
+
+# LangGraph currently pulls langchain-core; pin to what your install already ended up with
+# (If you later want langchain-openai, we’ll revisit pins together.)
+langchain-core==1.2.5
+
+# Your project likely needs these anyway
+typing-extensions>=4.9.0
+
+langgraph>=0.3.0
+python-dotenv>=1.0.0
+psycopg2-binary>=2.9.9
+requests>=2.31.0
+beautifulsoup4>=4.12.0
