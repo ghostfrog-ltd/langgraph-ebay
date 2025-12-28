@@ -4,7 +4,7 @@ import os
 import time
 from time import perf_counter
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Set, Tuple
 from collections import deque
 from psycopg2.extras import execute_values
 import requests
@@ -239,7 +239,7 @@ class EbayAdapterBase:
 
         try:
             if n_list:
-                deduped = {}
+                deduped: Dict[str, Dict[str, Any]] = {}
                 for row in self._batch_buffer:
                     ext_id = row.get("external_id")
                     deduped[ext_id] = row
@@ -403,6 +403,7 @@ class EbayAdapterBase:
                         break
                     else:
                         return all_items
+
                 increment_api_usage("ebay")
 
                 try:
@@ -448,8 +449,125 @@ class EbayAdapterBase:
 
         return all_items
 
-    def _normalize_item(self, raw: dict[str, Any], sale_type: str):
+    def _mark_404_listings_stale(self, external_ids: Set[str]) -> None:
+        """
+        For listings that returned 404 from getItem, mark them as stale in DB
+        so they stop being treated as live targets.
+        """
+        if not external_ids:
+            return
 
+        from utils.db_schema import get_connection  # if not already imported at top
+
+        conn = get_connection()
+        ids_list = list(external_ids)
+
+        try:
+            with conn, conn.cursor() as cur:
+                ensure_utc_session(cur)
+                # Mark as stale and set end_time if it's NULL
+                cur.execute(
+                    """
+                    UPDATE auction_listings
+                    SET status   = 'stale',
+                        end_time = COALESCE(end_time, (now() AT TIME ZONE 'utc'))
+                    WHERE external_id = ANY(%s)
+                    """,
+                    (ids_list,),
+                )
+            logger.info(
+                "[%s] marked %d listings as stale due to 404 from getItem",
+                self.DOMAIN,
+                len(ids_list),
+            )
+        except Exception as e:
+            logger.warning(
+                "[%s] failed to mark 404 listings stale (ids=%s): %s",
+                self.DOMAIN,
+                ids_list,
+                e,
+            )
+
+    def _fetch_items_by_ids(
+            self,
+            token: str,
+            external_ids: List[str],
+            chunk_size: int = 20,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch full item details for a list of REST item IDs using the Browse getItem API.
+
+        Used by the pph (price-per-hour) pipeline to refresh prices/bids for
+        already-known listings without doing full discovery.
+        """
+        base = os.getenv("EBAY_API_BASE", "").rstrip("/")
+        if not base:
+            logger.error(f"[{self.DOMAIN}] EBAY_API_BASE missing in env")
+            return []
+
+        ids = [str(i) for i in external_ids if i]
+        if not ids:
+            return []
+
+        all_items: List[Dict[str, Any]] = []
+        seen_ids: Set[str] = set()
+        not_found_ids: Set[str] = set()
+
+        for eid in ids:
+            if eid in seen_ids:
+                continue
+            seen_ids.add(eid)
+
+            url = f"{base}/buy/browse/v1/item/{eid}"
+
+            t_api_start = perf_counter()
+            try:
+                r = requests.get(url, headers=self._build_headers(token), timeout=10)
+            except Exception as e:
+                logger.warning(
+                    "[%s] getItem request failed for ID %s: %s",
+                    self.DOMAIN,
+                    eid,
+                    e,
+                )
+                continue
+
+            self._hist_api.append(perf_counter() - t_api_start)
+
+            # 404 == listing gone (ended/cancelled)
+            if r.status_code == 404:
+                logger.info("[%s] getItem 404 (ended?) for ID %s", self.DOMAIN, eid)
+                not_found_ids.add(eid)
+                continue
+
+            if r.status_code != 200:
+                logger.warning(
+                    "[%s] getItem status %s for ID %s: %s",
+                    self.DOMAIN,
+                    r.status_code,
+                    eid,
+                    (r.text or "")[:200],
+                )
+                continue
+
+            increment_api_usage("ebay")
+
+            try:
+                item = r.json()
+            except Exception as e:
+                logger.warning("[%s] bad JSON from getItem for ID %s: %s", self.DOMAIN, eid, e)
+                continue
+
+            all_items.append(item)
+            time.sleep(0.05)
+
+        # After we’re done, mark any 404’d listings as stale in DB
+        if not_found_ids:
+            self._mark_404_listings_stale(not_found_ids)
+
+        return all_items
+
+    def _normalize_item(self, raw: dict[str, Any], sale_type: str):
         if is_configurable_item(raw):
             logger.info(
                 "[%s] skipping configurable/multi-variation listing itemId=%s title=%r",
@@ -534,7 +652,7 @@ class EbayAdapterBase:
         return row, ph
 
     # ------------------------------------------------------------------
-    # Public entry
+    # Public entry: full scrape
     # ------------------------------------------------------------------
     def fetch_listings_api(self, ebay_token: str) -> None:
         sale_types = (
@@ -615,6 +733,82 @@ class EbayAdapterBase:
 
                 logger.info(f"[{self.DOMAIN}] cat {cat_id} {sale_type}: {added} listings")
                 time.sleep(self.CATEGORY_PAUSE_SECONDS)
+
+        self.flush_batch()
+
+    # ------------------------------------------------------------------
+    # Public entry: targeted price refresh (PPH)
+    # ------------------------------------------------------------------
+    def refresh_items_price(self, ebay_token: str, external_ids: List[str]) -> None:
+        """
+        Targeted price/bid refresh for already-known listings.
+
+        Used by the pph (price-per-hour) pipeline:
+          - ONLY hits listings we already know about (by external_id).
+          - DOES NOT do discovery searches.
+          - Reuses normalisation + bulk upsert + price history.
+        """
+        if not external_ids:
+            logger.info("[%s] refresh_items_price called with empty ID list", self.DOMAIN)
+            return
+
+        items = self._fetch_items_by_ids(ebay_token, external_ids)
+        if not items:
+            logger.info(
+                "[%s] refresh_items_price: 0 items returned for %d requested IDs",
+                self.DOMAIN,
+                len(external_ids),
+            )
+            return
+
+        allowed_ids: Set[str] = {str(i) for i in external_ids if i}
+        added = 0
+
+        for raw in items:
+            item_id = get_item_id(raw)
+            if item_id not in allowed_ids:
+                continue
+
+            buying_opts = raw.get("buyingOptions") or []
+
+            # Derive sale_type from live buying options if we can
+            if "AUCTION" in buying_opts:
+                sale_type = "auction"
+            elif "FIXED_PRICE" in buying_opts:
+                sale_type = "bin"
+            else:
+                # Fallback: use adapter's configured SALE_TYPE
+                st = self.SALE_TYPE
+                if isinstance(st, (list, tuple)):
+                    if "auction" in st:
+                        sale_type = "auction"
+                    elif "bin" in st:
+                        sale_type = "bin"
+                    else:
+                        sale_type = str(st[0])
+                else:
+                    sale_type = str(st)
+
+            norm = self._normalize_item(raw, sale_type)
+            if not norm:
+                continue
+            row, ph = norm
+
+            if not self._is_relevant(row):
+                continue
+
+            self._batch_buffer.append(row)
+            if row["price_current"]:
+                self._ph_buffer.append(ph)
+            added += 1
+            self._maybe_flush()
+
+        logger.info(
+            "[%s] refresh_items_price: refreshed %d listings (requested=%d)",
+            self.DOMAIN,
+            added,
+            len(external_ids),
+        )
 
         self.flush_batch()
 

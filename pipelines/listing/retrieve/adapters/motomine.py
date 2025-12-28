@@ -51,21 +51,21 @@ def _extract_items_from_html(html: str) -> List[Dict[str, Any]]:
         seen.add(item_id)
 
         container = (
-            a.find_parent("div", class_="su-card-container")
-            or a.find_parent("li")
-            or a
+                a.find_parent("div", class_="su-card-container")
+                or a.find_parent("li")
+                or a
         )
 
         title_el = (
-            container.select_one(".s-card__title")
-            or container.select_one(".s-item__title")
-            or a
+                container.select_one(".s-card__title")
+                or container.select_one(".s-item__title")
+                or a
         )
         title = title_el.get_text(strip=True) if title_el else ""
 
         price_el = (
-            container.select_one(".s-card__price")
-            or container.select_one(".s-item__price")
+                container.select_one(".s-card__price")
+                or container.select_one(".s-item__price")
         )
         price_raw = price_el.get_text(strip=True) if price_el else None
         price_val = _parse_price(price_raw)
@@ -159,9 +159,34 @@ def _bulk_upsert_auction_listings(rows: List[Dict[str, Any]]) -> int:
     cols = [
         "source", "external_id", "title", "price_current", "bids_count", "end_time",
         "url", "sale_type", "roi_estimate", "max_bid", "notes",
-        "source_id", "model_key", "time_left_s", "status"
+        "source_id", "model_key", "time_left_s", "status", "last_seen_at"
     ]
-    values = [tuple(r.get(c) for c in cols) for r in rows]
+
+    now_ts = datetime.now(timezone.utc)
+
+    values = [
+        tuple(
+            [
+                r.get("source"),
+                r.get("external_id"),
+                r.get("title"),
+                r.get("price_current"),
+                r.get("bids_count"),
+                r.get("end_time"),
+                r.get("url"),
+                r.get("sale_type"),
+                r.get("roi_estimate"),
+                r.get("max_bid"),
+                r.get("notes"),
+                r.get("source_id"),
+                r.get("model_key"),
+                r.get("time_left_s"),
+                r.get("status"),
+                now_ts,
+            ]
+        )
+        for r in rows
+    ]
 
     sql = f"""
         INSERT INTO auction_listings ({", ".join(cols)})
@@ -179,7 +204,8 @@ def _bulk_upsert_auction_listings(rows: List[Dict[str, Any]]) -> int:
             source_id     = EXCLUDED.source_id,
             model_key     = COALESCE(EXCLUDED.model_key,     auction_listings.model_key),
             time_left_s   = COALESCE(EXCLUDED.time_left_s,   auction_listings.time_left_s),
-            status        = COALESCE(EXCLUDED.status,        auction_listings.status)
+            status        = COALESCE(EXCLUDED.status,        auction_listings.status),
+            last_seen_at  = EXCLUDED.last_seen_at
     """
 
     conn = connection
@@ -196,11 +222,102 @@ def _bulk_upsert_auction_listings(rows: List[Dict[str, Any]]) -> int:
 # Adapter used by Heartbeat
 # -------------------------------------------------
 class Adapter:
-    DOMAIN = "motomine"   # <<--- THIS is what sources.domain must match
+    DOMAIN = "motomine"  # <<--- THIS is what sources.domain must match
 
     def __init__(self, max_pages: int = 3, delay: float = 2.0):
         self.max_pages = max_pages
         self.delay = delay
+
+    def refresh_items_price(self, ebay_token: str, external_ids: list[str]) -> None:
+        """
+        Refresh price for a set of known motomine listings (external_ids).
+
+        This is used by the pph (price-per-hour) pipeline:
+          - We ONLY look at listings that already exist in auction_listings.
+          - We DO NOT do discovery beyond the normal HTML scrape pages.
+          - We reuse the same upsert as fetch_listings_api so price_current is updated.
+        """
+        domain = self.DOMAIN
+
+        if not external_ids:
+            logger.info(f"[{domain}] pph: no external_ids to refresh")
+            return
+
+        # Look up source_id (same as in fetch_listings_api)
+        with connection.cursor() as cur:
+            cur.execute(
+                "SELECT id FROM sources WHERE domain = %s LIMIT 1",
+                (domain,),
+            )
+            row = cur.fetchone()
+
+        if not row:
+            logger.warning(f"[{domain}] pph: No source row found; skipping")
+            return
+
+        source_id = row[0]
+
+        # Scrape current listings from eBay (same as discovery)
+        items = _fetch_seller_items(domain, max_pages=self.max_pages, delay=self.delay)
+        logger.info(f"[{domain}] pph: Scraped {len(items)} listings for refresh")
+
+        if not items:
+            return
+
+        # Map scraped items by external_id so we can filter to the ones we care about
+        by_id: Dict[str, Dict[str, Any]] = {}
+        for it in items:
+            eid = it.get("external_id")
+            if not eid:
+                continue
+            by_id[str(eid)] = it
+
+        target_ids: Set[str] = {str(eid) for eid in external_ids if eid}
+
+        scrape_ts = now_utc()
+        default_duration = timedelta(days=7)
+
+        rows: List[Dict[str, Any]] = []
+        refreshed = 0
+
+        for eid in target_ids:
+            it = by_id.get(eid)
+            if not it:
+                # Not on motomine's current pages anymore – let global stale logic handle it
+                continue
+
+            rows.append(
+                {
+                    "source": domain,
+                    "external_id": it["external_id"],
+                    "title": it["title"],
+                    "price_current": it["price_value"],
+                    "bids_count": None,
+                    "end_time": scrape_ts + default_duration,
+                    "url": it["url"],
+                    "sale_type": "auction",
+                    "roi_estimate": None,
+                    "max_bid": None,
+                    "notes": None,
+                    "source_id": source_id,
+                    "model_key": None,
+                    "time_left_s": None,
+                    "status": "live",
+                }
+            )
+            refreshed += 1
+
+        if not rows:
+            logger.info(
+                f"[{domain}] pph: none of {len(target_ids)} requested IDs found on current pages"
+            )
+            return
+
+        _bulk_upsert_auction_listings(rows)
+
+        logger.info(
+            f"[{domain}] pph: refreshed {refreshed}/{len(target_ids)} listings via HTML"
+        )
 
     def fetch_listings_api(self, ebay_token: str) -> None:
         """
