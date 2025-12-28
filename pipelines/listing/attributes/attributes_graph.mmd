@@ -1,0 +1,33 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	start(start)
+	next_candidate(next_candidate)
+	extract_item_id(extract_item_id)
+	call_api(call_api)
+	extract_attrs(extract_attrs)
+	apply(apply)
+	mark_false(mark_false)
+	advance(advance)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> start;
+	advance -. &nbsp;end&nbsp; .-> __end__;
+	advance -. &nbsp;next&nbsp; .-> next_candidate;
+	apply --> advance;
+	call_api -. &nbsp;extract&nbsp; .-> extract_attrs;
+	call_api -.-> mark_false;
+	extract_attrs -.-> apply;
+	extract_attrs -.-> mark_false;
+	extract_item_id -.-> call_api;
+	extract_item_id -.-> mark_false;
+	mark_false --> advance;
+	next_candidate --> extract_item_id;
+	start -. &nbsp;end&nbsp; .-> __end__;
+	start -. &nbsp;next&nbsp; .-> next_candidate;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
