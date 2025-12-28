@@ -8,6 +8,7 @@ graph TD;
 	init(init)
 	ended(ended)
 	retrieve(retrieve)
+	pph(pph)
 	comps(comps)
 	attributes(attributes)
 	hot(hot)
@@ -20,7 +21,8 @@ graph TD;
 	ended --> retrieve;
 	hot --> roi;
 	init --> ended;
-	retrieve --> comps;
+	pph --> comps;
+	retrieve --> pph;
 	roi --> new;
 	new --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2

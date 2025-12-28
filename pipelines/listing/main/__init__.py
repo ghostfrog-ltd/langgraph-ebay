@@ -8,6 +8,7 @@ from utils.auth import get_auth
 
 from pipelines.listing.ended.graph import build_graph as build_ended
 from pipelines.listing.retrieve.graph import build_graph as build_retrieve
+from pipelines.listing.pph.graph import build_graph as build_pph
 from pipelines.listing.comps.graph import build_graph as build_comps
 from pipelines.listing.attributes.graph import build_graph as build_attributes
 from pipelines.listing.hot.graph import build_graph as build_hot
@@ -24,6 +25,7 @@ class MainState(TypedDict, total=False):
     # subgraph outputs (namespaced so nothing collides)
     ended_out: Dict[str, Any]
     retrieve_out: Dict[str, Any]
+    pph_out: Dict[str, Any]
     comps_out: Dict[str, Any]
     attributes_out: Dict[str, Any]
     hot_out: Dict[str, Any]
@@ -58,6 +60,7 @@ def build_graph():
 
     g.add_node("ended", run_subgraph("ended", build_ended))
     g.add_node("retrieve", run_subgraph("retrieve", build_retrieve))
+    g.add_node("pph", run_subgraph("pph", build_pph))
     g.add_node("comps", run_subgraph("comps", build_comps))
     g.add_node("attributes", run_subgraph("attributes", build_attributes))
     g.add_node("hot", run_subgraph("hot", build_hot))
@@ -66,10 +69,11 @@ def build_graph():
 
     g.set_entry_point("init")
 
-    # Pattern A: straight chain
+    # Straight chain with PPH slotted after retrieve
     g.add_edge("init", "ended")
     g.add_edge("ended", "retrieve")
-    g.add_edge("retrieve", "comps")
+    g.add_edge("retrieve", "pph")
+    g.add_edge("pph", "comps")
     g.add_edge("comps", "attributes")
     g.add_edge("attributes", "hot")
     g.add_edge("hot", "roi")
@@ -78,14 +82,17 @@ def build_graph():
 
     return g.compile()
 
+
 def save_graph_diagram(path: str = "main_graph.mmd") -> None:
     graph = build_graph()
     g = graph.get_graph()
 
-    # Mermaid text (works everywhere)
     mermaid = g.draw_mermaid()
     with open(path, "w", encoding="utf-8") as f:
         f.write(mermaid)
+
+    logger.info(f"[main] wrote graph mermaid to {path}")
+
 
 def run() -> MainState:
     graph = build_graph()
