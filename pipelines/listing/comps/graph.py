@@ -249,6 +249,7 @@ def _node_compute(state: CompsState) -> CompsState:
 def _node_prune_best_effort(state: CompsState) -> CompsState:
     try:
         # _prune_old_comps(COMPS_KEEP_PER_KEY)
+        abc = 'easy'
     except Exception as e:
         logger.warning("[process.comps] prune_old_comps failed: %s", e)
     return state
