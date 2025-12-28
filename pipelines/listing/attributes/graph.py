@@ -12,6 +12,8 @@ from utils.db_schema import get_connection
 from utils.usage_tracker import increment_api_usage
 from utils.logger import get_logger
 
+from pipelines.listing.attributes.mk import normalise_model
+
 # LangGraph
 from langgraph.graph import StateGraph, END
 
@@ -21,6 +23,7 @@ EBAY_TRADING_ENDPOINT = "https://api.ebay.com/ws/api.dll"
 EBAY_SITE_ID = "3"          # UK
 EBAY_COMPAT_LEVEL = "967"   # compat level for GetItem
 
+UNKNOWN_KEY = "unknown"
 
 # -------------------------------------------------
 # Helpers (KEEP IN THIS FILE)
@@ -189,13 +192,12 @@ def _extract_from_trading(xml_text: str) -> tuple[Dict[str, Optional[Any]], Dict
     return attrs, raw_map
 
 
-def _load_candidates(limit: int) -> List[Tuple[int, str]]:
+def _load_candidates(limit: int) -> List[Tuple[int, str, str, str]]:
     # Keep your current “process anything with raw_attrs IS NULL” behaviour
     sql = """
-        SELECT id, external_id
+        SELECT id, external_id, source, title
         FROM auction_listings
-        WHERE 1=1
-          AND raw_attrs IS NULL
+        WHERE raw_attrs IS NULL
         ORDER BY id DESC
         LIMIT %s
     """
@@ -217,6 +219,7 @@ def _apply_attributes(
     storage_gb: Optional[int],
     colour: Optional[str],
     epid: Optional[str],
+    model_key: Optional[str]
 ) -> None:
     fields: List[str] = []
     values: List[Any] = []
@@ -246,6 +249,10 @@ def _apply_attributes(
         fields.append("epid = %s")
         values.append(epid)
 
+    if model_key is not None:
+        fields.append("model_key = %s")
+        values.append(model_key)
+
     if not fields:
         return
 
@@ -271,11 +278,13 @@ class AttributesState(TypedDict, total=False):
     enable_api: bool
 
     # work
-    rows: List[Tuple[int, str]]
+    rows: List[Tuple[int, str, str, str]]
     idx: int
 
     auction_id: int
     external_id: str
+    source: str
+    title: str
     item_id: Optional[str]
 
     xml_text: Optional[str]
@@ -319,9 +328,11 @@ def _node_next_candidate(state: AttributesState) -> AttributesState:
     if i >= len(rows):
         return state
 
-    auction_id, external_id = rows[i]
+    auction_id, external_id, source, title = rows[i]
     state["auction_id"] = int(auction_id)
     state["external_id"] = str(external_id) if external_id is not None else ""
+    state["source"] = str(source) if source is not None else ""
+    state["title"] = str(title) if title is not None else ""
     state["item_id"] = None
     state["xml_text"] = None
     state["attrs"] = {}
@@ -401,6 +412,9 @@ def _node_apply(state: AttributesState) -> AttributesState:
     auction_id = int(state.get("auction_id", 0))
     attrs = state.get("attrs") or {}
     raw_map = state.get("raw_map") or {}
+    source = state.get("source")
+    title = state.get("title")
+    key = normalise_model(title=title, attrs=attrs, source=source) or UNKNOWN_KEY
 
     _apply_attributes(
         auction_id=auction_id,
@@ -410,6 +424,7 @@ def _node_apply(state: AttributesState) -> AttributesState:
         storage_gb=attrs.get("storage_gb"),
         colour=attrs.get("colour"),
         epid=attrs.get("epid"),
+        model_key = key
     )
 
     state["processed"] = int(state.get("processed", 0)) + 1
@@ -431,6 +446,7 @@ def _node_mark_false(state: AttributesState) -> AttributesState:
         storage_gb=None,
         colour=None,
         epid=None,
+        model_key=None,
     )
 
     state["processed"] = int(state.get("processed", 0)) + 1
