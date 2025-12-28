@@ -1,0 +1,19 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	select_candidates(select_candidates)
+	process_next_candidate(process_next_candidate)
+	apply_updates(apply_updates)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> select_candidates;
+	process_next_candidate -.-> apply_updates;
+	select_candidates --> process_next_candidate;
+	apply_updates --> __end__;
+	process_next_candidate -.-> process_next_candidate;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
