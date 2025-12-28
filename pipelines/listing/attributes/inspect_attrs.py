@@ -35,7 +35,8 @@ logger = get_logger(__name__)
 # SOURCE = "ebay-watches"
 # SOURCE = "ebay-tools"
 # SOURCE = "motomine"
-SOURCE = "ebay-motors"
+#SOURCE = "ebay-motors"
+SOURCE = "ebay-lego"
 
 
 def _to_str(v: Any) -> str | None:

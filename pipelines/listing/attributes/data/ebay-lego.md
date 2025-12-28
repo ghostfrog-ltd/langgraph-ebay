@@ -1,0 +1,11504 @@
+# Attribute values for source: `ebay-lego`
+
+Total attributes: **295**
+
+---
+## *Brand (2 unique)
+
+- `MOC  LEGO`
+- `MOC LEGO`
+
+---
+## 100% Complete Guarantee? (1 unique)
+
+- `YES*`
+
+---
+## Age (2 unique)
+
+- `10+`
+- `16+`
+
+---
+## Age Level (67 unique)
+
+- `06-Dec`
+- `1.5-3`
+- `10`
+- `10+`
+- `10-14`
+- `10-16`
+- `11+`
+- `11-16`
+- `12`
+- `12+`
+- `12-16`
+- `14+`
+- `16+`
+- `18`
+- `18+`
+- `1Â½+`
+- `2+`
+- `2-5`
+- `216.0`
+- `3+`
+- `3-11`
+- `4+`
+- `4-7`
+- `40658+`
+- `5+`
+- `5-12`
+- `5-8`
+- `6 - 12 years`
+- `6+`
+- `6-12`
+- `6-14`
+- `6-18`
+- `6-8`
+- `60443+`
+- `7`
+- `7 Years`
+- `7+`
+- `7-12`
+- `7-14`
+- `7-16`
+- `8`
+- `8 Years`
+- `8 plus`
+- `8+`
+- `8-12`
+- `8-14`
+- `8-16`
+- `9`
+- `9 Years`
+- `9+`
+- `9-11`
+- `9-12`
+- `9-14`
+- `9-16`
+- `AGES 10+`
+- `AGES 18+`
+- `AGES 7+`
+- `AGES 8+`
+- `AGES 9+`
+- `Apr-99`
+- `Aug-14`
+- `Jul-14`
+- `N/A`
+- `None`
+- `Nov-16`
+- `Sep-14`
+- `does not apply`
+
+---
+## Age Range Description (1 unique)
+
+- `9+`
+
+---
+## Age range (1 unique)
+
+- `18+`
+
+---
+## Age range (description) (1 unique)
+
+- `9+`
+
+---
+## All Minifigures (1 unique)
+
+- `YES`
+
+---
+## All Minifigures? (1 unique)
+
+- `YES`
+
+---
+## Altersempfehlung (13 unique)
+
+- `10+`
+- `12+`
+- `12-16`
+- `14+`
+- `16+`
+- `18+`
+- `5-7 Jahre`
+- `7+`
+- `8+`
+- `8-12`
+- `8-14`
+- `9+`
+- `siehe Beschreibung / Artikelbild`
+
+---
+## Amount of instructions (1 unique)
+
+- `1`
+
+---
+## Amount of minifigures (5 unique)
+
+- `1`
+- `10`
+- `16`
+- `4`
+- `8`
+
+---
+## Amount of parts (7 unique)
+
+- `1743`
+- `2417`
+- `2953`
+- `3093`
+- `3304`
+- `528`
+- `717`
+
+---
+## Angebotspaket (1 unique)
+
+- `Nein`
+
+---
+## Anno di fabbricazione (2 unique)
+
+- `1993`
+- `2025`
+
+---
+## AnnÃ©e de fabrication (1 unique)
+
+- `2011`
+
+---
+## AnnÃ©e de sortie (1 unique)
+
+- `2011`
+
+---
+## Anzahl der Teile (22 unique)
+
+- `0`
+- `1267`
+- `16+`
+- `1769`
+- `1781`
+- `185`
+- `1957`
+- `1969`
+- `2187`
+- `2617`
+- `3011`
+- `348`
+- `3929`
+- `4163`
+- `4287`
+- `444`
+- `482`
+- `71`
+- `834`
+- `866`
+- `ca. 5-10`
+- `siehe Beschreibung / Artikelbild`
+
+---
+## Artikelnummer (1 unique)
+
+- `70783`
+
+---
+## Assembly Required (1 unique)
+
+- `Yes`
+
+---
+## AuslÃ¤ndisches Produkt (1 unique)
+
+- `Nein`
+
+---
+## BOX (1 unique)
+
+- `FREE GIFT BOX OFFERED`
+
+---
+## BUILDING INSTRUCTIONS (1 unique)
+
+- `Digital or Paper Copy Option â CONFIRM WITH ORDER`
+
+---
+## Batteries (2 unique)
+
+- `1 Unknown batteries required.`
+- `Alkaline`
+
+---
+## Batteries Are Included (1 unique)
+
+- `No`
+
+---
+## Batteries Required? (1 unique)
+
+- `No`
+
+---
+## Batteries included? (1 unique)
+
+- `No`
+
+---
+## Batteries required (1 unique)
+
+- `No`
+
+---
+## Battery Description (1 unique)
+
+- `6 Aa Batteries`
+
+---
+## Besonderheiten (21 unique)
+
+- `80s`
+- `90`
+- `90s`
+- `Bulkware`
+- `EOL`
+- `Limitierte Auflage`
+- `MOC - Meine eigene Kreation`
+- `Neu`
+- `Neuware`
+- `OVP`
+- `Originalverpackung`
+- `Ovp`
+- `Raumschiff`
+- `Retro`
+- `SChachtel`
+- `Vintage`
+- `mit OVP`
+- `ohne Anleitung`
+- `ohne Verpackung`
+- `sealed`
+- `ungeÃ¶ffnet`
+
+---
+## Block Size (2 unique)
+
+- `Small building block`
+- `Small building blockï¼Compatible with Legoï¼`
+
+---
+## Box (3 unique)
+
+- `Gift Box Option â please confirm with order`
+- `Without Box`
+- `without Box`
+
+---
+## Brand (6 unique)
+
+- `LEGO`
+- `LEGOÂ®`
+- `Lego`
+- `MOC  LEGO`
+- `lego`
+- `mk5`
+
+---
+## Brand Name (1 unique)
+
+- `LEGO`
+
+---
+## BrandName (1 unique)
+
+- `LEGO`
+
+---
+## Breite (8 unique)
+
+- `199 mm`
+- `262 mm`
+- `288 mm`
+- `378 mm`
+- `480 mm`
+- `582 mm`
+- `91 mm`
+- `ca. 2,5 cm`
+
+---
+## Building Instructions (1 unique)
+
+- `Digital or Paper Copy Option â CONFIRM WITH ORDER`
+
+---
+## Bundle Description (2 unique)
+
+- `Complete set of all 6x Piraka`
+- `does not apply`
+
+---
+## California Prop 65 Warning (1 unique)
+
+- `N/A`
+
+---
+## CaractÃ©ristiques (4 unique)
+
+- `En vrac/lot`
+- `MOC-ma propre crÃ©ation`
+- `Partielle/complÃ¨te construit`
+- `Vintage`
+
+---
+## Caratteristiche (1 unique)
+
+- `Edizione da collezione`
+
+---
+## Cartoon character (1 unique)
+
+- `Flower`
+
+---
+## Character (1 unique)
+
+- `Iron Man`
+
+---
+## Character Family (1 unique)
+
+- `aircraft`
+
+---
+## Character World (1 unique)
+
+- `Starwars`
+
+---
+## Character family (1 unique)
+
+- `Voya Nui PIRAKA`
+
+---
+## Collection (12 unique)
+
+- `LEGO City`
+- `LEGO Disney Classic`
+- `LEGO Fortnite`
+- `LEGO Jurassic World`
+- `LEGO LEGO Ideas`
+- `LEGO Minecraft`
+- `LEGO ONE PIECE`
+- `LEGO Star Wars`
+- `LEGO Star Wars TM`
+- `LEGO Super Heroes`
+- `LEGO Super Mario`
+- `LEGO Wicked`
+
+---
+## Color (4 unique)
+
+- `Multicolor`
+- `Paper manual`
+- `color`
+- `multicolor`
+
+---
+## Colour (4 unique)
+
+- `Basic Version`
+- `Multicolor`
+- `Multicoloured`
+- `âMulticolor`
+
+---
+## Compatible Brand (2 unique)
+
+- `For LEGO`
+- `LEGO`
+
+---
+## Convention/Event (1 unique)
+
+- `Star Wars Celebration`
+
+---
+## Country of Origin (15 unique)
+
+- `Australia`
+- `Belgium`
+- `China`
+- `Czech Republic`
+- `Czechia`
+- `Denmark`
+- `Does not apply`
+- `Germany`
+- `Hungary`
+- `Japan`
+- `Mexico`
+- `United Kingdom`
+- `United States`
+- `Unknown`
+- `does not apply`
+
+---
+## Country/Region of Manufacture (7 unique)
+
+- `China`
+- `Czech Republic`
+- `Czechia`
+- `Denmark`
+- `Hungary`
+- `Mexico`
+- `United Kingdom`
+
+---
+## Custom Bundle (3 unique)
+
+- `No`
+- `Yes`
+- `does not apply`
+
+---
+## Date of publication (1 unique)
+
+- `June 2025`
+
+---
+## Depth (8 unique)
+
+- `118 mm`
+- `19.1 cm`
+- `28.2 cm`
+- `37.8 cm`
+- `48 cm`
+- `59 mm`
+- `70.5 mm`
+- `78 mm`
+
+---
+## Description (1 unique)
+
+- `Celebrate innovative engineering and design from o`
+
+---
+## Description the contents of the package (1 unique)
+
+- `NEW ORIGINAL NEW MISB`
+
+---
+## EAN (267 unique)
+
+- `0013201204351`
+- `0042884060756`
+- `0042884062675`
+- `0042884069896`
+- `0673419014472`
+- `0673419083058`
+- `0673419102704`
+- `0673419103770`
+- `0673419111898`
+- `0673419111904`
+- `0673419127103`
+- `0673419128957`
+- `0673419129022`
+- `0673419129053`
+- `0673419129077`
+- `0673419130561`
+- `0673419144537`
+- `0673419145596`
+- `0673419145909`
+- `0673419166942`
+- `0673419168007`
+- `0673419169073`
+- `0673419189729`
+- `0673419191432`
+- `0673419191456`
+- `0673419191524`
+- `0673419196789`
+- `0673419210256`
+- `0673419210478`
+- `0673419231596`
+- `0673419231619`
+- `0673419243759`
+- `0673419247764`
+- `0673419248730`
+- `0673419252263`
+- `0673419264396`
+- `0673419267489`
+- `0673419267625`
+- `0673419282239`
+- `0673419282345`
+- `0673419295147`
+- `0673419304139`
+- `0673419340335`
+- `0673419344968`
+- `0673419364874`
+- `0673419379038`
+- `0673419379892`
+- `0673419408226`
+- `4053893777548`
+- `4516793129539`
+- `5702010960736`
+- `5702010960750`
+- `5702014478626`
+- `5702014518605`
+- `5702014521261`
+- `5702014533363`
+- `5702014601277`
+- `5702014601291`
+- `5702014734296`
+- `5702014735606`
+- `5702014736955`
+- `5702014841055`
+- `5702014846623`
+- `5702014971899`
+- `5702014974784`
+- `5702014974807`
+- `5702014974876`
+- `5702015006965`
+- `5702015064835`
+- `5702015115810`
+- `5702015122313`
+- `5702015122436`
+- `5702015122467`
+- `5702015124249`
+- `5702015348386`
+- `5702015352635`
+- `5702015352659`
+- `5702015357197`
+- `5702015535571`
+- `5702015591058`
+- `5702015591829`
+- `5702015592451`
+- `5702015594028`
+- `5702015611480`
+- `5702015643597`
+- `5702015735049`
+- `5702015865272`
+- `5702015865319`
+- `5702015868976`
+- `5702015869706`
+- `5702015869904`
+- `5702015869935`
+- `5702016000078`
+- `5702016109788`
+- `5702016109795`
+- `5702016110319`
+- `5702016110371`
+- `5702016110708`
+- `5702016111170`
+- `5702016111811`
+- `5702016116977`
+- `5702016160277`
+- `5702016368253`
+- `5702016368260`
+- `5702016368291`
+- `5702016368307`
+- `5702016368314`
+- `5702016369335`
+- `5702016369489`
+- `5702016369878`
+- `5702016370461`
+- `5702016370706`
+- `5702016370799`
+- `5702016468953`
+- `5702016469110`
+- `5702016554205`
+- `5702016603842`
+- `5702016604115`
+- `5702016615586`
+- `5702016616460`
+- `5702016616644`
+- `5702016617276`
+- `5702016617320`
+- `5702016617696`
+- `5702016617801`
+- `5702016618532`
+- `5702016663495`
+- `5702016667974`
+- `5702016667998`
+- `5702016668001`
+- `5702016668018`
+- `5702016683325`
+- `5702016719062`
+- `5702016756401`
+- `5702016761382`
+- `5702016819953`
+- `5702016911961`
+- `5702016911985`
+- `5702016912333`
+- `5702016912692`
+- `5702016912937`
+- `5702016913194`
+- `5702016913217`
+- `5702016913415`
+- `5702016913484`
+- `5702016913736`
+- `5702016914061`
+- `5702016914139`
+- `5702016914184`
+- `5702016914214`
+- `5702016914306`
+- `5702016914320`
+- `5702016914351`
+- `5702016914528`
+- `5702016914894`
+- `5702016915648`
+- `5702016972030`
+- `5702016973563`
+- `5702016995985`
+- `5702017100104`
+- `5702017117324`
+- `5702017152066`
+- `5702017153261`
+- `5702017153742`
+- `5702017153988`
+- `5702017154244`
+- `5702017154619`
+- `5702017155494`
+- `5702017155579`
+- `5702017155616`
+- `5702017155647`
+- `5702017159041`
+- `5702017189208`
+- `5702017189642`
+- `5702017189673`
+- `5702017189680`
+- `5702017189840`
+- `5702017189925`
+- `5702017189994`
+- `5702017190488`
+- `5702017231044`
+- `5702017234335`
+- `5702017241883`
+- `5702017241937`
+- `5702017413143`
+- `5702017413167`
+- `5702017413228`
+- `5702017415949`
+- `5702017415956`
+- `5702017416083`
+- `5702017416625`
+- `5702017416908`
+- `5702017416915`
+- `5702017416922`
+- `5702017416953`
+- `5702017417448`
+- `5702017419664`
+- `5702017419688`
+- `5702017419787`
+- `5702017421360`
+- `5702017421384`
+- `5702017421469`
+- `5702017424767`
+- `5702017425191`
+- `5702017433509`
+- `5702017433806`
+- `5702017433820`
+- `5702017434025`
+- `5702017434032`
+- `5702017435787`
+- `5702017452135`
+- `5702017452142`
+- `5702017462530`
+- `5702017462851`
+- `5702017497877`
+- `5702017497884`
+- `5702017582412`
+- `5702017583419`
+- `5702017584119`
+- `5702017584362`
+- `5702017584454`
+- `5702017584485`
+- `5702017587318`
+- `5702017589473`
+- `5702017589893`
+- `5702017589916`
+- `5702017589930`
+- `5702017589947`
+- `5702017590158`
+- `5702017590196`
+- `5702017590240`
+- `5702017590431`
+- `5702017591018`
+- `5702017591049`
+- `5702017595672`
+- `5702017597454`
+- `5702017598840`
+- `5702017599533`
+- `5702017599670`
+- `5702017599700`
+- `5702017599755`
+- `5702017600277`
+- `5702017600840`
+- `5702017602097`
+- `5702017758152`
+- `5702017812526`
+- `5702017812823`
+- `5702017812915`
+- `5702017812939`
+- `5702017815503`
+- `5702017815862`
+- `5702017815879`
+- `5702017816258`
+- `5702017816296`
+- `5702017816302`
+- `5702017817668`
+- `5702017817934`
+- `5702017822402`
+- `5702017824192`
+- `5702017824284`
+- `73210304`
+- `9788448961718`
+- `9788448962142`
+- `9788448983680`
+- `9788448984212`
+- `Does not apply`
+- `N/A`
+
+---
+## Educational Objective (2 unique)
+
+- `Creativity, Creativity, Spatial Recognition, Focus And Dexterity`
+- `Dexterity`
+
+---
+## Educational Objective(s) (1 unique)
+
+- `Construction Skills, Creative Thinking, Hand-Eye Coordination, Im`
+
+---
+## Educational goals (1 unique)
+
+- `Creative thinking`
+
+---
+## Educational objective (1 unique)
+
+- `Construction Skills, Creative Thinking, Hand-Eye Coordination, Im`
+
+---
+## Eingestellt (2 unique)
+
+- `Ja`
+- `Nein`
+
+---
+## Embalaje (1 unique)
+
+- `Caja`
+
+---
+## Emballage (3 unique)
+
+- `Box`
+- `BoÃ®te`
+- `Sachet transparent`
+
+---
+## Erscheinungsjahr (19 unique)
+
+- `1967`
+- `1998`
+- `2006`
+- `2008`
+- `2009`
+- `2011`
+- `2013`
+- `2014`
+- `2015`
+- `2016`
+- `2017`
+- `2018`
+- `2019`
+- `2020`
+- `2021`
+- `2022`
+- `2023`
+- `2024`
+- `2025`
+
+---
+## Eu Toys Safety Directive Age Warning (1 unique)
+
+- `Not Suitable Under 36 Months`
+
+---
+## Eu Toys Safety Directive Language (1 unique)
+
+- `English`
+
+---
+## Eu Toys Safety Directive Warning (1 unique)
+
+- `No Warning Applicable, Adult Supervision Required, Toy Inside`
+
+---
+## Exact Material (1 unique)
+
+- `Plastic`
+
+---
+## Fascia di etÃ (1 unique)
+
+- `10+`
+
+---
+## Features (231 unique)
+
+- `10 minifigures`
+- `100% Complete`
+- `12 LEGO Harry Potter minifigures`
+- `2 Horse Figures`
+- `2 Iconic Buildings In 1 Playset`
+- `2 detailed cabins`
+- `2-in-1`
+- `2083 Pieces`
+- `25 Minifigures`
+- `25th Anniversary`
+- `3 Mini-Doll Figures`
+- `3 in 1`
+- `3 in 1 discontinued set`
+- `360-degree-rotating elevating heavy blaster cannon`
+- `3D Printed`
+- `4 Droid figures`
+- `4 floors of action â This NINJAGOÂ® City model is packed`
+- `4 x minifigures`
+- `4x Upgraded Wheels`
+- `5 Minifigures`
+- `6 x minifigures`
+- `7 x minifigures`
+- `8 minifigures`
+- `9V`
+- `Animals`
+- `Authentic vending mechanism`
+- `BNIB`
+- `BRAND NEW`
+- `Battery Powered`
+- `Battle Droid LEGO figure`
+- `Battle the droids with Commander Bly and Aayla Secura.`
+- `Beginner-Friendly Instructions`
+- `Belle and Beast can be seen on the removable grand staircase.`
+- `Belle joins Cogsworth and LumiÃ¨re at the dinner table`
+- `Birthday Gift`
+- `Boxed`
+- `Brand New`
+- `Brand New & Sealed`
+- `Brand New in Sealed Box`
+- `Brand new in box`
+- `Break free from the Devilâs Snare.`
+- `Brick Separator Included`
+- `Brick-built blaster`
+- `Building`
+- `Bulk/Lot`
+- `Catch crooks with Grandma Lina or travel to space`
+- `Chase keys in the enchanted keys room.`
+- `Check out the bridge, command room, break room and more.`
+- `Christmas Gift`
+- `Christmas gift`
+- `Collectible`
+- `Collection`
+- `Collector's Edition`
+- `Collectors`
+- `Collectors Edition`
+- `Complete`
+- `Complete Set`
+- `Construction`
+- `Converts`
+- `Cosy Night-Light Functionality`
+- `Custom Printed`
+- `Detachable Escape Pods`
+- `Detachable minifigure cockpit`
+- `Disassembled into numbered bags as per LEGO instructions`
+- `Discontinued`
+- `Display Chopper as if his arms and wheel have been retracted into`
+- `Display Plate Included`
+- `Display Stand Included`
+- `Display stand`
+- `Display stands let you pose minifigures around the model`
+- `Does not apply`
+- `Downloadable PDF Instructions`
+- `Dumbledoreâs office`
+- `Easy Installation`
+- `Electronic`
+- `Enjoy the thrill of surprise with 16 collectable minifigures`
+- `Escape from Fluffyâs room through the trapdoor.`
+- `Exclusive minifigure Saw Gerrera`
+- `Factory Sealed`
+- `Factory Sealed box`
+- `Factory sealed`
+- `Festive Edition`
+- `Fold out the carry handle for flying.`
+- `Fold out the tool from Chopperâs chest.`
+- `Fold up the MTTâs side panels to view the detailed interior.`
+- `Full Set`
+- `Glow in the Dark`
+- `Handmade`
+- `Hard To Find`
+- `Hassle-Free Removal`
+- `Hogwarts Train`
+- `Hyena Droid Bomber`
+- `Includes Battery Boxes`
+- `Includes Instruction Guide`
+- `Includes USB Connector`
+- `Includes USB Light Kits`
+- `Includes a collectible Cal Kestis LEGO minifigure.`
+- `Integrated Wire Organizer`
+- `LEGO ART The Milky Way Galaxy 31212`
+- `LEGO ART Vincent van Gogh â Sunflowers 31215`
+- `LEGO Bluey Bluey's Beach & Family Car Trip 11202`
+- `LEGO Bluey Bluey's Family House 11203`
+- `LEGO Botanicals Hibiscus 10372`
+- `LEGO Disney Lilo and Stitch Beach House 43268`
+- `LEGO Disney WALL-E and EVE 43279`
+- `LEGO Harry Potter Quidditch Supplies & Ice Cream Parlour 76452`
+- `LEGO Iconic Festive Gingerbread House 40809`
+- `LEGO Iconic Up-Scaled Santa Minifigure 40820`
+- `LEGO Icons Transformers Bumblebee Model Set 10338`
+- `LEGO LEGO Creator Medieval Horse Knight Castle 31168`
+- `LEGO LEGO Ideas Gremlins: Gizmo 21361`
+- `LEGO ONE PIECE The Baratie Floating Restaurant 75640`
+- `LEGO Super Heroes Avengers: Endgame Thor vs. Chitauri 76322`
+- `LEGO Super Heroes Dancing Groot 76297`
+- `LEGO Super Heroes The Avengers Assemble: Age of Ultron 76291`
+- `LEGO Technic Koenigsegg Jesko Absolut Grey Hypercar 42173`
+- `LEGO Technic Oracle Red Bull Racing RB20 F1 Car 42206`
+- `LEGO Wednesday Wednesday Addams Figure 76780`
+- `Large NINJAGOÂ® model for play and display`
+- `Laser Cannons`
+- `Lego`
+- `Lego Art the Milky Way Galaxy 31212`
+- `Lego Bundle`
+- `Lego City`
+- `Lego Custom Built`
+- `Lift off the top panel and fold out the side panels.`
+- `Light Up`
+- `Light Up Model`
+- `Limited Edition`
+- `Limited Edition, Without Box`
+- `Look into the Mirror of Erised.`
+- `Look out for the Kyber Crystal element in the cargo box.`
+- `Luke Skywalker`
+- `Lunar Lander`
+- `MOC - My Own Creation`
+- `Magnetic`
+- `Midi-Scale`
+- `Missing Minifigures`
+- `Missing Pieces`
+- `Move equipment and more with the working crane`
+- `Move the lever to activate Chopperâs iconic head movements.`
+- `Mystery Bag`
+- `N/A`
+- `NEW for 2025`
+- `NUMBER 3 BAGS ONLY`
+- `New`
+- `New Sealed Set`
+- `New and Sealed`
+- `New parts`
+- `None`
+- `Not applicable`
+- `Olaf the Snowman`
+- `Original (Unopened)`
+- `Original Box`
+- `Original Instructions`
+- `Perform a stunt on the towering skate ramp`
+- `Play video games in Jason's room or try a jackhammer`
+- `Please note the number plate sticker is damaged`
+- `Plug-and-Play Setup`
+- `Plug-in Power`
+- `Pneumatic`
+- `Pneumatics`
+- `Power Functions`
+- `Pre-Routed Channels`
+- `Pre-Set Wiring Layout`
+- `Printed Paper Manual`
+- `Rare Lego`
+- `Recreate Belle and Beastâs memorable dance scene`
+- `Relaxing Ambience Booster`
+- `Remote Control`
+- `Retired`
+- `Retired Product`
+- `Retired set`
+- `Ride the STAP with the Battle Droid.`
+- `Rotating Radar Disc`
+- `Santa plus Family`
+- `Scented`
+- `Sealed`
+- `Sealed and Unopened`
+- `Sealed box`
+- `Sold by Weight`
+- `Sopwith Camel`
+- `Spring-Loaded Shooters`
+- `Step-by-Step Online Videos`
+- `Stud Shooter`
+- `Super Hero Arkham Asylumâ¢ building set for adults â 2,953 pieces`
+- `Supply Wagon`
+- `Target Rebel starships with the spring-loaded shooters.`
+- `The MTT has hidden wheels for smooth movement.`
+- `The set also includes a standard-size Chopper LEGO droid figure t`
+- `Tool-Free Removal`
+- `Turn the knob on top of the MTT to activate the rack.`
+- `Ultimate Collector Series`
+- `Ultimate Collector's Series (UCS)`
+- `Ultra-Thin Alloy Wires`
+- `Unclip the Battle Droids from the rack.`
+- `Unopened`
+- `Vintage`
+- `Washed & Sanitised`
+- `Washed/Sanitized`
+- `With Box`
+- `With Original Box`
+- `With Original Instructions`
+- `With box and Instructions`
+- `Without Box`
+- `Without Manual`
+- `X-Wing`
+- `authentic features`
+- `automatic`
+- `box`
+- `brand new`
+- `bugatti chiron`
+- `building`
+- `collectables and figures for sale`
+- `complete`
+- `custom made`
+- `does not apply`
+- `featuring a fully functional buildable Minifigure Vending Machine`
+- `in box`
+- `instructions`
+- `lego`
+- `lego Bundle`
+- `measures over 16 in. (41 cm) high, 10 in. (25 cm) wide and 10 in.`
+- `minifigures`
+- `new`
+- `new parts`
+- `rare`
+- `retired`
+- `sealed`
+- `see in description`
+- `without minifigures& their accesories`
+
+---
+## Foreign Product (1 unique)
+
+- `No`
+
+---
+## Franchise (2 unique)
+
+- `Iron Man`
+- `Star Wars`
+
+---
+## GTIN (1 unique)
+
+- `05702017587318`
+
+---
+## Gamme de produits (thÃ¨me LEGO) (3 unique)
+
+- `Marvel Super Heroes`
+- `Star Wars`
+- `Technic`
+
+---
+## Gender (4 unique)
+
+- `BOYS`
+- `Both`
+- `Boy`
+- `Unisex`
+
+---
+## Genre (1 unique)
+
+- `Science Fiction`
+
+---
+## Global Trade Identification Number (2 unique)
+
+- `05702017591759`
+- `05702017814681`
+
+---
+## Hauteur de l'article (1 unique)
+
+- `3.4 in`
+
+---
+## Height (7 unique)
+
+- `11.8 cm`
+- `12.4 cm`
+- `13.2 cm`
+- `15.7 cm`
+- `27`
+- `6.1 cm`
+- `7.2 cm`
+
+---
+## Herstellernummer (24 unique)
+
+- `10214`
+- `10253`
+- `10335`
+- `21033`
+- `21155`
+- `21306`
+- `21309`
+- `4002025`
+- `42055`
+- `42129`
+- `6199`
+- `6286`
+- `71043`
+- `71705`
+- `7187`
+- `75288`
+- `7672`
+- `79018`
+- `80036`
+- `8258`
+- `910001`
+- `910057`
+- `924`
+- `Nicht zutreffend`
+
+---
+## Herstellungsjahr (14 unique)
+
+- `1998`
+- `2006`
+- `2008`
+- `2009`
+- `2011`
+- `2014`
+- `2016`
+- `2017`
+- `2019`
+- `2020`
+- `2022`
+- `2023`
+- `2024`
+- `2025`
+
+---
+## Herstellungsland und -region (1 unique)
+
+- `DÃ¤nemark`
+
+---
+## High-concerned Chemical (1 unique)
+
+- `None`
+
+---
+## HÃ¶he (10 unique)
+
+- `112 mm`
+- `118 mm`
+- `127 mm`
+- `282 mm`
+- `480 mm`
+- `499 mm`
+- `72 mm`
+- `87 mm`
+- `91 mm`
+- `ca. 4,5 cm`
+
+---
+## ISBN (1 unique)
+
+- `5702017817934`
+
+---
+## Imballaggio (1 unique)
+
+- `Scatola`
+
+---
+## Included Components (3 unique)
+
+- `LEGO Aloy & Varl vs. Shell-Walker & Sawtooth 77037`
+- `LEGO Happy Plants 10349`
+- `Lego Spider-Man Vs. Doc Ock Subway Train Scene 76321`
+
+---
+## Interessen (30 unique)
+
+- `Bauwerke`
+- `Belagerungen und Kutschen`
+- `Boot`
+- `Boote`
+- `Burgen und SchlÃ¶sser`
+- `City`
+- `Creator`
+- `Dungeons and Dragons`
+- `Fahrzeuge`
+- `Fantasie`
+- `Filme`
+- `FÃ¼r groÃe Baumeister`
+- `King Arthur`
+- `LÃ¶wenritter`
+- `Medieval Knights`
+- `Mittelalterliche Waffen`
+- `Raumschiff`
+- `Raumschiffe`
+- `Ritter der Tafelrunde`
+- `Robin Hood`
+- `Saisonale Sets`
+- `SammlerstÃ¼ck`
+- `SammlerstÃ¼cke`
+- `Space`
+- `Taucher`
+- `Unterwasser`
+- `Unterwasserwel`
+- `Unterwasserwelt`
+- `Vintage`
+- `Weltraum`
+
+---
+## Interests (271 unique)
+
+- `ATV/Buggy`
+- `Action/Adventure`
+- `Adults Welcome`
+- `Adults WelcomeAnimalsCarsMoviesVehicles`
+- `Adults WelcomeFantasyRobots for KidsTV Shows`
+- `Aeroplanes`
+- `Aircraft, History`
+- `Airplanes`
+- `Alien`
+- `Ambiance`
+- `Animals`
+- `Animals & Zoo`
+- `Animals;Knights & Ninjas`
+- `Animals;Vehicles`
+- `Architecture`
+- `Architecture Buildings`
+- `Architecture;Fantasy`
+- `Architecture;House`
+- `Architecture;Playground`
+- `Art`
+- `Arts and Crafts`
+- `Aurora Borealis`
+- `Auto`
+- `Aviation`
+- `Baby Dino`
+- `Baby Raptors`
+- `Back to the Future`
+- `Barraki`
+- `Bionicle`
+- `Blue`
+- `Books`
+- `Botanicals`
+- `Building`
+- `Building & Construction`
+- `Buildings`
+- `Buildings Super heroes`
+- `Bus`
+- `Camping`
+- `Captain America`
+- `Car`
+- `Cars`
+- `Cars;Sports`
+- `Cars;Vehicles`
+- `Cartoons`
+- `Castle`
+- `Catamaran to Race Power Boat`
+- `Cave`
+- `Charlie`
+- `China`
+- `Chinese`
+- `Chinese New Year`
+- `Chocolate`
+- `Christmas`
+- `City`
+- `Claire Dearing`
+- `Coding for Kids`
+- `Collectable`
+- `Comic Books`
+- `Concorde`
+- `Construction Vehicle;Cars`
+- `Creator Expert`
+- `Custom set`
+- `DC Universe - Super Heroes`
+- `Danny Nedermeyer`
+- `Delta`
+- `Dino-Mech`
+- `Dinosaur`
+- `Dinosaurs`
+- `Disney`
+- `Disney Frozen II`
+- `Disney Princess`
+- `Displays`
+- `Dragons`
+- `Echo`
+- `Exploration`
+- `Exploration;Knights & Ninjas`
+- `F1`
+- `F1 Car`
+- `FIGURES`
+- `Family`
+- `Fantasy`
+- `Flowers`
+- `Flying`
+- `For Grown Up`
+- `For Grown Up;Architecture`
+- `For Grown Up;Cars`
+- `For Grown Up;Exploration`
+- `For Grown Up;House`
+- `For Grown Up;Mini-Dolls`
+- `For Grown Up;Space`
+- `For Grown Up;Superheroes`
+- `For Grown Up;Vehicles`
+- `Formula 1`
+- `Formula One`
+- `Fortnite`
+- `Gaming`
+- `Geology`
+- `Ghost Busters`
+- `Gift`
+- `Gizmo`
+- `Gremlins`
+- `Grogu`
+- `Hard To Find LEGO`
+- `Helicopter`
+- `Helmet collection`
+- `Holidays`
+- `Home Decor`
+- `House;Fantasy`
+- `House;Playground`
+- `How to Train Your Dragon`
+- `Ideas`
+- `Insects`
+- `Into the Spider-Verse`
+- `Jurassic`
+- `Jurassic Park`
+- `Jurassic World`
+- `Knights`
+- `Knights & Ninjas`
+- `Knights & Ninjas;Animals & Zoo`
+- `LEGO`
+- `LEGO Blacktron`
+- `LEGO Christmas`
+- `LEGO Christmas train`
+- `LEGO Creator`
+- `LEGO Disney Pixar`
+- `LEGO Disney Pixar WALL-E and EVE`
+- `LEGO Flower`
+- `LEGO Flowers`
+- `LEGO Fortnite`
+- `LEGO Icons`
+- `LEGO Ideas`
+- `LEGO Pixar`
+- `LEGO Plant`
+- `LEGO Plants`
+- `LEGO Star War`
+- `LEGO Star Wars`
+- `LEGO Trains`
+- `LEGO WALL-E and EVE`
+- `LEGO train`
+- `Las Vegas`
+- `Learn to Build`
+- `Lego`
+- `Lego Botanicals Petite Sunny Bouquet`
+- `Lego F1`
+- `Lego Friends`
+- `Lilo & Stitch`
+- `Lilo & Stitch Lego`
+- `Locomotive`
+- `Mario`
+- `Marvel`
+- `Medieval`
+- `Mercedes`
+- `Merry Christmas`
+- `Micky Mouse`
+- `Miles Morales`
+- `Minecraft`
+- `Mini-Dolls`
+- `Mini-Dolls;House`
+- `Mini-Dolls;Playground`
+- `Mobile Home`
+- `Motorbikes`
+- `Motorcycles`
+- `Movies`
+- `Music`
+- `NASA`
+- `Nativity`
+- `Natural World`
+- `Nature`
+- `Netflix`
+- `Ninjas`
+- `Northern Lights`
+- `Olaf`
+- `Original trilogy`
+- `Outdoor Adventure`
+- `Owen Grady`
+- `POLICE`
+- `Pirates`
+- `Pixar`
+- `Police`
+- `Police, Airport and Vehicles`
+- `Preschool`
+- `Preschool;House`
+- `Princesses`
+- `Race Car`
+- `Race Cars`
+- `Racing`
+- `Racing Cars`
+- `Raptor`
+- `Real-Life Heroes`
+- `Robots for Kids`
+- `Robots for Kids;For Grown Up`
+- `STEM`
+- `Santa`
+- `Sci-Fi`
+- `Sci-fi`
+- `SciFi`
+- `Science Fiction`
+- `Seasonal`
+- `Seasonal Sets`
+- `Sesame Street`
+- `Sherlock`
+- `Sherlock Holmes`
+- `Ship/Boat`
+- `Ship/Boat;For Grown Up`
+- `Ship/Boat;Knights & Ninjas`
+- `Ship/Boat;Superheroes`
+- `Ships`
+- `Sneaker`
+- `Snowman`
+- `Space`
+- `Space Ship`
+- `Space;Exploration`
+- `Space;For Grown Up`
+- `Space;Robots for Kids`
+- `Space;Vehicles`
+- `SpaceCraft`
+- `Speed Champions`
+- `Spider-Man`
+- `Spiders`
+- `Sports`
+- `Star Wars`
+- `Star wars`
+- `Stranger Things`
+- `Super Heroes`
+- `Super Mario`
+- `Superhero Masks`
+- `Superheroes`
+- `Superheroes;Cars`
+- `Superheroes;For Grown Up`
+- `Superheroes;Robots for Kids`
+- `T. Rex`
+- `TV Shows`
+- `Technic`
+- `The Lord of the Rings`
+- `The Office`
+- `Train Set`
+- `Trainer`
+- `Trains`
+- `Trains;Fantasy`
+- `Travel`
+- `Tyrannosaurus Rex`
+- `USB flash drive`
+- `Vehicle`
+- `Vehicles`
+- `Vehicles;Sports`
+- `Velociraptor`
+- `Vending Machines`
+- `Vic Hoskins`
+- `WALL-E and EVE`
+- `Wagon`
+- `Weapons`
+- `Wild West`
+- `Wildlife, Birds`
+- `Winter Village`
+- `Wizarding`
+- `a`
+- `architecture`
+- `books`
+- `does not apply`
+- `ewok`
+- `film`
+- `lego`
+- `limited edition`
+- `marvel`
+- `minecraft`
+- `mini figures and bricks`
+- `promo`
+- `reading`
+- `snakes`
+- `star wars`
+- `the clone wars`
+
+---
+## Is Assembly Required (1 unique)
+
+- `Yes`
+
+---
+## Is Electric (1 unique)
+
+- `No Battery`
+
+---
+## Is it real authentic ? (1 unique)
+
+- `Yes. As purchased at the Lego Store.`
+
+---
+## Item Dimensions (1 unique)
+
+- `38.2 x 26.2 x 5.6 centimetres`
+
+---
+## Item Height (266 unique)
+
+- `0`
+- `0.08 cm`
+- `0.9 cm`
+- `1.57 Inches`
+- `1.9 in`
+- `10 cm`
+- `10.3cm`
+- `10.5â`
+- `100 mm`
+- `101 mm`
+- `1030 mm`
+- `104 mm`
+- `105 mm`
+- `1090 mm`
+- `10cm`
+- `11.5 cm`
+- `11.8 cm`
+- `11.8cm`
+- `110 mm`
+- `1120 mm`
+- `114 mm`
+- `1140 mm`
+- `116 mm`
+- `118 mm`
+- `1180 mm`
+- `11cm`
+- `12 cm`
+- `12.4 cm`
+- `120 mm`
+- `122 mm`
+- `124 mm`
+- `1240 mm`
+- `1270 mm`
+- `12cm`
+- `13.2 cm`
+- `13.5cm`
+- `131 mm`
+- `132 mm`
+- `136 mm`
+- `137 mm`
+- `13cm`
+- `14 cm`
+- `141 mm`
+- `145 mm`
+- `149 mm`
+- `14cm`
+- `15 cm`
+- `15.5 cm`
+- `15.63 in`
+- `150 mm`
+- `1530 mm`
+- `155 mm`
+- `15cm`
+- `16 cm`
+- `160 mm`
+- `16cm`
+- `17 cm`
+- `170 mm`
+- `1700 mm`
+- `171 mm`
+- `1760 mm`
+- `17cm`
+- `18 cm`
+- `181 mm`
+- `182 mm`
+- `185 mm`
+- `186 mm`
+- `19 cm`
+- `19.1`
+- `190 mm`
+- `1900 mm`
+- `191 mm`
+- `19cm`
+- `20 mm`
+- `205 mm`
+- `21 cm`
+- `21.8 cm`
+- `210 mm`
+- `2120 mm`
+- `218 mm`
+- `219 mm`
+- `21cm`
+- `22 cm`
+- `22.9 cm`
+- `220 mm`
+- `222 mm`
+- `223 Mm`
+- `223 mm`
+- `224 mm`
+- `22cm`
+- `248 mm`
+- `24cm`
+- `253 mm`
+- `256 mm`
+- `258 mm`
+- `26`
+- `26 cm`
+- `26.2`
+- `26.2 cm`
+- `260 mm`
+- `262 mm`
+- `266 mm`
+- `26cmm`
+- `276 mm`
+- `277 mm`
+- `27cm`
+- `28.2`
+- `28.2 cm`
+- `280 mm`
+- `282 mm`
+- `28cm`
+- `3 cm`
+- `3.6 in`
+- `3.7 cm`
+- `3.9 cm`
+- `30" (75cm)`
+- `300 mm`
+- `32.8cm`
+- `32cm`
+- `338 mm`
+- `339 mm`
+- `345mm`
+- `35.4cm`
+- `352 mm`
+- `354 mm`
+- `36cm`
+- `37.3cms`
+- `37.7 cm`
+- `37.8`
+- `37.8 cm`
+- `370 mm`
+- `373 mm`
+- `378 mm`
+- `378.mm`
+- `378mm`
+- `38 cm`
+- `381 mm`
+- `382 mm`
+- `385 mm`
+- `3850 mm`
+- `392 mm`
+- `397 mm`
+- `4 cm`
+- `4.5 cm`
+- `4.6 cm`
+- `4.7 cm`
+- `4.8 cm`
+- `434 mm`
+- `45.2 cm`
+- `45.7 cm`
+- `450 mm`
+- `46 cm`
+- `460 mm`
+- `47 cm`
+- `47.7cm`
+- `474 mm`
+- `48`
+- `48 cm`
+- `480 mm`
+- `481 mm`
+- `494 mm`
+- `499 mm`
+- `5 cm`
+- `5.45 cm`
+- `5.5 Centimetres`
+- `5.6 cm`
+- `5.7 centimetres`
+- `5.7 cm`
+- `5.9 cm`
+- `5.9cm`
+- `514 mm`
+- `516 mm`
+- `518 mm`
+- `520 mm`
+- `537 mm`
+- `540 mm`
+- `546 mm`
+- `559 mm`
+- `560 mm`
+- `57 mm`
+- `570 mm`
+- `58.5cm`
+- `58cm`
+- `59 mm`
+- `590 mm`
+- `6 cm`
+- `6.1 cm`
+- `6.25 cm`
+- `6.5 cm`
+- `6.9cm`
+- `60 mm`
+- `600 mm`
+- `61 mm`
+- `610 mm`
+- `620 mm`
+- `640 mm`
+- `66 mm`
+- `660 mm`
+- `670 mm`
+- `7 cm`
+- `7.1 cm`
+- `7.1cm`
+- `7.2 cm`
+- `7.4 cm`
+- `7.4cm`
+- `7.5 cm`
+- `7.6 cm`
+- `7.8 cm`
+- `7.9 cm`
+- `70 mm`
+- `70.5 mm`
+- `700 mm`
+- `71 mm`
+- `710 mm`
+- `720 mm`
+- `740 mm`
+- `760 mm`
+- `78 mm`
+- `780 mm`
+- `790 mm`
+- `79cm`
+- `7cm`
+- `8 bricks / 7.7cm`
+- `8.27 in`
+- `8.58 in`
+- `8.7 cm`
+- `8.7cm`
+- `8.9 cm`
+- `80 mm`
+- `800 mm`
+- `82 mm`
+- `83 mm`
+- `830 mm`
+- `85 mm`
+- `850 mm`
+- `860 mm`
+- `87 mm`
+- `870 mm`
+- `88 mm`
+- `8â (22cm) high`
+- `9 cm`
+- `9.1 cm`
+- `9.4 cm`
+- `9.41 in`
+- `9.4cm`
+- `9.5 cm`
+- `9.6 cm`
+- `90 mm`
+- `900 mm`
+- `910 mm`
+- `91cms`
+- `91mm`
+- `93 mm`
+- `94 mm`
+- `940 mm`
+- `95 mm`
+- `960 mm`
+- `9vm`
+- `Box Dimensions: L 38.2 x W 26.2 x H 7.05 cm`
+- `Box Dimensions: L 45.6 x W 28.2 x H 8.8 cm, Weight: 1.4kg`
+- `Box Dimensions: L 55.5 x W 37.8 x H 13.2 cm, 3.5kg`
+- `Does not apply`
+- `N/A`
+- `One Size`
+- `See Description`
+- `does not apply`
+
+---
+## Item Length (222 unique)
+
+- `10.3`
+- `105 cm`
+- `105cm`
+- `11.8`
+- `12.4`
+- `1200 mm`
+- `13 cm`
+- `13.2`
+- `1300 mm`
+- `135`
+- `137.2 cm`
+- `138 mm`
+- `13cm`
+- `14 cm`
+- `14.1 cm`
+- `14.4 cm`
+- `14.57 in`
+- `14.9 cm`
+- `140`
+- `141 mm`
+- `1410 mm`
+- `1440 mm`
+- `15 cm`
+- `15.1 in`
+- `15.7 cm`
+- `157 mm`
+- `1570 mm`
+- `16 studs / 13cm`
+- `16cm`
+- `16â (42cm) longÂ`
+- `17 cm`
+- `18 cm`
+- `18.89 in`
+- `180 mm`
+- `189 mm`
+- `19 cm`
+- `19.1 cm`
+- `19.1cm`
+- `19.2 cm`
+- `19.5 cm`
+- `190 mm`
+- `191 mm`
+- `1910 mm`
+- `1920 mm`
+- `196 mm`
+- `197 mm`
+- `19cm`
+- `20 cm`
+- `20.5 cm`
+- `205 mm`
+- `21cm`
+- `22.9 in`
+- `2220 mm`
+- `23 cm`
+- `23.54 in`
+- `23.66 in`
+- `2400 mm`
+- `25 cm`
+- `25.5 cm`
+- `257 mm`
+- `259 mm`
+- `25cm`
+- `26 cm`
+- `26.1 cm`
+- `26.2 cm`
+- `260 mm`
+- `2600 mm`
+- `262 mm`
+- `2620 mm`
+- `263 mm`
+- `27.7 cm`
+- `270 mm`
+- `278 mm`
+- `27cm`
+- `28.2 cm`
+- `28.5 cm`
+- `28.6 cm`
+- `28.8 cm`
+- `280 mm`
+- `282 mm`
+- `2820 mm`
+- `2880 mm`
+- `28cm`
+- `290 mm`
+- `297 mm`
+- `299 mm`
+- `305 mm`
+- `31 cm`
+- `31.5 cm`
+- `32 cm`
+- `320 mm`
+- `32cm`
+- `333 mm`
+- `3360 mm`
+- `338 mm`
+- `340 mm`
+- `35.4 cm`
+- `3500 mm`
+- `354 mm`
+- `3540 mm`
+- `354mm`
+- `36 cm`
+- `37.2/57.4 cm`
+- `37.4cm`
+- `37.7 cm`
+- `370 mm`
+- `371 mm`
+- `374 mm`
+- `375 mm`
+- `3750 mm`
+- `378 mm`
+- `3780 mm`
+- `379 mm`
+- `38`
+- `38 cm`
+- `38.2 cm`
+- `38.2cm`
+- `38.4 cm`
+- `380 mm`
+- `3800 mm`
+- `382 mm`
+- `3820 mm`
+- `384 mm`
+- `3840 mm`
+- `388 mm`
+- `389 mm`
+- `38cm`
+- `39.4cms`
+- `393 mm`
+- `394 mm`
+- `395 mm`
+- `397 mm`
+- `398 mm`
+- `417 mm`
+- `419 mm`
+- `42 cm`
+- `4320 mm`
+- `44.6cm`
+- `47.5cm`
+- `47.7 cm`
+- `471 mm`
+- `473 mm`
+- `4780 mm`
+- `479 mm`
+- `48 cm`
+- `48.0cm`
+- `48.3 cm`
+- `480 mm`
+- `4800 mm`
+- `480mm`
+- `48cm`
+- `4900 mm`
+- `493 mm`
+- `5 cm`
+- `50cm`
+- `51 cm`
+- `52 cm`
+- `52.3 cm`
+- `523 mm`
+- `524 mm`
+- `525 mm`
+- `53 cm`
+- `533 mm`
+- `5330 mm`
+- `5350 mm`
+- `54 cm`
+- `540 mm`
+- `5400 mm`
+- `54cm`
+- `55.5 cm`
+- `552 mm`
+- `555 mm`
+- `558 mm`
+- `560 mm`
+- `561 mm`
+- `57.7 cm`
+- `570 mm`
+- `5760 mm`
+- `578 mm`
+- `5780 mm`
+- `57cm`
+- `58.1 cm`
+- `58.2 cm`
+- `58.2 cms`
+- `58.2cm`
+- `58.4 cm`
+- `580 mm`
+- `582 mm`
+- `5820 mm`
+- `5850 mm`
+- `5880 mm`
+- `590 mm`
+- `593 mm`
+- `5930 mm`
+- `594 mm`
+- `596 mm`
+- `598 mm`
+- `5cm`
+- `6.1`
+- `600 mm`
+- `604 mm`
+- `60cm`
+- `610 mm`
+- `62 cm`
+- `627 mm`
+- `63cm`
+- `6520 mm`
+- `7.05`
+- `7.2`
+- `700 mm`
+- `716 mm`
+- `8.7 cm`
+- `80 cm`
+- `88mm`
+- `8cm`
+- `9.4`
+- `9.55`
+- `91 mm`
+- `Does not apply`
+- `N/A`
+- `See Description`
+- `does not apply`
+
+---
+## Item Number (4 unique)
+
+- `70780`
+- `71051`
+- `75396`
+- `9516`
+
+---
+## Item Package Quantity (1 unique)
+
+- `1`
+
+---
+## Item Type (6 unique)
+
+- `Box Sets`
+- `Custom Kit`
+- `Custom Model`
+- `Flowers`
+- `Minifigs`
+- `Minifigures`
+
+---
+## Item Type Name (1 unique)
+
+- `Building set`
+
+---
+## Item Weight (139 unique)
+
+- `0.79 kg`
+- `1 Kg`
+- `1.11 kg`
+- `1.24 kg`
+- `1.3 kg`
+- `1.32 kg`
+- `1.38 kg`
+- `1.49 kg`
+- `1.58 kg`
+- `1.72 kg`
+- `1.73 kg`
+- `1.97 kg`
+- `10.01 kg`
+- `10.37 kg`
+- `10.62 kg`
+- `100 Grams`
+- `11.01 kg`
+- `11.31 kg`
+- `1270g`
+- `13.36 kg`
+- `14.98 kg`
+- `2`
+- `2.`
+- `2.03 kg`
+- `2.05 kg`
+- `2.06 kg`
+- `2.15 kg`
+- `2.23 kg`
+- `2.29 kg`
+- `2.43 kg`
+- `2.45 kg`
+- `2.51 kg`
+- `2.55 kg`
+- `2.61 kg`
+- `2.64 kg`
+- `2.7`
+- `2.77`
+- `2.77 k`
+- `2.81 kg`
+- `2.84 kg`
+- `2.88 kg`
+- `2.93 kg`
+- `2.96 kg`
+- `2.97 kg`
+- `2.99 kg`
+- `3 kg`
+- `3.01 kg`
+- `3.04 kg`
+- `3.08 kg`
+- `3.17 kg`
+- `3.2 kg`
+- `3.27 kg`
+- `3.28 kg`
+- `3.29 kg`
+- `3.32 kg`
+- `3.34 kg`
+- `3.38 kg`
+- `3.44 kg`
+- `3.45 kg`
+- `3.46 kg`
+- `3.51 kg`
+- `3.52 kg`
+- `3.67 kg`
+- `3.7 kg`
+- `3.75 kg`
+- `3.77 kg`
+- `3.8 kg`
+- `3.86 kg`
+- `3.87 kg`
+- `3.88 kg`
+- `3.9 kg`
+- `3.92 kg`
+- `3.98 kg`
+- `377 Grams`
+- `4.03 kg`
+- `4.07 kg`
+- `4.11 kg`
+- `4.15 kg`
+- `4.21 kg`
+- `4.33 kg`
+- `4.36 kg`
+- `4.38 kg`
+- `4.41 kg`
+- `4.45 kg`
+- `4.51 kg`
+- `4.61 kg`
+- `4.73 lb`
+- `5 kg`
+- `5.14 kg`
+- `5.19 kg`
+- `5.27 kg`
+- `5.29 kg`
+- `5.38 kg`
+- `5.39 kg`
+- `5.44 kg`
+- `5.47 kg`
+- `5.63 kg`
+- `5.95 kg`
+- `500 Grams`
+- `6.02 kg`
+- `6.05 kg`
+- `6.06 kg`
+- `6.09 kg`
+- `6.19 kg`
+- `6.29 kg`
+- `6.54 kg`
+- `6.56 kg`
+- `6.66 kg`
+- `6.67 kg`
+- `6.69 kg`
+- `6.71 kg`
+- `6.75 kg`
+- `6.78 kg`
+- `6.79 kg`
+- `6.96 kg`
+- `7 kg`
+- `7.04 kg`
+- `7.13 kg`
+- `7.36 kg`
+- `7.42 kg`
+- `7.45 kg`
+- `7.62 kg`
+- `7.76 kg`
+- `7.83 kg`
+- `8 kg`
+- `8.11 kg`
+- `8.28 kg`
+- `8.43 kg`
+- `8.54 kg`
+- `8.77 kg`
+- `8.99 kg`
+- `825g`
+- `9.01 kg`
+- `9.03 kg`
+- `9.18 kg`
+- `9.2 kg`
+- `9.25 kg`
+- `9.3 kg`
+- `994g`
+
+---
+## Item Width (242 unique)
+
+- `1.4 cm`
+- `10 cm`
+- `103 mm`
+- `106 mm`
+- `11`
+- `11 cm`
+- `11.2cm`
+- `11.3 in`
+- `11.5 cm`
+- `11.8cm`
+- `113 mm`
+- `11cm`
+- `12.2 cm`
+- `12.5 cm`
+- `120 mm`
+- `122 mm`
+- `1220 mm`
+- `124 mm`
+- `12533877`
+- `12cm`
+- `13.9 cm`
+- `130 mm`
+- `136 mm`
+- `139 mm`
+- `14 cm`
+- `14.1 cm`
+- `14.1cm`
+- `14.5 cm`
+- `14.7 cm`
+- `140 mm`
+- `141 mm`
+- `1410 mm`
+- `1440 mm`
+- `15 cm`
+- `15.5 cm`
+- `150 mm`
+- `1500 mm`
+- `154 mm`
+- `155 mm`
+- `157 mm`
+- `15cm`
+- `16 cm`
+- `160 mm`
+- `169 mm`
+- `17 cm`
+- `17.8 cm`
+- `171 mm`
+- `175 mm`
+- `17cm`
+- `18 mm`
+- `18.9 in`
+- `180 mm`
+- `184 mm`
+- `1880 mm`
+- `19 cm`
+- `19.1 cm`
+- `19.1cm`
+- `19.2 cm`
+- `19.5 cm`
+- `19.53 in`
+- `190 mm`
+- `1900 mm`
+- `191 mm`
+- `1910 mm`
+- `191mm`
+- `192 mm`
+- `1920 mm`
+- `193 mm`
+- `196 mm`
+- `197 mm`
+- `199 mm`
+- `19cm`
+- `2 cm`
+- `20.59 in`
+- `200 mm`
+- `207 mm`
+- `21.1 cm`
+- `21.5 cm`
+- `218 mm`
+- `22.2 cm`
+- `229 mm`
+- `232 mm`
+- `234 mm`
+- `236 mm`
+- `238 mm`
+- `239 mm`
+- `24 cm`
+- `24.6 cm`
+- `2400 mm`
+- `243 mm`
+- `244 mm`
+- `248 mm`
+- `248mm`
+- `25 cm`
+- `251 mm`
+- `252 mm`
+- `253 mm`
+- `254 mm`
+- `259 mm`
+- `25cm`
+- `26 cm`
+- `26.2`
+- `26.2 cm`
+- `26.2cm`
+- `260 mm`
+- `2600 mm`
+- `262 mm`
+- `2620 mm`
+- `265 mm`
+- `2670 mm`
+- `26cm`
+- `2720 mm`
+- `2780 mm`
+- `28.2`
+- `28.2 cm`
+- `28.2cm`
+- `28.5 cm`
+- `28.6 cm`
+- `28.8 cm`
+- `280 mm`
+- `2800 mm`
+- `282 mm`
+- `2820 mm`
+- `288 mm`
+- `2880 mm`
+- `29 cm`
+- `29.9cms`
+- `290 mm`
+- `296 mm`
+- `299 mm`
+- `300 mm`
+- `31 cm`
+- `31cm`
+- `320 mm`
+- `32cm`
+- `330 mm`
+- `3500 mm`
+- `352 mm`
+- `354 mm`
+- `357 mm`
+- `35cm`
+- `37.1 cm`
+- `37.5cm`
+- `37.8 cm`
+- `37.8cm`
+- `370 mm`
+- `370mm`
+- `372 mm`
+- `3730 mm`
+- `374 mm`
+- `3740 mm`
+- `375 mm`
+- `378 mm`
+- `3780 mm`
+- `379 mm`
+- `38 cm`
+- `38.2`
+- `380 mm`
+- `3820 mm`
+- `3840 mm`
+- `39 cm`
+- `39.5/26.8 cm`
+- `394 mm`
+- `395 mm`
+- `396 mm`
+- `397 mm`
+- `398 mm`
+- `399 mm`
+- `400 mm`
+- `406 mm`
+- `40cm`
+- `42cm`
+- `43 cm`
+- `43cm`
+- `45.6`
+- `456 mm`
+- `460 mm`
+- `4600 mm`
+- `47.6 cm`
+- `4750 mm`
+- `48`
+- `48 cm`
+- `48.3 cm`
+- `480 mm`
+- `4800 mm`
+- `48cm`
+- `48cms`
+- `4900 mm`
+- `494 mm`
+- `497 mm`
+- `49cm`
+- `5 cm`
+- `5020 mm`
+- `506 mm`
+- `5100 mm`
+- `51cm`
+- `52.3`
+- `523 mm`
+- `52cm`
+- `54cm`
+- `55.5`
+- `552 mm`
+- `555 mm`
+- `57 mm`
+- `58.2 cm`
+- `581 mm`
+- `5820 mm`
+- `5850 mm`
+- `5cm`
+- `6 cm`
+- `6.5 cm`
+- `60`
+- `61 mm`
+- `6520 mm`
+- `7 cm`
+- `7 studs / 6cm`
+- `7.1 cm`
+- `7.48 in`
+- `7.8 cm`
+- `70 mm`
+- `71 cm`
+- `71 mm`
+- `71mm`
+- `75 mm`
+- `7cm`
+- `7â (20cm) wide`
+- `8.6 cm`
+- `8.7 cm`
+- `82 mm`
+- `88cm`
+- `9 cm`
+- `9.1 cm`
+- `9.92 in`
+- `900 mm`
+- `91 mm`
+- `93 mm`
+- `94 mm`
+- `95 mm`
+- `Does not apply`
+- `N/A`
+- `See Description`
+- `does not apply`
+
+---
+## Item dimensions L x W x H (1 unique)
+
+- `26.2 x 14.1 x 4.8 centimetres`
+
+---
+## Item model number (1 unique)
+
+- `10349`
+
+---
+## Item weight (1 unique)
+
+- `0.26 Kilograms`
+
+---
+## Jahr der Einstellung (2 unique)
+
+- `2018`
+- `2022`
+
+---
+## LEGO Character (986 unique)
+
+- `01 Date Night Homer`
+- `02 Date Night Marge`
+- `03 Lisa with Snowball II`
+- `04 Maggie & Santa's Little Helper`
+- `05 Bartman`
+- `06 Fallout Boy Milhouse`
+- `07 Comic Book Guy`
+- `08 Martin Prince`
+- `09 Professor Frink`
+- `1 mini fig`
+- `10 Hans Moleman`
+- `11 Selma`
+- `12 Patty`
+- `13 Groundskeeper Willie`
+- `14 Edna Krabappel`
+- `15 Waylon Smithers`
+- `16 Dr. Hibbert`
+- `2 mini figs`
+- `2 x Clone Shock Troopers`
+- `2-1B`
+- `4 Firefighters`
+- `4-LOM`
+- `5 Figures in total`
+- `5 Minifigures`
+- `5 mini figs`
+- `ACU trooper`
+- `APXGP Team Race Car from F1Â® The Movie`
+- `ASP Droid`
+- `ASSORTED`
+- `AT-AT Driver`
+- `AT-AT Walker`
+- `AT-DP Pilot`
+- `AT-ST`
+- `AT-ST Driver`
+- `Aaron`
+- `Aayla Secura`
+- `Acidicus`
+- `Adi`
+- `Admiral Ackbar`
+- `Admiral Yularen`
+- `Adventure Peely`
+- `Agent Kallus`
+- `Agile Archer`
+- `Ahsoka Tano`
+- `Air Traffic Controller`
+- `Airen Cracken`
+- `Airport Flagman`
+- `Airport Worker`
+- `Alan Grant`
+- `Albus Dumbledore`
+- `Alex`
+- `Alfred Pennyworth`
+- `Alien`
+- `All Ast`
+- `Aloy`
+- `Amber Grant`
+- `Anakin Skywalker`
+- `Andrea`
+- `Angel`
+- `Animals`
+- `Aquaman`
+- `Archer`
+- `Arctic Explorer`
+- `Ariel`
+- `Arthur Weasley`
+- `Asajj Ventress`
+- `Ash Attacker`
+- `Ashe`
+- `Ashlee Starstrider`
+- `Asoka`
+- `Assassin Droid`
+- `Assorted`
+- `Astor City Guard`
+- `Astromech Droid`
+- `Astromech Droid K3-R1`
+- `Astromech Droid, C1-10P`
+- `Astronaut`
+- `Augustus Gloop`
+- `Aunt May`
+- `Avak`
+- `B'omarr Monk`
+- `B-Wing Pilot`
+- `BB-8`
+- `BUGATTI CHIRON`
+- `Baby`
+- `Baby Blue`
+- `Baby Charlie`
+- `Baby Delta`
+- `Baby Echo`
+- `Ballerina`
+- `Balrog`
+- `Barista`
+- `Barraki`
+- `Barriss Offee`
+- `Bart Simpson`
+- `Bartender Guinan`
+- `Basketball Player`
+- `Batman`
+- `Battalion Brawler`
+- `Battle Droid`
+- `Battle Droid Commander`
+- `Battle Droid Pilot`
+- `Battle Mech`
+- `Battle droid x 3`
+- `Baze Malbus`
+- `Beauxbaton`
+- `Beetle`
+- `Bellatrix Lestrange`
+- `Belle`
+- `Ben`
+- `Ben Kenobi`
+- `Ben Urich`
+- `Benny`
+- `Bernie the Cab Driver`
+- `Betty Brant`
+- `Beverly Crusher`
+- `Bib Fortuna`
+- `Biker`
+- `Bilbo Baggins`
+- `Bistan`
+- `Black Cat`
+- `Black Falcon`
+- `Black Panther`
+- `Black Widow`
+- `Blacksmith`
+- `Blacktron`
+- `Blade`
+- `Blaize`
+- `Blaze`
+- `Bluey`
+- `Boat Captain`
+- `Bob`
+- `Bob-Omb`
+- `Boba Fett`
+- `Book Of Monsters`
+- `Bounty Hunter`
+- `Boushh`
+- `Boy`
+- `Brawny Boxer`
+- `Brite Bomber`
+- `Bruce Wayne`
+- `Brutaka`
+- `Bullseye`
+- `Bumblebee`
+- `C-3PO`
+- `Cad Bane`
+- `Cakey`
+- `Captain America`
+- `Captain Antilles`
+- `Captain Jean-Luc Picard`
+- `Captain Redbeard`
+- `Captain Rex`
+- `Car`
+- `Car Driver`
+- `Carnage`
+- `Cassian Andor`
+- `Cat`
+- `Catwoman`
+- `Cedric Diggory`
+- `Celebration Series`
+- `Chancellor Palpatine`
+- `Chandler`
+- `Charlie`
+- `Charlie Bucket`
+- `Chef`
+- `Chewbacca`
+- `Chief`
+- `Chief Chirpa`
+- `Chief Wiggum`
+- `Children`
+- `Chitauri`
+- `Chunk`
+- `Cinderella`
+- `Circus Clown`
+- `Claire Dearing`
+- `Clone Commander`
+- `Clone Pilot`
+- `Clone Trooper`
+- `Clone Trooper Commander`
+- `Clone Trooper Commander Fox`
+- `Clone Trooper Gunner`
+- `Clone Trooper Pilot`
+- `Clone Trooper, 212th Attack x 3`
+- `Clone Trooper, 501st Legion`
+- `Clown`
+- `Coast Guard`
+- `Cole`
+- `Cole, Jay, Kai, Lloyd, Nya, Sensei Wu, Zane`
+- `Commander Bacara`
+- `Commander Bly`
+- `Commander Cody`
+- `Commander Data`
+- `Commander Geordi La Forge`
+- `Commander William Riker`
+- `Commando Droid`
+- `Conductor`
+- `Construction Worker Female`
+- `Construction Worker Male`
+- `Cook`
+- `Counsellor Deanna Troi`
+- `Counsellor Dianna Troi`
+- `Count Dooku`
+- `Cow`
+- `Cowardly Lion`
+- `Cowboy`
+- `Cragger`
+- `Creator Expert`
+- `Creeper`
+- `Crew Member`
+- `Crocodile Train`
+- `Crook`
+- `Crown Knight`
+- `Crusher`
+- `Cube Assassin`
+- `Cuddle Team Leader`
+- `Customer`
+- `D-0`
+- `D-O`
+- `Dad`
+- `Daisy Duck`
+- `Dak Ralter`
+- `Dana Barrett`
+- `Daniel`
+- `Daniel Craig`
+- `Danny Nedermeyer`
+- `Daphne`
+- `Daredevil`
+- `Dark Trooper`
+- `Darth Malgus`
+- `Darth Maul`
+- `Darth Revan`
+- `Darth Vader`
+- `Data`
+- `Dean Thomas`
+- `Deanna Troi`
+- `Death Star Trooper`
+- `Death star`
+- `Decorator`
+- `Deep Sea Explorer`
+- `Demagorgon`
+- `Demogorgon`
+- `Dennis Nedry`
+- `Detective`
+- `Diver`
+- `Dizzy`
+- `Doc`
+- `Doc Brown`
+- `Doc Ock`
+- `Docs`
+- `Doctor Octopus`
+- `Doctor Strange`
+- `Doctor Who`
+- `Does not apply`
+- `Dog`
+- `Dom`
+- `Donald Duck`
+- `Donna`
+- `Dorothy Gale`
+- `Doubloon`
+- `Dr Alan Grant`
+- `Dr Beverly Crusher`
+- `Dr Ellie Sattler`
+- `Dr Henry Wu`
+- `Dr Ian Malcolm`
+- `Dr Watson`
+- `Dr Wu`
+- `Dr. Beverley Crusher`
+- `Dr. Beverly Crusher`
+- `Dr. Emmet Brown`
+- `Dr. Grace Augustine`
+- `Dr. Harleen Quinzel`
+- `Dr. Henry Loomis`
+- `Dr. Peter Venkman`
+- `Dr. Raymond Stantz`
+- `Draco Malfoy`
+- `Dragon Bolt`
+- `Dragon Knight`
+- `Drax`
+- `Drift`
+- `Droid`
+- `Drowned`
+- `Duncan Kincaid`
+- `Durmstrang`
+- `Dustin`
+- `Dwarf Spider Droid`
+- `DÃ©agol`
+- `EV3`
+- `EVE`
+- `Edward Elephant`
+- `Eeyore with Bow`
+- `Egon Spengler`
+- `Elephant`
+- `Eleven`
+- `Elf`
+- `Elphaba`
+- `Emmet`
+- `Emperor Palpatine`
+- `Empress Beatrix`
+- `Engineer`
+- `Ensign Ro`
+- `Eris`
+- `Even Piell`
+- `Ewok`
+- `Explorer`
+- `Falcon`
+- `Fame`
+- `Fangdam`
+- `Farmer`
+- `Female Caroler`
+- `Female Passenger`
+- `Female Skier`
+- `Fennac Shand`
+- `Fennec Shand`
+- `Fenrir Greyback`
+- `Fifth Brother`
+- `Fili the Dwarf`
+- `Finn`
+- `Fire Chief`
+- `Firefighter`
+- `Fireman`
+- `Firestar`
+- `First Officer Hawkins`
+- `First Order Snowtrooper`
+- `First Order Stormtrooper`
+- `Fish`
+- `Flexible Gymnast`
+- `Flounder`
+- `Flowers`
+- `Flynn Rider`
+- `Forest Elf`
+- `Forestman`
+- `Fox`
+- `Frackjaw`
+- `Frank Hurley (gen189)`
+- `Fred`
+- `Fred Weasley`
+- `Frog`
+- `Fruit Merchant`
+- `Futuron`
+- `Gabby`
+- `Gabby Gabby`
+- `Gadunka`
+- `Galactic Marines`
+- `Game Boy`
+- `Gamer`
+- `Gamora`
+- `Gamorrean Guard`
+- `Gandalf the Grey`
+- `Garbage Truck`
+- `Garmadon`
+- `Garp`
+- `Garven Dreis`
+- `General Dodonna`
+- `General Grievous`
+- `General Jan Dodonna`
+- `General Lando Calrissian`
+- `General Pryde`
+- `General Store Carriage Driver`
+- `General Store Customer x 3`
+- `General Store Owner`
+- `Geolix`
+- `Geonosian`
+- `Geordi La Forge`
+- `George Weasley`
+- `Ghost`
+- `Gingerbread Darth Vader`
+- `Gingerbread Man`
+- `Gingerbread Train Ornament`
+- `Ginny Weasley`
+- `Gizmo`
+- `Glinda`
+- `Goblin King`
+- `Godric Gryffindor`
+- `Gollum`
+- `Goofy`
+- `Gorilla Grodd`
+- `Grand Inquisitor`
+- `Grand Moff Tarkin`
+- `Grandpa`
+- `Grandpa Joe`
+- `Gray`
+- `Green Goblin`
+- `Green Lantern`
+- `Green Ninja`
+- `Grogu`
+- `Groot`
+- `Guard`
+- `Guinan`
+- `Gunther`
+- `Gwaihir`
+- `Gwen Stacy`
+- `Hakann`
+- `Hal`
+- `Han Solo`
+- `Harley Quinn`
+- `Harry Potter`
+- `Harry Potter Kettle`
+- `Headless Horseman`
+- `Hedwig`
+- `Helga Hufflepuff`
+- `Helicopter Pilot`
+- `Helmeppo`
+- `Henry Jones Sr.`
+- `Hera Syndulla - Dark Brown`
+- `Hermione Granger`
+- `Hero`
+- `Holiday Elf`
+- `Homer Simpson`
+- `Hooper`
+- `Horse`
+- `Horse, Knight`
+- `Horseback Rider`
+- `Hoth Rebel Trooper`
+- `Huey`
+- `Hulk`
+- `Hulkbuster`
+- `Hunter`
+- `Huntress`
+- `Hydra Trooper`
+- `Hyena Droid Bomber`
+- `INDIANA JONES`
+- `Ice Skater`
+- `Ice Skaters`
+- `Icons`
+- `Imperial Crew`
+- `Imperial Gunner`
+- `Imperial Officer`
+- `Imperial Pilot`
+- `Imperial Probe Droid`
+- `Imperial Royal Guard`
+- `Imperial Soldier`
+- `Imperial Storm Trooper SW1275`
+- `Imperial Storm Trooper SW1326`
+- `Imperial Storm Trooper SW1327`
+- `Imperial Trooper`
+- `Indiana Jones`
+- `Ink Demon`
+- `Ink General`
+- `Irene Adler`
+- `Irina Spalko`
+- `Irnakk`
+- `Iron Legion`
+- `Iron Man`
+- `Iron Spider`
+- `Isabela`
+- `Itchy`
+- `Izzie`
+- `J. Jonah Jameson`
+- `JW048 Owen Grady`
+- `JW052 Claire Dearing`
+- `JW053 Danny Nedermeyer`
+- `JW055 Vic Hoskins`
+- `Jabba the Hutt`
+- `Jacen Syndulla`
+- `Jack Skellington`
+- `Jack Sparrow`
+- `Jacob Kowalski`
+- `Jake Sully`
+- `Jake Sully Na'vi`
+- `James`
+- `James Bond`
+- `Jango Fett`
+- `Janine Melnitz`
+- `Jar Jar Binks`
+- `Jay`
+- `Jay DX`
+- `Jean Luc Picard`
+- `Jek-14`
+- `Jerry`
+- `Jerry, Elaine, George, Kramer, Newman`
+- `Jessie`
+- `Jesus`
+- `Jet Trooper`
+- `Joey`
+- `John Hammond`
+- `Jon Vander`
+- `Joseph`
+- `Joshua Pearce`
+- `Judo Fighter`
+- `Jyn Erso`
+- `Kai`
+- `Kanjiklub Gang Member`
+- `Karzahni`
+- `Kashyyyk Trooper`
+- `Kayla Watts`
+- `Kevin`
+- `Ki-Adi-Mundi`
+- `Kick Sauber`
+- `Kili the Dwarf`
+- `Killer Croc`
+- `King`
+- `Kit Fisto`
+- `Knight`
+- `Knight of Ren (Ushar)`
+- `Knight of Wren (Ap'lek)`
+- `Koby`
+- `Kopaka`
+- `Kranky Crane`
+- `Kruncha`
+- `Kylo Ren`
+- `LEGO 42105 Technic`
+- `LEGO Modulars`
+- `LEGOLAND`
+- `Lady`
+- `Lando Calrissian`
+- `Larry`
+- `Lasha`
+- `Laurence the boombox goon`
+- `Laval`
+- `Lavender Brown`
+- `Lawrence The Boombox Goon`
+- `Leann`
+- `Legolas Greenleaf`
+- `Leo`
+- `Lex Murphy`
+- `Liann`
+- `Librarian`
+- `Library Ghost`
+- `Lieutenant Commander`
+- `Lieutenant Commander Data`
+- `Lieutenant Commander Forge`
+- `Lieutenant Commander Geordi La Forge`
+- `Lieutenant Worf`
+- `Lighthouse Keeper/Verona Dempsey`
+- `Lion Knight`
+- `Lisa`
+- `Lisa Simpson`
+- `Liz`
+- `Liza`
+- `Lloyd`
+- `Lloyd Garmadon`
+- `Loki`
+- `Lone Ranger`
+- `Louie`
+- `Louis Tully`
+- `Lt. Beyta`
+- `Lucas`
+- `Lucky Cat`
+- `Luffy`
+- `Luigi`
+- `Luke`
+- `Luke Skywalker`
+- `Luna Lovegood`
+- `M-O`
+- `M.O.D.O.K.`
+- `Mace Windu`
+- `MadTeo`
+- `Madam Rosmerta`
+- `Maggie Simpson`
+- `Majisto`
+- `Male Caroler`
+- `Male Passenger`
+- `Man`
+- `Mandalorian`
+- `Marge Simpson`
+- `Marie`
+- `Mario`
+- `Mario Kart`
+- `Marion Ravenwood`
+- `Marrok`
+- `Martin`
+- `Martin Krebs`
+- `Marty McFly`
+- `Mary`
+- `Master Wu`
+- `Mata Nui`
+- `Mateo`
+- `Max`
+- `Max Shreck`
+- `Mecha Team Leader`
+- `Mecha team leader`
+- `Megaman`
+- `Mei Power-Up`
+- `Meowscles`
+- `MerCat`
+- `Mermaid`
+- `Mia`
+- `Michaelangelo`
+- `Mickey Mouse`
+- `Micky Maus`
+- `Mihawk`
+- `Mike`
+- `Mike Teavee`
+- `Mikey`
+- `Miles Morales`
+- `Miles Morales Spider-Man`
+- `Milhouse Van Houten`
+- `Millennium Falcon`
+- `Mimban Stormtrooper`
+- `Mindstorms`
+- `Miner`
+- `Minnie Mouse`
+- `Mo'at`
+- `Mocca`
+- `Molly Weasley`
+- `Monica`
+- `Monkey`
+- `Monkey Kid`
+- `Monster`
+- `Morton`
+- `Mother`
+- `Mouse Droid`
+- `Mouth`
+- `Mr. Burns`
+- `Mr. Flume`
+- `Mr. Freeze`
+- `Mrs. Castillo`
+- `Mrs. Flume`
+- `Mummy`
+- `Mungus`
+- `Mutt Williams`
+- `Mysterio`
+- `N/A`
+- `NA`
+- `NASA`
+- `NASA Apollo 11 Astronaut`
+- `Naida Riverheart`
+- `Nami`
+- `Ned Flanders`
+- `Neel`
+- `Neville Longbottom`
+- `Newt Scamander`
+- `Neytiri`
+- `Nigel Mansell`
+- `Nightwing`
+- `Nike Dunk x LEGOÂ® Set`
+- `Niko`
+- `Ninja`
+- `Ninjago`
+- `No character`
+- `None`
+- `Norm Spellman`
+- `Not specified`
+- `Nya`
+- `Nymphadora Tonks`
+- `Obi Wan Kenobi`
+- `Obi-Wan Kenobi`
+- `Ocean Explorer`
+- `Officer Jefferson`
+- `Olaf`
+- `Olivia`
+- `Omega`
+- `One Piece`
+- `Oola`
+- `Oompa Loompa`
+- `Optimus Prime`
+- `Orca`
+- `Owen Grady`
+- `Owl Post Worker`
+- `PANDA`
+- `Padme Amidala`
+- `PadmÃ© Amidala`
+- `Paige`
+- `Painter`
+- `Paisley`
+- `Paleontologist`
+- `Pandy`
+- `Passenger`
+- `Patroller`
+- `Penny`
+- `Pet Shop Owner`
+- `Pet Shop female`
+- `Peter Parker`
+- `Pharaoh`
+- `Phoebe`
+- `Phoenix`
+- `Photographer`
+- `Picard`
+- `Piglet`
+- `Pigsy`
+- `Pilot`
+- `Pilot Battle Droid`
+- `Pippin Reed`
+- `Piraka`
+- `Pirate Captain`
+- `Pirates`
+- `Pitch`
+- `Poe Dameron`
+- `Poison Ivy`
+- `Police Officer`
+- `Police Specialist`
+- `Police Woman`
+- `Policeman`
+- `Pong Krell`
+- `Poppy Starr`
+- `Porg`
+- `Porsche 911 RSR`
+- `Power Miner`
+- `Power Miner Rex`
+- `Prince Charming`
+- `Prince Florian`
+- `Prince Naveen`
+- `Princess`
+- `Princess Leia`
+- `Princess Leia (Boushh)`
+- `Princess Tiana`
+- `Prison Guard`
+- `Probe Droid`
+- `Professor Minerva`
+- `Professor Moriarty`
+- `Punk Rocker`
+- `QT-KT`
+- `QT-KT SW 1393`
+- `Queasy Kitty`
+- `Queen`
+- `Queenie Goldstein`
+- `Qui Gon Jinn`
+- `Quint`
+- `Quorra`
+- `R2-BHD`
+- `R2-D2`
+- `R5-D4`
+- `Rabbit`
+- `Race Car Driver`
+- `Rachel`
+- `Rainn Delacourt`
+- `Range Trooper`
+- `Raphael`
+- `Raptor`
+- `Rapunzel`
+- `Raven`
+- `Ray Arnold`
+- `Razar`
+- `Razcal`
+- `Rebel Fleet Trooper`
+- `Rebel Pilot`
+- `Rebel Trooper`
+- `Red`
+- `Red Guardian`
+- `Reidak`
+- `Reindeer`
+- `Relay Runner`
+- `Republic Gunship`
+- `Rescuer`
+- `Retro Gamer`
+- `Reva Inquisitor`
+- `Rex`
+- `Rey`
+- `Riker`
+- `Rinzler`
+- `Ro Laren`
+- `Robbie Robertson`
+- `Robin`
+- `Rocket`
+- `Rogue`
+- `Romilda Vane`
+- `Ron Barney`
+- `Ron Weasley`
+- `Ross`
+- `Rowena Ravenclaw`
+- `Sabine Wren`
+- `Sailor`
+- `Salacious B. Crumb`
+- `Salazar Slytherin`
+- `Sam Flynn`
+- `Samurai`
+- `Samurai X`
+- `Sandman`
+- `Sanji`
+- `Santa`
+- `Santa Claus`
+- `Santa Darth Vader`
+- `Santa, Mum, Dad and Daughter`
+- `Santaâs Little Helper`
+- `Saw Gerrera`
+- `Scarecrow`
+- `Scooby`
+- `Scooby-Doo`
+- `Scout`
+- `Scout Trooper`
+- `Scrooge McDuck`
+- `Senate Commando`
+- `Sensei Wu`
+- `Shaggy`
+- `Shark`
+- `Sheriff`
+- `Sherlock Holmes`
+- `Shock Trooper`
+- `Shredder`
+- `Shuttle Astronaut`
+- `Shuttle Ground Crew`
+- `Simba`
+- `Sinjin Prescott`
+- `Sir Ernest Shackleton (gen188)`
+- `Sith Trooper`
+- `Skeleton`
+- `Sleeping Beauty`
+- `Sleven`
+- `Slime`
+- `Slimer`
+- `Sloth`
+- `SmÃ©agol`
+- `Snoke`
+- `Snow Groomer Driver`
+- `Snow White`
+- `Snowball II`
+- `Snowman`
+- `Snowspeeder Gunner Will`
+- `Snowspeeder Pilot Zev`
+- `Snowtrooper`
+- `Soldier`
+- `Sonic the Hedgehog`
+- `Sonny Hayes`
+- `Soyona Santos`
+- `Space`
+- `Spaceman`
+- `Sparratus`
+- `Spider`
+- `Spider-Gwen`
+- `Spider-Ham`
+- `Spider-Man`
+- `Spielberg`
+- `SpongeBob SquarePants`
+- `Spooky Boy`
+- `Spooky Girl`
+- `Spot`
+- `Star`
+- `Star Trek`
+- `Star Wars`
+- `Star Wars Imperial Shuttle`
+- `Star Wars UCS`
+- `Star-Lord`
+- `Stealth Swimmer`
+- `Stephanie`
+- `Steve`
+- `Steward`
+- `Stinky Pete`
+- `Stitch`
+- `Stormtrooper`
+- `Stuart`
+- `Super Mario`
+- `Swamp Creature / Mr Brown`
+- `Swamp Explorer`
+- `T. Rex`
+- `TIE Fighter Pilot`
+- `Tactical Tennis Player`
+- `Takadox`
+- `Taskmaster`
+- `Tasu Leech`
+- `Tauriel`
+- `Technic`
+- `Ten Numb`
+- `The Beatles`
+- `The Big Bang Theory`
+- `The Collector`
+- `The Fratellis`
+- `The Going Merry Pirate Ship`
+- `The Insect Collection`
+- `The Joker`
+- `The Never Witch`
+- `The Office`
+- `The Penguin`
+- `The Punisher`
+- `The Spot`
+- `Thok`
+- `Thomas`
+- `Thor`
+- `Thor, Chitauri`
+- `Thwomp`
+- `Tiana`
+- `Tiger`
+- `Tim Murphy`
+- `Time Machine from Back to the Future`
+- `Tin Man`
+- `Tina Goldstein`
+- `Tinker Bell`
+- `Toa Nuva`
+- `Tobias Beckett`
+- `Todo 360`
+- `Tom`
+- `Toothless`
+- `Toto`
+- `Tourist`
+- `Town Hall`
+- `Tracer`
+- `Train`
+- `Train Driver`
+- `Train Worker`
+- `Tremor`
+- `Trespasser Elite`
+- `Troll`
+- `Tron`
+- `Trooper`
+- `Tropical Aquarium`
+- `Troy`
+- `Truck Driver`
+- `Trudy Chacon`
+- `Tsu'tey`
+- `Turtle`
+- `Two-Face`
+- `U-wing Pilot`
+- `U.S. Cavalry Soldier`
+- `Ultron`
+- `Umbra`
+- `Unitron`
+- `Unkar's Thug`
+- `Unknown`
+- `Usopp`
+- `Vakama, Matau, Onewa, Nokama, Nuju, Whenua`
+- `Velociraptor`
+- `Venom`
+- `Veruca Salt`
+- `Vezok`
+- `Vicki Vale`
+- `Viking`
+- `Viking Warrior`
+- `Villager`
+- `Vincent van Gogh`
+- `Violet Beauregarde`
+- `Vitruvius`
+- `Volcano Explorer`
+- `Volvo`
+- `Voporak`
+- `Vulture`
+- `WALL-E`
+- `War Machine`
+- `Warrior`
+- `Watcher`
+- `Wednesday`
+- `Wednesday & Enid`
+- `Wednesday Addams`
+- `Wesley Crusher`
+- `Wicket`
+- `Will`
+- `Will Byers`
+- `William Riker`
+- `Willy Wonka`
+- `Winnie the Pooh`
+- `Winston Zeddemore`
+- `Wizard`
+- `Wolf`
+- `Wolverine`
+- `Woman`
+- `Wondrous Weightlifter`
+- `Woody`
+- `Worf`
+- `Workers`
+- `Wu`
+- `Wu Sensei`
+- `Y-wing Pilot`
+- `Year Of The Tiger Guy`
+- `Yellow Tusk Elephant`
+- `Yeti`
+- `Yoda`
+- `Yoda Xmas`
+- `Young Lloyd Garmadon`
+- `Yuletide Squadron Pilot`
+- `Zaktan`
+- `Zane`
+- `Zeff`
+- `Zelda`
+- `Zombie`
+- `Zombie Driver`
+- `Zombie/Zeke`
+- `Zora Bennett`
+- `Zorii Bliss`
+- `Zoro`
+- `Zugu`
+- `adidas Originals Superstar`
+- `architecture`
+- `baby groot`
+- `black falcon`
+- `boolio`
+- `captain cody`
+- `city`
+- `dark trooper`
+- `does not apply`
+- `dustin`
+- `lego`
+- `legoÂ® Star Wars 75355 UCS X-Wing Starfighter`
+- `lucy`
+- `mario`
+- `n/a`
+- `peely`
+- `plo-koon`
+- `professor Huyang`
+- `queas`
+- `random`
+- `scooby doo`
+- `seasonal`
+- `simba`
+- `simpsons`
+- `sora`
+- `spacemen`
+- `toy story`
+- `will`
+
+---
+## LEGO Charakter (26 unique)
+
+- `ArmbrustschÃ¼tze`
+- `AxtkÃ¤mpfer`
+- `Bandit`
+- `Bane`
+- `BannertrÃ¤ger`
+- `Batman`
+- `Ben`
+- `BogenschÃ¼tze`
+- `Boxer`
+- `Falkenritter`
+- `FuÃsoldat`
+- `Harry Potter`
+- `John Lennon`
+- `LÃ¶wenritter`
+- `Monkie Kid`
+- `Passenger`
+- `Piggy`
+- `Protector of Water`
+- `Ritter`
+- `Ritterburg`
+- `Robin Hood`
+- `RÃ¤uber`
+- `Smaug`
+- `Taucher`
+- `Two-Face`
+- `VW`
+
+---
+## LEGO Launch Date (2 unique)
+
+- `01-June-2025`
+- `1st July 2025`
+
+---
+## LEGO Set Name (1659 unique)
+
+- `007 Aston Martin DB5`
+- `12 Grimmauld Place`
+- `123 Sesame Street`
+- `1970 Ferrari 512 M`
+- `1989 Batmobile`
+- `1989 Batmobile,  1989 Batwing`
+- `1989 Batwing`
+- `2 Fast 2 Furious Honda S2000`
+- `2 Fast 2 Furious Nissan Skyline Gt-R (R34)`
+- `2018 Dodge Challenger SRT Demon and 1970 Dodge Charger R/T`
+- `2022 Ford Gt`
+- `21360 Willy Wonka The Chocolate Factory`
+- `3 in 1 magical castle`
+- `327th Star Corps Clone Troopersâ¢ Battle Pack`
+- `3in1 Space Shuttle Adventure`
+- `3in1 Tree House`
+- `40 Years of Hands-On Learning`
+- `40776 Hot Chocolate Stand`
+- `4X4 X-treme Off-Roader`
+- `4x4 Crawler`
+- `4x4 Mercedes-Benz Zetros Trial Truck`
+- `501st Legion Clone Troopers`
+- `560`
+- `6286 Skull's Eye Schooner`
+- `6x6 All Terrain Tow Truck`
+- `6x6 Volvo Articulated Hauler`
+- `76193`
+- `910039 The Art of Chocolate`
+- `A Minifigure Tribute`
+- `A-Frame Cabin`
+- `A-wing Starfighter`
+- `AAT`
+- `APXGP Team Race Car from F1Â® The Movie`
+- `AT-AT`
+- `AT-AT Driver Helmet 75429`
+- `AT-ST`
+- `AT-ST Raider`
+- `AT-ST Walker`
+- `AT-TE Walker`
+- `Able Sistersâ Clothing Shop`
+- `Acclamator-Class Assault Ship`
+- `Advent Calendar`
+- `Advent Calendar 2025`
+- `Adventure In Transylvania`
+- `Adventure in Transylvania`
+- `Adventures in Bikini Bottom`
+- `Adventures with Luigi Starter Course`
+- `Aero Tube Hangar`
+- `Ahsoka Tano's Duel on Peridea`
+- `Ahsoka Tano's T-6 Jedi Shuttle`
+- `Ahsoka's Jedi Interceptor`
+- `Aira & the Song of the Wind Dragon`
+- `Airbus H175 Rescue Helicopter`
+- `Aircraft`
+- `Airport`
+- `Airport Air Show`
+- `Airport Passenger Airplane`
+- `Airport Passenger Terminal`
+- `Alien Conquest Earth Defence`
+- `All-Terrain Vehicle`
+- `Allied Avenger Sub Orbital Guardian`
+- `Alpine Lodge`
+- `Alpine Lodge Winter Village Edition`
+- `Ambulance`
+- `Ambush on Ferrix`
+- `Amusement Park Roller Coaster`
+- `An Unexpected Gathering`
+- `Anakin's Custom Jedi Starfighter`
+- `Anakin's Jedi Interceptor`
+- `Anakin's Jedi Starfighter`
+- `Anakin's Podracer - 20th Anniversary Edition`
+- `Anakin's Y-Wing Starfighter`
+- `Andrea's Family House`
+- `Andrea's Modern Mansion`
+- `Andrea's Theatre School`
+- `Angel`
+- `Animal Costume Fan`
+- `Antique Shop`
+- `App-Controlled Cat D11 Bulldozer`
+- `App-Controlled Top Gear Rally Car`
+- `App-Controlled Transformation Vehicle`
+- `Appgesteuerter 4x4 Mercedes-Benz Zetros Offroad-Truck`
+- `Aragog in the Dark Forest`
+- `Arc de Triomphe`
+- `Arc-170 Starfighter`
+- `Arcade Machine`
+- `Architecture Studio`
+- `Arctic Air Transport`
+- `Arctic Base Camp`
+- `Arctic Explorer`
+- `Arctic Icebreaker`
+- `Arctic Truck`
+- `Arendelle Castle Celebration`
+- `Ariel & Ursula`
+- `Ariel's Undersea Castle`
+- `Ariel's Underwater Palace`
+- `Arkham Asylum`
+- `Armoured Assault Tank (Aat)`
+- `Art Project - Create Together`
+- `Assembly Square`
+- `Aston Martin`
+- `Aston Martin Aramco F1 AMR24`
+- `Aston Martin DB5`
+- `Aston Martin Safety Car & Amr23`
+- `Aston Martin Valkyrie`
+- `At-Dp`
+- `Atari 2600`
+- `Atrociraptor Dinosaur: Bike Chase`
+- `Attack on Weathertop`
+- `Attack on the Burrow`
+- `Audi Rs Q E-Tron`
+- `Auspicious Dragon`
+- `Australia Postcard`
+- `Auto Transporter`
+- `Avengers Helicarrier`
+- `Avengers Tower`
+- `Avengers Tower Battle`
+- `Avengers Ultimate Quinjet`
+- `Avengers: Endgame Final Battle`
+- `Avengers: Endgame Thor vs. Chitauri`
+- `B-Wing`
+- `B-Wing Fighter`
+- `BARC Speeder With Sidecar`
+- `BASH!`
+- `BB-8`
+- `BD-1`
+- `BMW M 1000 RR`
+- `BMW R 1200 GS Adventure`
+- `Back to the Future Time Machine`
+- `Backhoe Grader`
+- `Bakery`
+- `Ballarina & Nutcracker Scene`
+- `Bandit's Secret Hide-Out`
+- `Bandmates`
+- `Barc Speeder Escape`
+- `Barraki`
+- `Baryonyx Face-Off: The Treasure Hunt`
+- `Bat-Pod`
+- `Batboat Harbour Pursuit`
+- `Batcave Shadow Box`
+- `Batcave â Shadow Box`
+- `Batman`
+- `Batman Build Book`
+- `Batman Classic TV Series Batmobile`
+- `Batman Construction Figure and the Bat-Pod Bike`
+- `Batman Cowl`
+- `Batman The Animated Series Gotham City`
+- `Batman and The Joker Escape`
+- `Batman the animated series Gotham city`
+- `Batman vs. Mr. Freeze`
+- `Batman: Arkham Asylum Breakout`
+- `Batman: Killer Croc Sewer Smash`
+- `Batman: The Animated Series Gotham Cityâ¢`
+- `Batman: the Classic TV Series Batmobile`
+- `Batmobile`
+- `Batmobile Tumbler`
+- `Batmobile Tumbler: Scarecrow Showdown`
+- `Batmobile: Batman Vs. the Joker Chase`
+- `Battering RAM`
+- `Battle Bus`
+- `Battle Droid with STAP`
+- `Battle Pack`
+- `Battle at the Black Gate`
+- `Battle for Ninjago City`
+- `Battle of Felucia MTT`
+- `Battle of Felucia Separatist MTT`
+- `Battle on Saleucami`
+- `Battle on Scarif`
+- `Beast`
+- `Bell-Boeing V-22 Osprey`
+- `Benny's Space Squad`
+- `Berlin`
+- `Beta I Command Base`
+- `Betrayal at Cloud City`
+- `Big Ben`
+- `Bird of Paradise`
+- `Birds`
+- `Black Falcon's Fortress`
+- `Black Knight's Castle`
+- `Black Panther`
+- `Black Seas Barracuda`
+- `Black Widow Taskmasterâs Ambush`
+- `Blacksmith`
+- `Blacktron Cruiser`
+- `Blacktron Renegade`
+- `Blue & Beta Velociraptor Capture`
+- `Blue's Helicopter Pursuit`
+- `Bluey's Tea Party`
+- `Boba Fett`
+- `Boba Fett Helmet`
+- `Boba Fett's Throne Room`
+- `Boba Fettâs Starship`
+- `Bonsai Tree`
+- `Books Are My Passion`
+- `Books are my passion`
+- `Bookshop`
+- `Border Ambush`
+- `Botanical 10329 Tiny Plants`
+- `Botanical Garden`
+- `Boulder Blaster`
+- `Bounty Hunter Assault Gunship`
+- `Bouquet of Roses`
+- `Boutique Hotel`
+- `Brachiosaurus Discovery`
+- `Brainiac Attack`
+- `Brandenburg Gate`
+- `Breezeway Cafe'`
+- `Brick Bank`
+- `Brick Cross`
+- `Brick Cross Train Station`
+- `Brick-Built Gru and Minions`
+- `Brick-Built Minions And Their Lair`
+- `Brick-Built Minions and Their Lair`
+- `Brickheadz Captain America Series 1`
+- `Bricks Bricks Bricks`
+- `Brutaka`
+- `Buckbeak`
+- `Bucket Wheel Excavator`
+- `Buckingham Palace`
+- `Bugatti Chiron`
+- `Buggy`
+- `Bulldozer`
+- `Bullet Run`
+- `Bumblebee`
+- `Burg im Wald`
+- `Burj Khalifa`
+- `Bus Station`
+- `Butterfly Garden`
+- `C-3PO`
+- `C-3po`
+- `CLAAS XERION 5000 TRAC VC`
+- `Cafe Corner`
+- `Camouflaged Outpost`
+- `Camper Van`
+- `Campervan`
+- `Canal Houseboat`
+- `Captain America`
+- `Captain America's Shield`
+- `Captain Jack Sparrow`
+- `Captain Jack Sparrow's Pirate Ship`
+- `Captain Rex Helmet`
+- `Captain Rex's AT-TE`
+- `Car Chassis`
+- `Car Transporter`
+- `Carbon-Freezing Chamber`
+- `Card Game Set`
+- `Cargo Plane`
+- `Cargo Terminal`
+- `Cargo Train`
+- `Carnage`
+- `Carousel`
+- `Castle Cavalry`
+- `Castle Nocturnia`
+- `Castle in the Forest`
+- `Catamaran`
+- `Catamaran Sea Battle`
+- `Caterham Seven 620R`
+- `Celebration Series: Gingerbread Train Ornament`
+- `Central Perk`
+- `Century Skyway`
+- `Championship Challenge`
+- `Charles Dickens Tribute`
+- `Chevrolet Camaro Z28`
+- `Chevrolet Corvette Stingray`
+- `Chevrolet Corvette ZR1`
+- `Chewbacca`
+- `Chicago`
+- `Chinese New Year Temple Fair`
+- `Chopper (C1-10P)`
+- `Christmas Carousel`
+- `Christmas Ornaments`
+- `Christmas Table Decoration`
+- `Christmas Train`
+- `Christmas Tree`
+- `Chrysanthemum`
+- `Cinderella's Dream Castle`
+- `Cinderella's Dress`
+- `City Central Airport`
+- `Classic Animation Scenes`
+- `Clone Commander Cody Helmet`
+- `Clone Scout Walker`
+- `Clone Trooper & Battle Droid Battle Pack`
+- `Clone Turbo Tank`
+- `Cloud Cuckoo Palace`
+- `Cls-89 Eradicator Mech`
+- `Coast Guard Head Quarters`
+- `Coast Guard Platform`
+- `Colby City Showdown`
+- `Cole's Earth Driller`
+- `Cole's Titan Dragon Mech`
+- `Colosseum`
+- `Concorde`
+- `Concrete Mixer Truck`
+- `Construction`
+- `Construction Digger`
+- `Corner Garage`
+- `Corner Kiosk`
+- `Corporate Alliance Tank Droid`
+- `Coruscant Guard Gunship`
+- `Coruscant Police Gunship`
+- `Corvette`
+- `Cosmic Laser Launcher`
+- `Count Dooku's Solar Sailer`
+- `Crane Truck`
+- `Crawler Crane`
+- `Creative Box`
+- `Creative Builder Box`
+- `Creative Building Set`
+- `Creative Colour Fun`
+- `Creative Play Droid Builder`
+- `Creative Toolbox`
+- `Crocodile Locomotive`
+- `Crystal Explorer Sub`
+- `Cullens House`
+- `Curve and Crossroad`
+- `D-O`
+- `D.Va & Reinhardt`
+- `DISNEY CASTLE`
+- `Daffodils`
+- `Dagobah Jedi Training Diorama`
+- `Daily Bugle`
+- `Dancing Groot`
+- `Dark Dragon's Den`
+- `Dark Trooper Attack`
+- `Dark Trooper Helmet`
+- `Darth Maul`
+- `Darth Maul's Sith Infiltrator`
+- `Darth Vader`
+- `Darth Vader Bust`
+- `Darth Vader Helmet`
+- `Darth Vader Meditation Chamber`
+- `Darth Vader's Castle`
+- `Darth Vader's TIE Fighter`
+- `Death Star`
+- `Death Star Final Duel`
+- `Death Star II`
+- `Death Star Trash Compactor Diorama`
+- `Death Star Trench Run Diorama`
+- `Death Star Troopers`
+- `Deep Sea Creatures`
+- `Deep-Sea Explorer Submarine`
+- `Demogorgon & Eleven`
+- `Der Einsame Berg`
+- `Desert Skiff & Sarlacc Pit`
+- `Destiny's Bounty`
+- `Destiny's Bounty-Race Against Time`
+- `Detective's Office`
+- `Diagon Alley`
+- `Diagon Alley Weasleyâs Wizard Wheezes`
+- `Diagon Alley Wizarding Shops`
+- `Diagon Alley: Weasleys' Wizard Wheezes`
+- `Diagon Alley: Weasleys'Wizard Wheezes`
+- `Die Creeper Mine`
+- `Die Endurance`
+- `Dilophosaurus Triceratops Brachiosaurus T.rex`
+- `Dinosaur Fossils`
+- `Dinosaur Missions: Allosaurus Transport Truck`
+- `Dinosaur Missions: Stegosaurus Discovery`
+- `Disney Angel`
+- `Disney Castle`
+- `Disney Castle & Train Station`
+- `Disney Classic Animation Scenes`
+- `Disney Hocus Pocus: the Sanderson Sisters' Cottage`
+- `Disney Tim Burton's the Nightmare before Christmas`
+- `Disney Train and Station`
+- `Disney stitch lego`
+- `Disney's Mickey Mouse`
+- `Diving Yacht`
+- `Doctor Strange's Sanctum Sanctorum`
+- `Doctor Who`
+- `Dojo Showdown`
+- `Dol Guldur Battle`
+- `Dom's Dodge Charger`
+- `Downtown Diner`
+- `Downtown Fire Brigade`
+- `Downtown Flower and Design Stores`
+- `Draco Malfoy & Cedric Diggory`
+- `Drag Racer`
+- `Dragon Bolt`
+- `Dragon Dance`
+- `Dragon Mountain`
+- `Dragon Pit`
+- `Dragon Rider`
+- `Dragonian Storm Village`
+- `Drawbridge Defense`
+- `Droid Developer Kit`
+- `Droid Gunship`
+- `Droid Tri-Fighter`
+- `Dubai`
+- `Ducati Panigale V4 R`
+- `Ducati Panigale V4 S`
+- `Ducati Panigale V4 S Motorcycle`
+- `Duel on Geonosis`
+- `Dumbledore's Office`
+- `Dungeons & Dragons Red Dragon's Tale`
+- `Dungeons & Dragons: Red Dragon's Tale`
+- `Dungeons & Dragons: Red Dragonâs Tale`
+- `ECTO-1`
+- `ETX ALIEN MOTHERSHIP ASSAULT SET`
+- `Eclipse Fighter`
+- `Education WeDo 2.0`
+- `Eiffel Tower`
+- `Eldorado Fortess`
+- `Eldorado Fortress`
+- `Elemental Dragon Vs. the Empress Mech`
+- `Elephant Caravan`
+- `Elf Club House`
+- `Elf Workshop`
+- `Elite Clone Trooper & Commando Droid Battle Pack`
+- `Elphaba & Glinda Figures`
+- `Elphaba's Retreat`
+- `Elsa's Ice Palace`
+- `Emerald City Wall Art`
+- `Emerald Night`
+- `Emergency Air Ambulance Plane`
+- `Emma's Art School`
+- `Emma's Fashion Shop`
+- `Emperor Palpatines Shuttle`
+- `Emperor's Throne Room Diorama`
+- `Empire State Building`
+- `Employee Christmas Gift`
+- `Employee gift`
+- `Enchanted Island`
+- `Encounter on Jakku`
+- `Endor Speeder Chase Diorama`
+- `Escape from Mirkwood Spiders`
+- `Escape from the Dragon's Prison`
+- `Evo 2.0`
+- `Ewok Attack`
+- `Ewok Village`
+- `Excavator`
+- `Executor Super Star Destroyer`
+- `Exo Suit`
+- `Expecto Patronum`
+- `Explorer Train`
+- `Explorersâ Arctic Polar Express Train`
+- `Ezra's Speeder Bike`
+- `F1`
+- `F1 Grid with VCARB & Sauber Race Cars`
+- `F1 Truck with Rb20 & Amr24 F1 Cars`
+- `F14 T & Scuderia Ferrari Truck`
+- `FC Barcelona Celebration`
+- `FIGURES`
+- `FRIENDLY SNAILS`
+- `Fairground Mixer`
+- `Fallingwater`
+- `Family House`
+- `Family Reunion Celebration`
+- `Family Tree`
+- `Family Vacation Beach Resort`
+- `Fangpyre Truck Ambush`
+- `Fantastical Tree House`
+- `Farm Animals`
+- `Farmers' Market`
+- `Fast and Furious Toyota Supra Mk4`
+- `Fawkes Dumbledoreï¿½S Phoenix`
+- `Fawkes, Dumbledoreâs Phoenix`
+- `Fender Stratocaster`
+- `Ferrari`
+- `Ferrari 430 Spider 1:17`
+- `Ferrari 488 GTE âAF Corse #51â`
+- `Ferrari 488 Gte ï¿½Af Corse #51ï¿½`
+- `Ferrari 499p-Hypercar`
+- `Ferrari Daytona SP3`
+- `Ferrari F40`
+- `Ferrari F8 Tributo`
+- `Ferrari Sf-24 F1 Car`
+- `Ferrari Sf-24 F1 Race Car`
+- `Ferris Wheel`
+- `Fiat 500`
+- `Field Flowers`
+- `Fighter Plane Attack`
+- `Fire Breathing Fortress`
+- `Fire Brigade`
+- `Fire Command Unit`
+- `Fire Patrol Vehicle`
+- `Fire Response Unit`
+- `Fire Station`
+- `Fire Station & Fire Truck`
+- `Fire Temple`
+- `Fire Truck`
+- `Firefighter Aircraft`
+- `Firehouse Headquarters`
+- `First Order Heavy Assault Walker`
+- `First Order Star Destroyer`
+- `First Order Transporter`
+- `Firstbourne`
+- `Fish Tank`
+- `Fishtank`
+- `Flatbed Truck`
+- `Floating Mountains Site 26 & RDA Samson`
+- `Flower Bouquet`
+- `Flucht aus Dem DrachengefÃ¤ngnis`
+- `Flying Ford Anglia`
+- `Flying Phoenix Fire Temple`
+- `Forbidden Corridor`
+- `Forbidden Forest: Magical Creatures`
+- `Forbidden Forest: Umbridge's Encounter`
+- `Ford F-150 Raptor`
+- `Ford Mustang`
+- `Forest Animals`
+- `Forest Animals: Red Fox`
+- `Forest Hideout`
+- `Forest Stronghold`
+- `Forest stronghold`
+- `Fort Legoredo`
+- `Fountain Garden`
+- `Fountain of Youth`
+- `Freeco Speeder`
+- `Freight Train`
+- `French CafÃ©`
+- `Friendly Snails`
+- `Friendship House`
+- `Friendship Tree House`
+- `Frodo with Cooking Corner`
+- `Futuron Monorail Transport System`
+- `GIZMO`
+- `GROGU`
+- `Gabby's Dollhouse`
+- `Gadunka`
+- `Galactic Peace Keeper`
+- `Galactic Spaceship`
+- `Galaxy Explorer`
+- `Gallimimus and Pteranodon Breakout`
+- `Game Boy`
+- `Gandalf the Grey & Balrog`
+- `Garage`
+- `Garma Mecha Man`
+- `Garmatron`
+- `General Grievous`
+- `General Grievous' Combat Speeder`
+- `General Grievous' Wheel Bike`
+- `General Grievousï¿½S Starfighter`
+- `General Store`
+- `Geonosian Fighter`
+- `Geonosis Troopers`
+- `Ghost & Phantom Ii`
+- `Ghostbusters ECTO-1`
+- `Ghostbusters Ecto-1`
+- `Giganotosaurus & Therizinosaurus Attack`
+- `Gingerbread AT-AT`
+- `Gingerbread AT-AT Walker`
+- `Gingerbread House`
+- `Gingerbread Ornaments`
+- `Gingerbread Train`
+- `Gingerbread Train Ornament`
+- `Gizmo`
+- `Glinda & Elphaba's Dormitory`
+- `Goofy & Pluto`
+- `Gorilla Grodd Goes Bananas`
+- `Gotham City`
+- `Grand Emporium`
+- `Grand Piano`
+- `Great Deku Tree 2-in-1`
+- `Green Ninja Mech Dragon`
+- `Gremlinsâ¢: Gizmo`
+- `Gringotts Wizarding Bank`
+- `Gringotts Wizarding Bank â Collectors' Edition`
+- `Gringotts wizarding bank`
+- `Grogu With Hover Pram`
+- `Grogu with Hover Pram`
+- `Guardians of the Galaxy: the Milano`
+- `Gungan Sub`
+- `Hagrid's Hut`
+- `Hagrid's Hut: Buckbeak's Rescue`
+- `Hagrid's Hut: an Unexpected Visit`
+- `Hagridï¿½S Hut: Buckbeakï¿½S Rescue`
+- `Hamburger Stand`
+- `Han Solo in Carbonite`
+- `Happy Plants`
+- `Harbormaster's Office`
+- `Harbour`
+- `Harley-Davidson Fat Boy`
+- `Harry Potter`
+- `Harry Potter & Hedwig`
+- `Harry Potter & Hermione Granger`
+- `Harry Potter Series 2`
+- `Harry, Hermione, Ron & Hagrid`
+- `Harvester Transport`
+- `Haunted House`
+- `Haunted Lighthouse`
+- `Heart Box`
+- `Heartlake City Aeroplane`
+- `Heartlake City Community Centre`
+- `Heartlake City Resort`
+- `Heartlake City Restaurant`
+- `Heartlake City Shopping Mall`
+- `Heartlake City Water Park`
+- `Heartlake Grand Hotel`
+- `Heavy-Duty Excavator`
+- `Heavy-Haul Train`
+- `Heavy-duty Tow Truck`
+- `High-Speed City Express Passenger Train`
+- `High-speed Chase`
+- `High-speed Passenger Train`
+- `Himeji Castle`
+- `Hive Crawler`
+- `Hogsmeade Village Visit`
+- `Hogwarts Astronomy Tower`
+- `Hogwarts Castle`
+- `Hogwarts Castle and Grounds`
+- `Hogwarts Castle: the Great Hall`
+- `Hogwarts Chamber of Secrets`
+- `Hogwarts Classrooms`
+- `Hogwarts Clock Tower`
+- `Hogwarts Courtyard: Sirius's Rescue`
+- `Hogwarts Crests`
+- `Hogwarts Express`
+- `Hogwarts Express & Hogsmeade Station`
+- `Hogwarts Express â Collectors' Edition`
+- `Hogwarts Express ï¿½ Collectors' Edition`
+- `Hogwarts Great Hall`
+- `Hogwarts Icons - Collectors' Edition`
+- `Hogwarts Moment: Defence Class`
+- `Hogwarts Moment: Herbology Class`
+- `Hogwarts Moment: Transfiguration Class`
+- `Hogwarts Wizardâs Chess`
+- `Hogwarts Wizardï¿½S Chess`
+- `Hogwarts: Dumbledore's Office`
+- `Hogwarts: Dumbledoreï¿½S Office`
+- `Hogwarts: Fluffy Encounter`
+- `Hogwartsâ¢ Castle Owlery`
+- `Hogwartsâ¢ Castle: The Great Hall`
+- `Hogwartsâ¢ Castle: The Main Tower`
+- `Hokusai â The Great Wave`
+- `Holiday Express Train`
+- `Holiday Home with Campervan`
+- `Holiday Main Street`
+- `Home Alone`
+- `Home One Mon Calamari Star Cruiser`
+- `Homing Spider Droid`
+- `Horizon Express`
+- `Horizon Forbidden West: Tallneck`
+- `Hospital`
+- `Hot Chocolate Stand`
+- `Hoth AT-ST`
+- `Hoth Attack`
+- `How to Train Your Dragon: Toothless`
+- `Hufflepuff House Banner`
+- `Hulk Lab Smash`
+- `Hulkbuster`
+- `Hungarian Horntail Dragon`
+- `Hydro Crystalization Station`
+- `Hyena Droid Bomber`
+- `I am Groot`
+- `Ice Festival`
+- `Ice Skating Rink`
+- `Iconic Chess Set`
+- `Imperial AT-Hauler`
+- `Imperial Armoured Marauder`
+- `Imperial Assault Hovertank`
+- `Imperial At-St`
+- `Imperial Conveyex Transport`
+- `Imperial Dropship vs Rebel Scout Speeder`
+- `Imperial Hotel`
+- `Imperial Landing Craft`
+- `Imperial Light Cruiser`
+- `Imperial Probe Droid`
+- `Imperial Shuttle`
+- `Imperial Shuttle Tydirium`
+- `Imperial Star Destroyer`
+- `Imperial TIE Fighter`
+- `Imperial Trading Post`
+- `Imperial Trooper Battle Pack`
+- `Imperial V-Wing Starfighter`
+- `Indiana Jones Motorcycle Chase`
+- `Indominus Rex Breakout`
+- `Indominus Rex Breakout 75919`
+- `Indominus Rex vs. Ankylosaurus`
+- `Indy Transport`
+- `Infinity Gauntlet`
+- `Inquisitor Transport Scythe`
+- `International Space Station`
+- `Interstellar Starfighter`
+- `Invader`
+- `Invisible Hand`
+- `Irnakk`
+- `Iron Man`
+- `Iron Man & Iron Legion Vs Hydra Soldier`
+- `Iron Man Figure`
+- `Iron Man Helmet`
+- `Iron Man: Extremis Sea Port Battle`
+- `Iron Man: Iron Monger Mayhem`
+- `Iron spider man`
+- `Jabba's Palace`
+- `Jabba's Sail Barge`
+- `Jack Skellington & Sally`
+- `Jakku Quadjumper`
+- `James Bond Aston Martin DB5`
+- `Jamgo Fett Starship`
+- `Jango Fett`
+- `Jango Fett Helmet`
+- `Jango Fett's Slave 1`
+- `Jango Fett's Slave I`
+- `Jango Fettâs Starship`
+- `Japan Postcard`
+- `Jaws`
+- `Jay Walker One`
+- `Jay's Storm Fighter`
+- `Jazz Club`
+- `Jazz Quartet`
+- `Jedi Defender-Class Cruiser`
+- `Jedi Interceptor`
+- `Jedi Starfighter With Hyperdrive`
+- `Jedi Starfighter and Vulture Droid`
+- `Jedi and Clone Troopers Battle Pack`
+- `Jeep Wrangler`
+- `Jek-14's Stealth Starfighter`
+- `John Deere 948l-Ii Skidder`
+- `John Deere 9620R 4WD Tractor`
+- `Jungle Cutter`
+- `Jungle Dragon`
+- `Jungle Explorer Helicopter at Base Camp`
+- `Jurassic Park Velociraptor Chase`
+- `Jurassic Park: T. rex Rampage`
+- `Jurassic Pk Indiana Jones`
+- `K-2SO`
+- `K.K.'s Concert at the Plaza`
+- `Kamino Training Facility`
+- `Kanan's Speeder Bike`
+- `Karzahni`
+- `Kashyyyk Troopers`
+- `Katana 4x4`
+- `Kawasaki Ninja H2r Motorcycle`
+- `Kessel Run Millennium Falcon`
+- `Kick Sauber F1 Team C44 Race Car`
+- `Killow vs. Samurai X`
+- `King Leo's Castle`
+- `King's Castle`
+- `King's Mountain Fortress`
+- `Kingfisher`
+- `Klombo`
+- `Knight Bus Adventure`
+- `Knight Busâ¢ Adventure`
+- `Knight's Castle`
+- `Knighton Castle`
+- `Knights of Ren Transport Ship`
+- `Knockturn Alley`
+- `Koenigsegg Jesko`
+- `Koenigsegg Jesko Absolut Grey Hypercar`
+- `Koenigsegg Jesko Absolut White Hypercar`
+- `Koi`
+- `Kopaka-Master of Ice`
+- `Krennic's Imperial Shuttle`
+- `Krusty Krab Adventures`
+- `Kwik-E-Mart`
+- `Kylo Ren Helmet`
+- `Kylo Ren's Command Shuttle`
+- `Kylo Ren's Command Shuttle Set`
+- `Kylo Ren's Shuttle`
+- `Kylo Ren's TIE Fighter`
+- `LEGO ART The Milky Way Galaxy 31212`
+- `LEGO ART Vincent van Gogh â Sunflowers 31215`
+- `LEGO Bluey Bluey's Beach & Family Car Trip 11202`
+- `LEGO Bluey Bluey's Family House 11203`
+- `LEGO Botanicals Bonsai Tree`
+- `LEGO Botanicals Hibiscus 10372`
+- `LEGO City Advent Calendar`
+- `LEGO Creator 3in1 Forest Animals: Red Fox`
+- `LEGO Disney Beauty and the Beast Castle`
+- `LEGO Disney Lilo and Stitch Beach House 43268`
+- `LEGO Disney WALL-E and EVE 43279`
+- `LEGO Friends Advent Calendar`
+- `LEGO Harry Potter Gringotts Wizarding Bank`
+- `LEGO Harry Potter Hogwarts Castle: The Main Tower`
+- `LEGO Harry Potter Quidditch Supplies & Ice Cream Parlour 76452`
+- `LEGO Iconic Festive Gingerbread House 40809`
+- `LEGO Iconic Up-Scaled Santa Minifigure 40820`
+- `LEGO Icons Transformers Bumblebee Model Set 10338`
+- `LEGO Ideas 21341 Disney Hocus Pocus: the Sanderson Sisters'`
+- `LEGO Ideas Minifigure Vending Machine`
+- `LEGO Ideas River Steamboat`
+- `LEGO Ideas Willy Wonka & the Chocolate Factory`
+- `LEGO Ideas: Mineral Collection`
+- `LEGO LEGO Creator Medieval Horse Knight Castle 31168`
+- `LEGO LEGO Ideas Gremlins: Gizmo 21361`
+- `LEGO Movie Maker`
+- `LEGO NINJAGO City Workshops`
+- `LEGO ONE PIECE`
+- `LEGO ONE PIECE The Baratie Floating Restaurant 75640`
+- `LEGO Star Wars Advent Calendar`
+- `LEGO Star Wars Battle of Felucia Separatist MTT`
+- `LEGO Star Wars Jango Fett's Firespray-Class Starship`
+- `LEGO Super Heroes Avengers: Endgame Thor vs. Chitauri 76322`
+- `LEGO Super Heroes The Avengers Assemble: Age of Ultron 76291`
+- `LEGO Super Mario: Game Boy`
+- `LEGO Technic Oracle Red Bull Racing RB20 F1 Car 42206`
+- `LEGO The City Tower`
+- `LEGO Tropical Aquarium`
+- `LEGO Wednesday Morticia's Cottage`
+- `LEGOÂ® Ideas FenderÂ® Stratocasterâ¢`
+- `LEGOÂ® Ideas Mineral Collection`
+- `Lagoon Lock-Up`
+- `Lamborghini Countach`
+- `Lamborghini Countach 5000 Quattrovalvole`
+- `Lamborghini HuracÃ¡n Tecnica`
+- `Lamborghini SiÃ¡n FKP 37`
+- `Lamborghini Siï¿½N Fkp 37`
+- `Lamborghini Urus St-X & Lamborghini Huracï¿½N Super Trofeo Evo`
+- `Land Bounty`
+- `Land Rover Classic Defender 90`
+- `Land Rover Defender`
+- `Landspeeder`
+- `Larry's and Mortonâs Airships Expansion Set`
+- `Las Vegas`
+- `Last Crusade`
+- `Laval's Fire Lion`
+- `Lego 21000 Architecture Willis Tower`
+- `Lego 21353 Idea The Botanical Garden 3472pcs 18+`
+- `Lego 40768 Star Trek Type-15 Shuttlepod`
+- `Lego 40776 Hot Chocolate Stand`
+- `Lego Brand Store`
+- `Lego Disney 40774 Classic Animation Scenes`
+- `Lego Fabuland Tribute`
+- `Lego Family`
+- `Lego Formula One minifigure series`
+- `Lego Game Boy`
+- `Lego House`
+- `Lego House Dinosaurs`
+- `Lego Hub Birds`
+- `Lego Large Creative Brick Box`
+- `Lego Ludo Game`
+- `Lego Mario & Standard Kart 18+ Model 72037`
+- `Lego Medium Creative Brick Box`
+- `Lego Mindstorms Ev3`
+- `Lego Minifigures Marvel Studios`
+- `Lego Nasa Apollo Saturn V`
+- `Lego Space - Vintage Sets`
+- `Lego Speed Champions 77241 2 Fast 2 Furious Honda S2000 Suki`
+- `Lego Speed Champions 77255 Lightning McQueen`
+- `Lego Speed Champions F1 Complete Collection`
+- `Lego Star Trek USS Enterprise`
+- `Lego Star Wars Obi-Wanâs Jedi Starfighter 75333`
+- `Lego The Goonies`
+- `Legoland`
+- `Liebherr R 9800 Excavator`
+- `Light and Sound XT Starship`
+- `Lighthouse Point`
+- `Lightning Dragon Battle`
+- `Lincoln Memorial`
+- `Lion Knights' Castle`
+- `Little Forest Friends`
+- `Lloyd`
+- `Lloyd Garmadon`
+- `Lloyd's Golden Ultra Dragon`
+- `Lloyd's Titan Mech`
+- `Lloydï¿½S Golden Ultra Dragon`
+- `Logging Railway`
+- `Loki's Cosmic Cube Escape`
+- `London`
+- `London Bus`
+- `Loop Coaster`
+- `Louvre`
+- `Lucky Bamboo`
+- `Lucky Cat`
+- `Luigiâs Mansion Haunt-and-Seek Expansion Set`
+- `Luke Skywalker & Yoda`
+- `Luke Skywalker (Red Five) Helmet`
+- `Luke Skywalker's Landspeeder`
+- `Luke Skywalker's Lightsaber`
+- `Luke Skywalkerâs X-Wing Fighter`
+- `Luke Skywalkerï¿½S Landspeeder`
+- `Luke Skywalkerï¿½S X-Wing Fighter`
+- `Luke's Landspeeder`
+- `Lunar New Year Ice Festival`
+- `Lunar Patroller Lunar MPV Vehicle`
+- `Lunar Research Base`
+- `Lunar Rocket Launcher`
+- `Lunar Roving Vehicle`
+- `MINDSTORMS EV3`
+- `MINI Cooper`
+- `MTT`
+- `Mace Windu's Jedi Starfighter`
+- `Macha Team Leader`
+- `Mack Anthem`
+- `Maersk Line Container Ship`
+- `Maersk Train`
+- `Magic Rescue from the Goblin Village`
+- `Magma Mech`
+- `Main Street`
+- `Main Street Building`
+- `Majestic Tiger`
+- `Majisto's Magical Workshop`
+- `Mako Submarine`
+- `Malevolence`
+- `Malfoy Manor`
+- `Mandalorian Fang Fighter vs. TIE Interceptor`
+- `Mandalorian Starfighter`
+- `Mandrake`
+- `Maple's Pumpkin Garden`
+- `Mario & Standard Kart`
+- `Mario Kart - Mario & Standard Kart`
+- `Mario Kart â Interactive LEGO`
+- `Mario Kart-Standard Kart`
+- `Mario Kartâ¢ â Mario & Standard Kart`
+- `Mario and Standard Cart`
+- `Market Street`
+- `Mars Crew Exploration Rover`
+- `Mars Space Base and Rocket`
+- `Marty McFly & Doc Brown`
+- `Marvel Spider-Man 2024 Advent Calendar`
+- `Marvel The Hulk Truck vs. Thanos`
+- `Master Falls`
+- `Mata Nui`
+- `Mateo and Z-Blob the Knight Battle Mech`
+- `Material Handler`
+- `Maula's Ice Mammoth Stomper`
+- `McLaren Elva`
+- `McLaren Formula 1 Race Car`
+- `McLaren Senna`
+- `Mclaren F1 Team Mcl38 Race Car`
+- `Mclaren Mercedes Pit Stop`
+- `Mclaren P1`
+- `Mecha Team Leader`
+- `Medieval Blacksmith`
+- `Medieval Castle`
+- `Medieval Dragon`
+- `Medieval Seaside Market`
+- `Medieval Town Square`
+- `Mega Core Magnetizer`
+- `Mercedes-AMG F1 W12 E Performance`
+- `Mercedes-AMG F1 W12 E Performance & Mercedes-AMG Project One`
+- `Mercedes-AMG F1 W15`
+- `Mercedes-Amg F1 W14 E Performance`
+- `Mercedes-Amg G 63 & Mercedes-Amg Sl 63`
+- `Mercedes-Benz Arocs 3245`
+- `Mercedes-Benz G 500`
+- `Mercedes-Benz G 500 Professional Line`
+- `Merchant Boat`
+- `Message Board`
+- `Message Intercept Base`
+- `MetalBeard's Sea Cow`
+- `Metroliner`
+- `Mia's House`
+- `Mia's Tree House`
+- `Mickey Mouse & Minnie Mouse Buildable Characters`
+- `Microscale Knights Castle`
+- `Microscale Lego Brand Store`
+- `Midi-Scale Millennium Falcon`
+- `Mighty Dinosaurs`
+- `Mike, Dustin, Lucas and Will`
+- `Mike, Dustin, Lucas and Will Figures`
+- `Miles Morales' Mask`
+- `Millennium Falcon`
+- `Mindstorms Education Base Set`
+- `Mine Mech`
+- `Minecraft Advent Calendar 2025`
+- `Mineral Collection`
+- `Mini Cooper Mk Vii`
+- `Mini Disney Sleeping Beauty Castle`
+- `Mini Disney The Haunted Mansion`
+- `Mini Knights Castle`
+- `Mini Orchid`
+- `Mini Orchid Artificial Plant`
+- `Minifigure Vending Machine`
+- `Minifigures Series 2`
+- `Mining Experts Site`
+- `Mining Station`
+- `Mining Truck`
+- `Minions and Gru's Family Mansion`
+- `Mirkwood Elf Army`
+- `Misfortune's Keep`
+- `Mission Moon`
+- `Mobile Command Center`
+- `Mobile Crane`
+- `Mobile Crane MK II`
+- `Mobile Tiny House`
+- `Modular Construction Site`
+- `Modular Skate House`
+- `Modular Winter Vacation`
+- `Mona Lisa`
+- `Monastery of Spinjitzu`
+- `Moneygram Haas F1 Team Vf-24 Race Car`
+- `Monkey King Warrior Mech`
+- `Monkey and Toucan`
+- `Monkie Kid's Team Secret HQ`
+- `Monorail`
+- `Mos Eisley Cantina`
+- `Mos Espa Podrace Diorama`
+- `Motor`
+- `Motorcycle`
+- `Motorised Lighthouse`
+- `Motorized Excavator`
+- `Motorized Lighthouse`
+- `Motorized Train Set`
+- `Motorized Walking At-At`
+- `Mountain Fortress`
+- `Mr. Freeze Ice Attack`
+- `Mummy Museum Mystery`
+- `Mushroom House`
+- `Mutation Chamber Unleashed`
+- `Mystery Mansion`
+- `Mystery Plane Adventures`
+- `NASA Apollo 11 Lunar Lander`
+- `NASA Apollo Saturn V`
+- `NASA Space Shuttle Discovery`
+- `NINJAGO City`
+- `NINJAGO City Docks`
+- `NINJAGO City Gardens`
+- `Naboo Starfighter`
+- `Nano Gauntlet`
+- `Nasa Apollo Lunar Roving Vehicle-Lrv`
+- `Nasa Artemis Space Launch System`
+- `Nasa Mars Rover Perseverance`
+- `Natural History Museum`
+- `Neuschwanstein Castle`
+- `New Republic E-Wing Vs. Shin Hatiï¿½S Starfighter`
+- `New York City Usa`
+- `Newsroom Van`
+- `Newt's Case of Magical Creatures`
+- `Nightmare Shark Ship`
+- `Nightmare Shark Submarine`
+- `Nike Dunk Trickshot`
+- `Nike Dunk x LEGOÂ® Set`
+- `Nindroid Mechdragon`
+- `Ninja Training Center`
+- `Ninja Ultra Combo Mech`
+- `Ninjago City Markets`
+- `Ninjago Minifigure Collection`
+- `Ninjago: the Board Game`
+- `Nintendo Entertainment System`
+- `Nocturn`
+- `Northern Lights Diorama`
+- `Notre-Dame De Paris`
+- `Nui-Rama`
+- `Number Train - Learn To Count`
+- `Nutcracker`
+- `Obi-Wan Kenobi's Jedi Starfighter`
+- `Obi-Wan's Jedi Interceptor`
+- `Ocean Exploration Base`
+- `Ocean Exploration Submarine`
+- `Ocean Explorer`
+- `Off Road Truck`
+- `Off-Road 4x4`
+- `Olaf`
+- `Old Fishing Store`
+- `Old Trafford - Manchester United`
+- `Old Train Engine Shed`
+- `Olivia's House`
+- `Olivia's Space Academy`
+- `Ollivanders & Madam Malkin's Robes`
+- `Olympics 2012`
+- `Ominous Isle`
+- `One Man Space Ship`
+- `Onua Nuva`
+- `Optimus Prime`
+- `Orchid`
+- `Orion Ii Hyperspace`
+- `Outlaw Forest Den`
+- `Overlord Dragon`
+- `Pac-Man Arcade`
+- `Pagani Utopia`
+- `Palace Cinema`
+- `Palpatine's Arrest`
+- `Paris`
+- `Paris Postcard`
+- `Paris Skyline`
+- `Parisian Restaurant`
+- `Parisian Street`
+- `Passenger Aeroplane`
+- `Passenger Airplane`
+- `Passenger Plane`
+- `Passenger Train`
+- `Payakan the Tulkun & Crabsuit`
+- `Peachï¿½S Castle Expansion Set`
+- `Peely Bone`
+- `People Pack-Fun in the Park`
+- `Pet Shop`
+- `Peter Parkerâs Apartment Building`
+- `Petite Sunny Bouquet`
+- `Peugeot 9x8 24h Le Mans Hybrid Hypercar`
+- `Pickup Truck`
+- `Piggy Plane Attack`
+- `Piraka`
+- `Piranha Plant`
+- `Pirate Ship`
+- `Pirate Snub Fighter`
+- `Pirates Chess Set`
+- `Pirates Enchanted Island`
+- `Pirates of Barracuda Bay`
+- `Pizza Planet Truck`
+- `Plane`
+- `Poe Dameron's X-wing Fighter`
+- `Poinsettia`
+- `Polar Copter`
+- `Polaris I Space Lab`
+- `Polaroid Onestep Sx-70 Camera`
+- `Police Command Base`
+- `Police Helicopter`
+- `Police Prison Island`
+- `Police Pursuit`
+- `Police Station`
+- `Pop Village Celebration`
+- `Popcorn Wagon`
+- `Porg`
+- `Porsche 911`
+- `Porsche 911 GT3 RS`
+- `Porsche 911 GT3 RS Super Car`
+- `Porsche 911 RSR`
+- `Porsche GT4 e-Performance`
+- `Power Functions Motor Set`
+- `Princess Enchanted Journey`
+- `Princess Leia (Boushh) Helmet`
+- `Prison Island`
+- `Prisoner Transporter`
+- `Professors of Hogwarts`
+- `Protector of Water`
+- `Pyroraptor & Dilophosaurus Transport`
+- `Queen Anne's Revenge`
+- `Queen Dragon's Rescue`
+- `Quidditch Match`
+- `R2-D2`
+- `RIVER STEAMBOAT`
+- `Race Car`
+- `Race Cars`
+- `Race for the Stolen Treasure`
+- `Racing Truck`
+- `Rally Car`
+- `Rancor Pit`
+- `Random`
+- `Rathtar Escape`
+- `Rattlecopter`
+- `Rebel Combat Frigate`
+- `Rebel U-Wing Fighter`
+- `Recycling Truck`
+- `Red Baron`
+- `Red Cargo Train`
+- `Red Five X-Wing Starfighter`
+- `Red London Telephone Box`
+- `Remote-Controlled Stunt Racer`
+- `Republic Attack Gunship`
+- `Republic Av-7 Anti-Vehicle Cannon`
+- `Republic Fighter Tank`
+- `Republic Frigate`
+- `Republic Gunship`
+- `Republic Juggernaut`
+- `Republic Striker-Class Starfighter`
+- `Republic Swamp Speeder`
+- `Republic Troopers Vs. Sith Troopers`
+- `Rescue Helicopter`
+- `Rescue Helicopter Transport`
+- `Research Institute`
+- `Resistance Bomber`
+- `Resistance Troop Transporter`
+- `Resistance Y-Wing Starfighter`
+- `Retro Radio`
+- `Retro Record Player`
+- `Retro Space Explorer`
+- `Riding Stable`
+- `Rise of the Domo`
+- `River Steamboat`
+- `Robin`
+- `Robot Inventor`
+- `Rock Island Refuge`
+- `Rock Raiders HQ`
+- `Rock Wrecker`
+- `Rockefeller Center`
+- `Rocket Launch Center`
+- `Rocket Launch Centre`
+- `Rocket Launch Pad`
+- `Rogue Shadow`
+- `Roller Coaster`
+- `Rolling Acres Ranch`
+- `Rough Terrain Crane`
+- `Royal Knight's Castle`
+- `SEGA Genesis Controller`
+- `SP.STRIKER`
+- `SPIDERMAN Daily Bugle`
+- `Sabre Island`
+- `Saesee Tiinâs jedi starfighter`
+- `San Francisco`
+- `Sanctum Sanctorum`
+- `Sand Dollar CafâÂ©`
+- `Sandcrawler`
+- `Sandwich Shop`
+- `Sandy's Speedboat`
+- `Santa's Delivery Truck`
+- `Santa's Fireplace`
+- `Santa's Post Office`
+- `Santa's Sleigh`
+- `Santa's Sleigh Ride`
+- `Santa's Workshop`
+- `Santaâs Visit`
+- `Santaï¿½S Visit`
+- `Schaufelradbagger`
+- `Schloss Hogwarts`
+- `School Day`
+- `Scout Trooper Helmet`
+- `Seaside Harbour with Cargo Ship`
+- `Seinfeld`
+- `Service Station`
+- `Service Truck`
+- `Shackleton's Lifeboat`
+- `Shark's Crystal Cave`
+- `Shelob Attacks`
+- `Sheriff's Lock Up`
+- `Sherlock Holmes: Book Nook`
+- `Sherlock Holmes: Book Nook Display`
+- `Ship in a Bottle`
+- `Shredder's Lair Rescue`
+- `Shuttle Adventure`
+- `Shuttle Carrier Aircraft`
+- `Shuttle Expedition`
+- `Shuttle Transporter`
+- `Siege Encampment`
+- `Silent Mary`
+- `Simple Machines Set`
+- `Simpsons Minifigures Series 2`
+- `Singapore`
+- `Sith Infiltrator`
+- `Sith Troopers Battle Pack`
+- `Skeleton Bowling`
+- `Skull Island`
+- `Skull Sorcerer's Dragon`
+- `Skull's Eye Schooner`
+- `Slave I`
+- `Slave I â 20th Anniversary Edition`
+- `SmÃ©agol & DÃ©agol`
+- `Snack Shack`
+- `Snoke's Throne Room`
+- `Snow Groomer`
+- `Snow Resort Ski Lift`
+- `Snow White & the Seven Dwarfs' Cottage`
+- `Snow White and the Seven Dwarfs' Cottage`
+- `Snowspeeder`
+- `Snowspeeder - 20th Anniversary Edition`
+- `Solar Snooper`
+- `Soldiers Fort`
+- `Solomon R. Guggenheim Museum`
+- `Sonic the Hedgehog`
+- `Sonic the Hedgehog - Green Hill Zone`
+- `Sopwith Camel`
+- `Soundwave`
+- `Source Dragon of Motion`
+- `Sp-Striker`
+- `Space Astronaut`
+- `Space Base and Rocket Launchpad`
+- `Space Cruiser`
+- `Space Ride Amusement Truck`
+- `Space Roller Coaster`
+- `Space Science Lab`
+- `Space Shuttle`
+- `Space Shuttle Craft`
+- `Space Shuttle Explorer`
+- `Spaceport`
+- `Sparratus' Spider Stalker`
+- `Speed Champions Ferrari SF-24 F1`
+- `Speed Champions Red Bull Racing RB20 F1`
+- `Speeda Demon`
+- `Spice Girls Tribute`
+- `Spider Mech vs. Venom`
+- `Spider-Man Figure`
+- `Spider-Man vs. Doc Ock`
+- `Spider-Man's Mask`
+- `Spider-Man's Train Rescue`
+- `Spider-Man: Web Warriors Ultimate Bridge Battle`
+- `Spider-Verse: Miles Morales Vs. the Spot`
+- `Spike Prime Expansion Set (V2)`
+- `Spike Prime Set`
+- `Spinjitzu Training`
+- `Spinosaurus & Quetzalcoatlus Air Mission`
+- `Sports Car`
+- `Spugg, Turg, Tungster`
+- `Stable of Dream Creatures`
+- `Stadt der Laternen`
+- `Star Trek Enterprise NCC-1701-D`
+- `Star Trek Type-15 Shuttle Pod`
+- `Star Trek U.S.S. Enterprise NCC-1701-D`
+- `Star Trek: Type-15 Shuttlepod`
+- `Star Trek: U.S.S. Enterprise`
+- `Star Trek: U.S.S. Enterprise NCC-1701-D`
+- `Star Trek: U.S.S. Enterprise NCC-1701-Dâ¢`
+- `Star Wars Advent Calendar`
+- `Star Wars Christmas X-Wing`
+- `Star Wars Microfighter`
+- `Star Wars: the Battle of Hoth`
+- `Star-Lord's Helmet`
+- `StarScavenger`
+- `Steam Train`
+- `Steamboat Willie`
+- `Stitch`
+- `Stormbringer`
+- `Stormtrooper`
+- `Stormtrooper Helmet`
+- `Stranger Things`
+- `Stranger Things The Creel House`
+- `Stranger Things Upside Down`
+- `Stranger Things: WSQK Radio Station`
+- `Street Race of Snake Jaguar`
+- `Stuck`
+- `Studio`
+- `Stunt Park`
+- `Stunt Show Arena`
+- `Stygimoloch Breakout`
+- `Stygimoloch Dinosaur Escape`
+- `Succulents`
+- `Summer Riding Camp`
+- `Sunflowers`
+- `Sunken Treasure Mission`
+- `Sunshine Ranch`
+- `Super Car`
+- `Super Heroes Lab`
+- `Super Mario 64 Question Mark Block`
+- `Super Mario World: Mario & Yoshi`
+- `Super Speedway Game`
+- `Super Star Destroyer`
+- `Super Street Sensation`
+- `Supernatural Racing Car`
+- `Surface Explorer`
+- `Surface Explorer Lunar Scout`
+- `Swamp Police Station`
+- `Sydney`
+- `Sydney Opera House`
+- `T-6 Jedi Shuttle`
+- `T. rex & Atrociraptor Dinosaur Breakout`
+- `T. rex Breakout`
+- `T. rex Dinosaur Breakout`
+- `T. rex vs Dino-Mech Battle`
+- `TALES OF THE SPACE AGE`
+- `THE BATMAN - BATMOBILE`
+- `TIE Advanced Prototype`
+- `TIE Bomber`
+- `TIE Fighter`
+- `TIE Fighter & X-Wing Mash-up`
+- `TIE Fighter with Imperial Hangar Rack`
+- `TRANSFORMERS SOUNDWAVE`
+- `TRON: Legacy`
+- `Taj Mahal`
+- `Tales of the Space Age`
+- `Talking Sorting Hat`
+- `Tanker Truck`
+- `Tantive IV`
+- `Taruga`
+- `Temple of The Ultimate Ultimate Weapon`
+- `Temple of the Crystal Skull`
+- `Temple of the Endless Sea`
+- `Temple of the Golden Idol`
+- `Temple of the Goldern Idol`
+- `Terrestrial Rover`
+- `Thanos: Ultimate Battle`
+- `The Amazing Spider-Man`
+- `The Armorerâs Mandalorian Forge`
+- `The Art of Chocolate`
+- `The Avengers Quinjet`
+- `The Bad Batch Attack Shuttle`
+- `The Baratie Floating Restaurant`
+- `The Batmobile: Two-Face's Escape`
+- `The Battle of Endor`
+- `The Battle of Five Armies`
+- `The Battle of Helm's Deep`
+- `The Battle of Helms Deep`
+- `The Beatles`
+- `The Beatles Yellow Submarine`
+- `The Big Bang Theory`
+- `The Blaze Bridge`
+- `The Brick Bounty`
+- `The Brick Moulding Machine`
+- `The Burrow - Collectors Edition`
+- `The Burrow-Collectors' Edition`
+- `The Cannibal Escape`
+- `The Castle of Morcia`
+- `The Child`
+- `The City of Lanterns`
+- `The Clone Wars Republic Juggernaut`
+- `The Clone Wars Republic Juggernaut Set`
+- `The Crafting Table`
+- `The Creeper`
+- `The Creeper Ambush`
+- `The Crimson Firehawk`
+- `The Crystal King Temple`
+- `The Dark Falcon`
+- `The DeLorean Time Machine`
+- `The Deep Dark Battle`
+- `The Disney Castle`
+- `The Durmstrang Ship`
+- `The Enderman Tower`
+- `The Endurance`
+- `The Endurance Ship`
+- `The Force of Creativity coffee-table book`
+- `The Friends Apartments`
+- `The Frog House`
+- `The Gatehouse Raid`
+- `The Ghost`
+- `The Ghost Train`
+- `The Globe`
+- `The Goat Boat`
+- `The Goblin King Battle`
+- `The Goonies`
+- `The Goonies Walshes Attic`
+- `The Goonies: The Walshes' Attic`
+- `The Guardian Battle`
+- `The Guardiansâ Ship`
+- `The Heavenly Realms`
+- `The Hulkbuster Smash-Up`
+- `The Hulkbuster: The Battle of Wakanda`
+- `The Ice Castle`
+- `The Insect Collection`
+- `The Iron Golem Fortress`
+- `The Joker`
+- `The Joker Manor`
+- `The Joker Notorious Lowrider`
+- `The Jungle Abomination`
+- `The Jungle Temple`
+- `The Justifier`
+- `The Knight Bus`
+- `The Kwik-E-Mart`
+- `The Lego Batman Movie Minifigure Collection`
+- `The Lighthouse of Darkness`
+- `The Little Mermaid Royal Clam Shell`
+- `The Little Mermaid Royal Clamshell`
+- `The Llama Village`
+- `The Lonely Mountain`
+- `The Lord of the Rings: Rivendell`
+- `The Madrigal House`
+- `The Mandalorian & the Child`
+- `The Mandalorian Helmet`
+- `The Mighty Bowser`
+- `The Milano vs. The Abilisk`
+- `The Milky Way`
+- `The Milky Way Galaxy`
+- `The Mine`
+- `The Ministry of Magic`
+- `The Mountain Cave`
+- `The Mystery Machine`
+- `The Nether Fortress`
+- `The Office`
+- `The Old Town`
+- `The Onyx Cinder`
+- `The Orc Forge`
+- `The Orient Express`
+- `The Orient Express Traim`
+- `The Orient Express Train`
+- `The Pickaxe Mine`
+- `The Pillager Outpost`
+- `The Razor Crest`
+- `The Red Barn`
+- `The Rolling Stones`
+- `The SHIELD Helicarrier`
+- `The Shire`
+- `The Shrieking Shack & Whomping Willow`
+- `The Simpsons`
+- `The Simpsons House`
+- `The Simpsonsâ¢: Krusty Burger`
+- `The Skeleton Dungeon`
+- `The Temple of Anubis`
+- `The Temple of Celebrations`
+- `The Tumbler`
+- `The Ultimate Batmobile`
+- `The Upside Down`
+- `The Village`
+- `The Water Dragon Adventure`
+- `The White House`
+- `The Wooden Duck`
+- `The cave`
+- `The orient express`
+- `Thing's Apartment`
+- `Thomas & Friends Gordonâs Express`
+- `Thor's Hammer`
+- `Thunder Driller`
+- `Thunderfang Dragon of Chaos`
+- `Thwomp Drop Expansion Set`
+- `Tie Defender`
+- `Tie Fighter & X-Wing Mash-Up`
+- `Tie Fighter & Y-Wing`
+- `Tie Fighter Pilot Helmet`
+- `Tie Interceptor`
+- `Time Machine`
+- `Time Machine from Back to the Future`
+- `Tipping Dump Truck`
+- `Titanic`
+- `Tokyo`
+- `Tom & Jerry`
+- `Toothless`
+- `Toruk Makto & Tree of Souls`
+- `Tow Truck`
+- `Tow Truck Trouble`
+- `Tower Bridge`
+- `Tower Bridge-10214`
+- `Tower of Orthanc`
+- `Town Hall`
+- `Town Square`
+- `Town Square-Castle Scene`
+- `Townhouse Pet Shop & CafÃ©`
+- `Tracer vs. Widowmaker`
+- `Tracked Crane`
+- `Tracks`
+- `Tractor`
+- `Trade Federation Aat`
+- `Trade Federation Mtt`
+- `Trafalgar Square`
+- `Train`
+- `Train Engine Shed`
+- `Train Motor`
+- `Train Station`
+- `Transformers: Soundwave`
+- `Travel Boat Adventure`
+- `Treasure Attack`
+- `Tree House`
+- `Treehouse`
+- `Tremor Track Infiltration`
+- `Trevi Fountain`
+- `Triceratops Research`
+- `Triwizard Tournament: the Arrival`
+- `Trophy`
+- `Tropical Aquarium`
+- `Tropical Rainforest Diorama`
+- `Tropical Ukulele`
+- `Trouble on Tatooine`
+- `Tudor Corner`
+- `Turbo Shredder`
+- `Turtle Lair Attack`
+- `Turtle Lair Invasion`
+- `Tuxedo Cat`
+- `Twilight`
+- `Twilight The Cullen House`
+- `Two-Face Double Demolition`
+- `Type 15 Shuttlepod`
+- `Type-15 Shuttlepod`
+- `Typewriter`
+- `U.S.S.Enterprise NCC-1701-D`
+- `UNIVERSAL BUILDING SET`
+- `USB Flash Drive`
+- `Ultimate Adventure Castle`
+- `Ultimate Build Lightning Mcqueen`
+- `Ultimate Lightsaber Duel`
+- `Ultra Agents Mission Hq`
+- `Ultra Stealth Raider`
+- `Umbra`
+- `Universal Building Set with Motor, 7+`
+- `Up' House`
+- `Up-Scaled Racing Driver Minifigure`
+- `Up-Scaled Santa Minifigure`
+- `Up-scaled Santa Minifigure`
+- `Uss Constellation`
+- `Utapau Troopers`
+- `V-19 Torrent`
+- `Vader's Tie Advanced`
+- `Vampyre Castle`
+- `Venator-Class Republic Attack Cruiser`
+- `Venator-class Republic Attack Cruiser`
+- `Venice Canal Chase`
+- `Venom Figure`
+- `Venom Helmet`
+- `Venomised Groot`
+- `Vermillion Invader`
+- `Vespa 125`
+- `Victory Lap Raceway`
+- `Viking Ship and the Midgard Serpent`
+- `Viking Village`
+- `Viking Voyager`
+- `Villain Icons`
+- `Vincent Van Gogh Sunflowers`
+- `Vincent van Gogh - The Starry Night`
+- `Vincent van Gogh Sunflowers Set`
+- `Vincent van Gogh â Sunflowers`
+- `Vintage Car`
+- `Visitor Center: T. rex & Raptor Attack`
+- `Visitor Centre: T. Rex & Raptor Attack`
+- `Vladek's Dark Fortress`
+- `Volcano Supply Helicopter`
+- `Volkswagen Beetle`
+- `Volkswagen T1 Camper Van`
+- `Volkswagen T2 Camper Van`
+- `Voltron`
+- `Volvo FMX Truck EC230 Electric Excavator`
+- `Volvo Fmx Truck & Ec230 Electric Excavator`
+- `Volvo L350f Wheel Loader`
+- `Volvo Wheel Loader`
+- `Vulture Droid`
+- `WALL-E`
+- `Wagon`
+- `Wall-E`
+- `Walt Disney Tribute Camera`
+- `Wednesday & Enid`
+- `Wednesday & Enid's Dorm Room`
+- `Wednesday Addams Figure`
+- `Welcome to Apocalypseburg!`
+- `Welcome to Emerald City`
+- `West Burton Power Station`
+- `Western Train Chase`
+- `Wicket The Ewok`
+- `Wicket the Ewok`
+- `Wild Animals of the World`
+- `Wild Animals: Panda Family`
+- `Wildflower Bouquet`
+- `Wildlife Rescue Camp`
+- `Wildlife Rescue Operation`
+- `William Furno`
+- `Williams Racing FW46 F1`
+- `Williams Racing Fw14b & Nigel Mansell`
+- `Willy Wonka & the Chocolate Factory`
+- `Winnie the Pooh`
+- `Winter Chalet`
+- `Winter Gazebo`
+- `Winter Holiday Train`
+- `Winter Toy Shop`
+- `Winter Village Cottage`
+- `Winter Village Fire Station`
+- `Winter Village Post Office`
+- `Winter Village Station`
+- `Winter Village Toy Shop`
+- `Wintertime Carriage Ride`
+- `Wizard of OZ`
+- `Wolf Mask Shadow Dojo`
+- `Wolfpack Tower`
+- `Wolverine Mech Armor`
+- `Wolverine Mech Armour`
+- `Wolverine's Adamantium Claws`
+- `Wooden Minifigure`
+- `Woody's Roundup!`
+- `Wookiee Gunship`
+- `World Animals`
+- `World Map`
+- `Wreath`
+- `X-Men: the X-Mansion`
+- `X-Wing Starfighter`
+- `XL-15 Spaceship`
+- `Xt Starship`
+- `Y-Wing Starfighter`
+- `Yamaha Mt-10 Sp`
+- `Yavin 4 Rebel Base`
+- `Yellow Delivery Truck`
+- `Yellow Submarine`
+- `Yellow Submarine-21306`
+- `Yellow Tusk Elephant`
+- `Yeti's Hideout`
+- `Yoda`
+- `Yoda's Lightsaber`
+- `Z-95 Headhunter`
+- `Zane's Mino Creature`
+- `Zaneï¿½S Ice Dragon Creature`
+- `adidas Originals Superstar`
+- `adventures in transylvania`
+- `bionicle`
+- `books are my passion`
+- `buildable mecha team leader`
+- `coruscant police gunship`
+- `crane`
+- `does not apply`
+- `escape from the lost tomb`
+- `galaxy commander`
+- `gizmo`
+- `goonies`
+- `gringotts bank`
+- `hot chocolate stand`
+- `how to train your dragon`
+- `kingdoms castle`
+- `knights Kingdom chess set`
+- `lego`
+- `lego 40777 Gingerbread Train`
+- `lego Castle`
+- `lego minifigures series 28`
+- `minifigure vending machine`
+- `minifigures series 28`
+- `not a set`
+- `orient express`
+- `pixar lamp`
+- `the Ewok village`
+- `the temple bounty`
+
+---
+## LEGO Set Number (1611 unique)
+
+- `#21363`
+- `10 sets : Set 77242 right through to Set 77251`
+- `10021`
+- `10024`
+- `10027`
+- `10030`
+- `10123`
+- `10144`
+- `10155`
+- `10174`
+- `10175`
+- `10178`
+- `10181`
+- `10182`
+- `10187`
+- `10188`
+- `10190`
+- `10194`
+- `10197`
+- `10198`
+- `10199`
+- `10203`
+- `10211`
+- `10213`
+- `10214`
+- `10215`
+- `10217`
+- `10218`
+- `10219`
+- `10220`
+- `10221`
+- `10222`
+- `10224`
+- `10226`
+- `10228`
+- `10229`
+- `10231`
+- `10232`
+- `10233`
+- `10234`
+- `10236`
+- `10237`
+- `10240`
+- `10242`
+- `10243`
+- `10244`
+- `10245`
+- `10246`
+- `10247`
+- `10248`
+- `10249`
+- `10251`
+- `10252`
+- `10253`
+- `10254`
+- `10255`
+- `10256`
+- `10257`
+- `10258`
+- `10259`
+- `10260`
+- `10261`
+- `10262`
+- `10263`
+- `10264`
+- `10265`
+- `10266`
+- `10267`
+- `10269`
+- `10270`
+- `10271`
+- `10272`
+- `10273`
+- `10274`
+- `10275`
+- `10276`
+- `10277`
+- `10278`
+- `10279`
+- `10280`
+- `10281`
+- `10282`
+- `10283`
+- `10289`
+- `10290`
+- `10292`
+- `10293`
+- `10294`
+- `10295`
+- `10297`
+- `10298`
+- `10299`
+- `1030`
+- `10300`
+- `10302`
+- `10303`
+- `10304`
+- `10305`
+- `10306`
+- `10307`
+- `10308`
+- `10309`
+- `10311`
+- `10312`
+- `10313`
+- `10316`
+- `10317`
+- `10318`
+- `10320`
+- `10321`
+- `10323`
+- `10325`
+- `10326`
+- `10328`
+- `10329`
+- `10330`
+- `10331`
+- `10332`
+- `10334`
+- `10335`
+- `10337`
+- `10338`
+- `10339`
+- `10340`
+- `10341`
+- `10343`
+- `10344`
+- `10347`
+- `10349`
+- `10350`
+- `10351`
+- `10352`
+- `10353`
+- `10354`
+- `10355`
+- `10356`
+- `10357`
+- `10358`
+- `10359`
+- `10360`
+- `10361`
+- `10362`
+- `10365`
+- `10366`
+- `10367`
+- `10368`
+- `10370`
+- `10372`
+- `10375`
+- `10404`
+- `10422`
+- `10427`
+- `10497`
+- `10515`
+- `10569`
+- `10696`
+- `10698`
+- `107 + Accessories  + track`
+- `10764`
+- `10788`
+- `10867`
+- `10874`
+- `10907`
+- `10937`
+- `10952`
+- `10954`
+- `10975`
+- `10993`
+- `10998`
+- `11016`
+- `11032`
+- `11202`
+- `11203`
+- `112110`
+- `113`
+- `11370`
+- `1484`
+- `1592`
+- `17101`
+- `1774`
+- `200`
+- `2025`
+- `2067`
+- `21000`
+- `21002`
+- `21005`
+- `21007`
+- `21008`
+- `21011`
+- `21017`
+- `21020`
+- `21022`
+- `21024`
+- `21027`
+- `21028`
+- `21029`
+- `21032`
+- `21033`
+- `21034`
+- `21035`
+- `21036`
+- `21037`
+- `21043`
+- `21044`
+- `21045`
+- `21047`
+- `21050`
+- `21051`
+- `21052`
+- `21054`
+- `21056`
+- `21057`
+- `21060`
+- `21061`
+- `21062`
+- `21063`
+- `21103`
+- `21108`
+- `21109`
+- `21110`
+- `21113`
+- `21118`
+- `21122`
+- `21128`
+- `21132`
+- `21137`
+- `21154`
+- `21159`
+- `21176`
+- `21180`
+- `21187`
+- `21188`
+- `21189`
+- `21226`
+- `21246`
+- `21250`
+- `21256`
+- `21265`
+- `21276`
+- `21277`
+- `21278`
+- `21279`
+- `21280`
+- `21301`
+- `21302`
+- `21303`
+- `21304`
+- `21306`
+- `21307`
+- `21309`
+- `21310`
+- `21311`
+- `21314`
+- `21317`
+- `21318`
+- `21319`
+- `21320`
+- `21321`
+- `21322`
+- `21323`
+- `21324`
+- `21325`
+- `21326`
+- `21327`
+- `21328`
+- `21329`
+- `21330`
+- `21331`
+- `21332`
+- `21333`
+- `21334`
+- `21335`
+- `21336`
+- `21338`
+- `21340`
+- `21341`
+- `21342`
+- `21343`
+- `21344`
+- `21345`
+- `21346`
+- `21347`
+- `21348`
+- `21349`
+- `2135`
+- `21350`
+- `21351`
+- `21353`
+- `21354`
+- `21356`
+- `21358`
+- `21360`
+- `21361`
+- `21362`
+- `21363`
+- `2263`
+- `2507`
+- `2519`
+- `2521`
+- `2853835`
+- `30210`
+- `30343`
+- `30585`
+- `306346935859`
+- `30654`
+- `30662`
+- `30670`
+- `30687`
+- `30701`
+- `30709`
+- `31019`
+- `31051`
+- `31066`
+- `31080`
+- `31081`
+- `31088`
+- `31091`
+- `31097`
+- `31109`
+- `31119`
+- `31120`
+- `31129`
+- `31130`
+- `31132`
+- `31141`
+- `31142`
+- `31152`
+- `31154`
+- `31156`
+- `31161`
+- `31165`
+- `31167`
+- `31168`
+- `31198`
+- `31201`
+- `31202`
+- `31203`
+- `31206`
+- `31208`
+- `31209`
+- `31212`
+- `31213`
+- `31215`
+- `31313`
+- `31314`
+- `3185`
+- `3221`
+- `3315`
+- `3354`
+- `3409`
+- `3433`
+- `3677`
+- `3678`
+- `377`
+- `3800`
+- `3827`
+- `3833`
+- `3856`
+- `3866`
+- `4002014`
+- `4002017`
+- `4002018`
+- `4002019`
+- `4002020`
+- `4002021`
+- `4002023`
+- `4002024`
+- `4002025`
+- `40139`
+- `40174`
+- `40198`
+- `40220`
+- `40293`
+- `40305`
+- `40338`
+- `40346`
+- `40366`
+- `40378`
+- `40410`
+- `40416`
+- `40433`
+- `40436`
+- `40478`
+- `40483`
+- `40485`
+- `40495`
+- `40496`
+- `40499`
+- `40501`
+- `40502`
+- `40504`
+- `40521`
+- `40548`
+- `40549`
+- `40549 & 40801`
+- `40560`
+- `40565`
+- `40567`
+- `40568`
+- `40573`
+- `40574`
+- `40578`
+- `40580`
+- `40591`
+- `40601`
+- `40603`
+- `40617`
+- `40627`
+- `40631`
+- `40642`
+- `40651`
+- `40686`
+- `40692`
+- `40693`
+- `40696`
+- `40698`
+- `40699`
+- `40701`
+- `40705`
+- `40706`
+- `40712`
+- `40713`
+- `40720`
+- `40729`
+- `40730`
+- `40743`
+- `40746`
+- `40747`
+- `40755`
+- `40757`
+- `40761`
+- `40765`
+- `40766`
+- `40768`
+- `40769`
+- `40771`
+- `40771, 40776`
+- `40773`
+- `40774`
+- `40775`
+- `40776`
+- `40777`
+- `40778`
+- `40782`
+- `40785`
+- `40787`
+- `40788`
+- `40793`
+- `40794`
+- `40801`
+- `40805`
+- `40806`
+- `40809`
+- `40813`
+- `40819`
+- `40820`
+- `40891`
+- `41039`
+- `41068`
+- `41101`
+- `41130`
+- `41154`
+- `41169`
+- `41172`
+- `41179`
+- `41185`
+- `41193`
+- `4124`
+- `41255`
+- `41324`
+- `41335`
+- `41340`
+- `41347`
+- `41369`
+- `41372`
+- `41379`
+- `41427`
+- `41429`
+- `41449`
+- `41450`
+- `41498`
+- `41542, 41543, 41544`
+- `41588`
+- `41589`
+- `41611`
+- `41623`
+- `41627`
+- `41630`
+- `41702`
+- `41704`
+- `41711`
+- `41713`
+- `41714`
+- `41732`
+- `41735`
+- `41748`
+- `41749`
+- `41757`
+- `4182`
+- `41839`
+- `41917`
+- `4192`
+- `4195`
+- `42006`
+- `42008`
+- `42009`
+- `42025`
+- `42027`
+- `42029`
+- `42030`
+- `42035`
+- `42038`
+- `42042`
+- `42043`
+- `42050`
+- `42054`
+- `42055`
+- `42056`
+- `42063`
+- `42064`
+- `42070`
+- `42073`
+- `42077`
+- `42078`
+- `42081`
+- `42082`
+- `42083`
+- `42093`
+- `42095`
+- `42096`
+- `42098`
+- `42099`
+- `4210`
+- `42100`
+- `42105`
+- `42107`
+- `42108`
+- `42109`
+- `42110`
+- `42111`
+- `42112`
+- `42113`
+- `42114`
+- `42115`
+- `42121`
+- `42122`
+- `42125`
+- `42126`
+- `42127`
+- `42128`
+- `42129`
+- `42130`
+- `42131`
+- `42136`
+- `42139`
+- `42140`
+- `42141`
+- `42143`
+- `42144`
+- `42145`
+- `42152`
+- `42154`
+- `42156`
+- `42157`
+- `42158`
+- `42159`
+- `42160`
+- `42161`
+- `42170`
+- `42171`
+- `42172`
+- `42173`
+- `42175`
+- `42176`
+- `42177`
+- `42180`
+- `42182`
+- `42184`
+- `42202`
+- `42203`
+- `42204`
+- `42205`
+- `42206`
+- `42207`
+- `42208`
+- `42209`
+- `42212`
+- `42213`
+- `42214`
+- `42215`
+- `42605`
+- `42630`
+- `42639`
+- `42664`
+- `42668`
+- `42673`
+- `43008`
+- `43021`
+- `43108`
+- `43179`
+- `43197`
+- `43202`
+- `43205`
+- `43207`
+- `43216`
+- `43217`
+- `43222`
+- `43225`
+- `43227`
+- `43230`
+- `43242`
+- `43244`
+- `43249`
+- `43257`
+- `43263`
+- `43266`
+- `43268`
+- `43279`
+- `44009`
+- `4431`
+- `44322`
+- `4478`
+- `4479`
+- `4501`
+- `4526 + 4527 + 4528`
+- `45300`
+- `45544`
+- `4558`
+- `45678`
+- `45681`
+- `45807`
+- `4645`
+- `4701`
+- `4706`
+- `4707`
+- `4708`
+- `4709`
+- `4714`
+- `4720`
+- `4721`
+- `4727`
+- `4729`
+- `4738`
+- `4758`
+- `4768`
+- `4818`
+- `4841`
+- `4855`
+- `4990`
+- `50011`
+- `5004590`
+- `5004938`
+- `5004939`
+- `5006470`
+- `5008878`
+- `5009408`
+- `5009806`
+- `5010018`
+- `5010030`
+- `51515`
+- `5510`
+- `5563`
+- `5925`
+- `5988`
+- `60004`
+- `60007`
+- `60016`
+- `60022`
+- `60036`
+- `60043`
+- `60047`
+- `60050`
+- `60051`
+- `60052`
+- `60057`
+- `60060`
+- `60062`
+- `60063`
+- `60069`
+- `60080`
+- `60098`
+- `60103`
+- `60104`
+- `60108`
+- `60110`
+- `60123`
+- `60128`
+- `60130`
+- `60134`
+- `60137`
+- `60138`
+- `60154`
+- `60167`
+- `60169`
+- `60193`
+- `60197`
+- `60198`
+- `60215`
+- `60216`
+- `60221`
+- `60222`
+- `60237`
+- `60246`
+- `60262`
+- `60264`
+- `60265`
+- `60282`
+- `60293`
+- `60294`
+- `60295`
+- `60302`
+- `60307`
+- `60313`
+- `60324`
+- `60329`
+- `60330`
+- `60335`
+- `60336`
+- `60343`
+- `60350`
+- `60351`
+- `60365`
+- `60367`
+- `60368`
+- `60379`
+- `60386`
+- `60419`
+- `60421`
+- `60422`
+- `60434`
+- `60437`
+- `60439`
+- `60440`
+- `60442`
+- `60445`
+- `60446`
+- `60465`
+- `60470`
+- `60473`
+- `60474`
+- `60475`
+- `6049`
+- `6062`
+- `6066`
+- `6073`
+- `6074`
+- `6075`
+- `6076`
+- `6080`
+- `6081`
+- `6082`
+- `6086`
+- `6090`
+- `6097`
+- `6098`
+- `6137064`
+- `6175`
+- `6190`
+- `6208`
+- `6211`
+- `6231`
+- `6265`
+- `6267`
+- `6273`
+- `6276`
+- `6277`
+- `6278`
+- `6279`
+- `6285`
+- `6286`
+- `6335`
+- `6346098`
+- `6346106`
+- `6376`
+- `6379`
+- `6386`
+- `6388`
+- `6395`
+- `6411`
+- `6419`
+- `6597`
+- `6605178`
+- `6605179`
+- `6607198`
+- `6656`
+- `6683`
+- `6714`
+- `6754`
+- `6755`
+- `6761`
+- `6769`
+- `6770 1621`
+- `6780`
+- `6781`
+- `6825`
+- `6842`
+- `6867`
+- `6880`
+- `6880 1580`
+- `6881`
+- `6883`
+- `6886`
+- `6887 6878`
+- `6893`
+- `6894`
+- `6932`
+- `6953`
+- `6957`
+- `6970`
+- `6972`
+- `6979`
+- `6980`
+- `6987`
+- `6989`
+- `6990`
+- `6991`
+- `70130`
+- `70144`
+- `70145`
+- `70146`
+- `70161`
+- `70165`
+- `70230`
+- `70326`
+- `70357`
+- `70402`
+- `70403`
+- `70412`
+- `70413`
+- `70431`
+- `70434`
+- `70504`
+- `70595`
+- `70605`
+- `70606`
+- `70608`
+- `70612`
+- `70613`
+- `70617`
+- `70618`
+- `70620`
+- `70624`
+- `70639`
+- `70642`
+- `70643`
+- `70652`
+- `70653`
+- `70655`
+- `70657`
+- `7066`
+- `70668`
+- `70669`
+- `70670`
+- `70675`
+- `70676`
+- `70677`
+- `70707`
+- `70708`
+- `70725`
+- `70728`
+- `70731`
+- `70747`
+- `70756`
+- `70780`
+- `70788`
+- `7079`
+- `70803`
+- `70806`
+- `70810`
+- `70820`
+- `70840`
+- `70841`
+- `70901`
+- `70906`
+- `70912`
+- `70915`
+- `70917`
+- `70922`
+- `71006`
+- `71009`
+- `71016`
+- `71023`
+- `71028`
+- `71031`
+- `71040`
+- `71040 71044`
+- `71042`
+- `71043`
+- `71044`
+- `71049`
+- `71051`
+- `7110`
+- `71374`
+- `71376`
+- `71387`
+- `71395`
+- `71401`
+- `71408`
+- `71411`
+- `71426`
+- `71427`
+- `71438`
+- `7144`
+- `71456`
+- `71459`
+- `71461`
+- `71469`
+- `71485`
+- `71486`
+- `7150`
+- `71500`
+- `7151`
+- `7153`
+- `7155`
+- `7167`
+- `71705`
+- `71719`
+- `71721`
+- `71741`
+- `71742`
+- `71746`
+- `71748`
+- `71755`
+- `71764`
+- `71765`
+- `71771`
+- `71774`
+- `71786`
+- `71796`
+- `71797`
+- `71799`
+- `71813`
+- `71821`
+- `71822`
+- `71832`
+- `71837`
+- `71841`
+- `71842`
+- `71847`
+- `71848`
+- `71861`
+- `7187`
+- `7197`
+- `7198`
+- `72032`
+- `72037`
+- `72043`
+- `72046`
+- `7250`
+- `7256`
+- `7257`
+- `7261`
+- `7317`
+- `7412`
+- `7414`
+- `744`
+- `7498`
+- `7498, 7743, 7235, 7245, 3179, 3180, 3182 and 7696`
+- `75001`
+- `75002`
+- `75003`
+- `75004`
+- `75005`
+- `75012`
+- `75015`
+- `75016`
+- `75017`
+- `75018`
+- `75020`
+- `75021`
+- `75025`
+- `75034`
+- `75035`
+- `75036`
+- `75037`
+- `75038`
+- `75040`
+- `75041`
+- `75042`
+- `75045`
+- `75046`
+- `75049`
+- `75050`
+- `75052`
+- `75053`
+- `75055`
+- `75056`
+- `75058`
+- `75059`
+- `75060`
+- `75080`
+- `75082`
+- `75083`
+- `75084`
+- `75087`
+- `75089`
+- `75090`
+- `75092`
+- `75093`
+- `75094`
+- `75095`
+- `75096`
+- `75097`
+- `75103`
+- `75104`
+- `75105`
+- `75112`
+- `75135`
+- `75137`
+- `75138`
+- `75140`
+- `75141`
+- `75144`
+- `75145`
+- `75147`
+- `75148`
+- `75150`
+- `75151`
+- `75152`
+- `75153`
+- `75155`
+- `75156`
+- `75157`
+- `75158`
+- `75159`
+- `75165`
+- `75171`
+- `75172`
+- `75175`
+- `75178`
+- `75179`
+- `75180`
+- `75181`
+- `75187`
+- `75188`
+- `75189`
+- `75190`
+- `75191`
+- `75192`
+- `75199`
+- `75206`
+- `75211`
+- `75212`
+- `75214`
+- `75216`
+- `75217`
+- `75218`
+- `75219`
+- `75220`
+- `75221`
+- `75222`
+- `75227`
+- `75230`
+- `75233`
+- `75243`
+- `75249`
+- `75251`
+- `75252`
+- `75254`
+- `75255`
+- `75256`
+- `75257`
+- `75258`
+- `75259`
+- `75266`
+- `75273`
+- `75274`
+- `75276`
+- `75277`
+- `75278`
+- `75280`
+- `75283`
+- `75284`
+- `75286`
+- `75288`
+- `75290`
+- `75291`
+- `75292`
+- `75293`
+- `75296`
+- `75299`
+- `75300`
+- `75301`
+- `75302`
+- `75304`
+- `75305`
+- `75306`
+- `75308`
+- `75309`
+- `75311`
+- `75312`
+- `75313`
+- `75314`
+- `75315`
+- `75316`
+- `75317`
+- `75318`
+- `75319`
+- `75322`
+- `75323`
+- `75324`
+- `75326`
+- `75327`
+- `75328`
+- `75329`
+- `75330`
+- `75331`
+- `75333`
+- `75335`
+- `75336`
+- `75337`
+- `75338`
+- `75339`
+- `75340`
+- `75341`
+- `75342`
+- `75343`
+- `75346`
+- `75347`
+- `75348`
+- `75349`
+- `75350`
+- `75351`
+- `75352`
+- `75353`
+- `75354`
+- `75355`
+- `75356`
+- `75357`
+- `75362`
+- `75364`
+- `75365`
+- `75367`
+- `75368`
+- `75371`
+- `75372`
+- `75374`
+- `75375`
+- `75376`
+- `75377`
+- `75378`
+- `75379`
+- `75380`
+- `75382`
+- `75383`
+- `75384`
+- `75385`
+- `75387`
+- `75389`
+- `75392`
+- `75393`
+- `75394`
+- `75396`
+- `75397`
+- `75398`
+- `75401`
+- `75403`
+- `75404`
+- `75406`
+- `75407`
+- `75408`
+- `75409`
+- `75413`
+- `75415`
+- `75416`
+- `75417`
+- `75419`
+- `75428`
+- `75429`
+- `75430`
+- `75431`
+- `75434`
+- `75435`
+- `75534`
+- `75537`
+- `75551`
+- `75573`
+- `75574`
+- `75577`
+- `75579`
+- `75582`
+- `75583`
+- `75637`
+- `75639`
+- `75640`
+- `75682`
+- `75683`
+- `75684`
+- `75685`
+- `75687`
+- `75688`
+- `75810`
+- `75822`
+- `75827`
+- `75876`
+- `75893`
+- `75900`
+- `75901`
+- `75902`
+- `75903`
+- `75904`
+- `75911`
+- `75913`
+- `75919`
+- `75927`
+- `75928`
+- `75932`
+- `75935`
+- `75936`
+- `75938`
+- `7594`
+- `75940`
+- `75941`
+- `75947`
+- `75948`
+- `75952`
+- `75954`
+- `75955`
+- `75956`
+- `75957`
+- `75967`
+- `75969`
+- `7597`
+- `75970`
+- `75973`
+- `75978`
+- `75979`
+- `7598`
+- `75980`
+- `76000`
+- `76006`
+- `76018`
+- `76023`
+- `76026`
+- `76032`
+- `76034`
+- `76040`
+- `76042`
+- `76055`
+- `76057`
+- `76060`
+- `76081`
+- `76104`
+- `76107`
+- `76115`
+- `76126`
+- `76138`
+- `76139`
+- `76139, 76161`
+- `76150`
+- `76153`
+- `76156`
+- `76161`
+- `76165`
+- `76166`
+- `76178`
+- `76182`
+- `76187`
+- `76188`
+- `76190`
+- `76191`
+- `76192`
+- `76193`
+- `76199`
+- `7620`
+- `76202`
+- `76208`
+- `76209`
+- `76210`
+- `76215`
+- `76217`
+- `76218`
+- `7622`
+- `76223`
+- `76224`
+- `76239`
+- `76240`
+- `76247`
+- `76248`
+- `76249`
+- `76250`
+- `76251`
+- `76252`
+- `7626`
+- `76261`
+- `76262`
+- `76269`
+- `7627`
+- `76271`
+- `76273`
+- `76285`
+- `76286`
+- `76288`
+- `76291`
+- `76293`
+- `76294`
+- `76295`
+- `76297`
+- `76300`
+- `76304`
+- `76311`
+- `76312`
+- `76317`
+- `76320`
+- `76321`
+- `76322`
+- `76324`
+- `76326`
+- `76328`
+- `76329`
+- `7636`
+- `76382`
+- `76384`
+- `76387`
+- `76388`
+- `76389`
+- `76391`
+- `76392`
+- `76393`
+- `76394`
+- `76397`
+- `76397, 76396, 76385, 76383, 76382`
+- `76401`
+- `76402`
+- `76403`
+- `76405`
+- `76406`
+- `76407`
+- `76408`
+- `7641`
+- `76412`
+- `76414`
+- `76417`
+- `76419`
+- `7642`
+- `76422`
+- `76423`
+- `76424`
+- `76427`
+- `76428`
+- `76429`
+- `76430`
+- `76432`
+- `76433`
+- `76435`
+- `76437`
+- `76439`
+- `76440`
+- `76444`
+- `76446`
+- `76449`
+- `76450`
+- `76451`
+- `76452`
+- `76453`
+- `76454`
+- `76457`
+- `7659`
+- `7662`
+- `7672`
+- `7674`
+- `7675`
+- `7676`
+- `7678`
+- `76780`
+- `76781`
+- `76785`
+- `76786`
+- `7680`
+- `76832`
+- `76895`
+- `76897`
+- `76898`
+- `76899`
+- `76902`
+- `76906`
+- `76908`
+- `76909`
+- `7691`
+- `76911`
+- `76914`
+- `76915`
+- `76917`
+- `76924`
+- `76925`
+- `76939`
+- `76944`
+- `76945`
+- `76946`
+- `76948`
+- `76949`
+- `76951`
+- `76956`
+- `76956, 76961, 77015`
+- `76958, 76959, 76960, 77012, 77013`
+- `76959`
+- `76960`
+- `76961`
+- `76965`
+- `76966`
+- `76969`
+- `76976`
+- `76989`
+- `77013`
+- `77015`
+- `77052`
+- `77055`
+- `77072`
+- `77073`
+- `77076`
+- `77077`
+- `77078`
+- `77092`
+- `7720`
+- `77238`
+- `77239`
+- `77241`
+- `77242`
+- `77243`
+- `77244`
+- `77245`
+- `77247`
+- `77249`
+- `77250`
+- `77251`
+- `77252`
+- `77255`
+- `77256`
+- `7741`
+- `7745`
+- `7752`
+- `7754`
+- `7778`
+- `7781`
+- `77905`
+- `77940`
+- `77942`
+- `7877`
+- `7893`
+- `7894`
+- `79001`
+- `79003`
+- `79007`
+- `79008`
+- `79010`
+- `79012`
+- `79014`
+- `79017`
+- `79018`
+- `79103`
+- `79106`
+- `79109`
+- `79117`
+- `79119`
+- `79122`
+- `7930`
+- `7931`
+- `7938`
+- `7946`
+- `7956`
+- `7961`
+- `7964`
+- `7965`
+- `80012`
+- `80013`
+- `80014`
+- `80036`
+- `80039`
+- `80043`
+- `80054`
+- `80102`
+- `80105`
+- `80109`
+- `80112`
+- `80113`
+- `8016`
+- `8017`
+- `8037`
+- `8038`
+- `8039`
+- `8043`
+- `8063`
+- `8071`
+- `8085`
+- `8086`
+- `8087`
+- `8088`
+- `8091`
+- `8092`
+- `8096`
+- `8097`
+- `8098`
+- `81000`
+- `8109`
+- `8147`
+- `8189`
+- `8191`
+- `8258`
+- `8273`
+- `8286`
+- `8287`
+- `8307`
+- `8448`
+- `8480`
+- `8484`
+- `851499`
+- `852293`
+- `852751`
+- `852922`
+- `8537`
+- `853967`
+- `8540-8545`
+- `857`
+- `8625`
+- `8626`
+- `8635`
+- `8640`
+- `8671`
+- `8707`
+- `8709`
+- `8734`
+- `8778`
+- `8781`
+- `88009, 88010, 88011`
+- `8857`
+- `8859`
+- `886`
+- `8860`
+- `8862`
+- `8877`
+- `8880`
+- `8881`
+- `8900 8901 8902 8903 8904 8905`
+- `8909`
+- `8916`
+- `8922`
+- `8935`
+- `8940`
+- `8957`
+- `8959`
+- `8960`
+- `8963`
+- `8989`
+- `910`
+- `910001`
+- `910004`
+- `910008`
+- `910029`
+- `910030`
+- `910031`
+- `910032`
+- `910033`
+- `910034`
+- `910035`
+- `910037`
+- `910038`
+- `910039`
+- `910040`
+- `910043`
+- `910045`
+- `910046`
+- `910047`
+- `910049`
+- `910050`
+- `910052`
+- `918`
+- `920`
+- `92176`
+- `92177`
+- `924`
+- `928`
+- `928 + 918 + 6927 + 6870 + 462 + 6842 x2`
+- `92882`
+- `9391`
+- `9396`
+- `9398`
+- `9443`
+- `9445`
+- `9463`
+- `9467`
+- `9468`
+- `9470`
+- `9472`
+- `9474`
+- `9476`
+- `9488`
+- `9492`
+- `9493`
+- `9494`
+- `9497`
+- `9498`
+- `9499`
+- `9515`
+- `9516`
+- `9526`
+- `9552`
+- `9748`
+- `9797`
+- `Custom Built`
+- `FIGURES`
+- `G13002`
+- `Model 75640`
+- `Random`
+- `S_40720-1___GB`
+- `S_76300-1___GB`
+- `Town House`
+- `VINTAGE`
+- `does not apply`
+- `n/a`
+- `nothing`
+- `set`
+
+---
+## LEGO Set Nummer (29 unique)
+
+- `10214`
+- `10253`
+- `10335`
+- `20018`
+- `21033`
+- `21155`
+- `21306`
+- `21309`
+- `4002025`
+- `42055`
+- `42129`
+- `6199`
+- `6286`
+- `71043`
+- `71049`
+- `71705`
+- `7187`
+- `75288`
+- `75417`
+- `7672`
+- `7780`
+- `7787`
+- `7894`
+- `79018`
+- `80036`
+- `8258`
+- `910001`
+- `910057`
+- `924`
+
+---
+## LEGO Sub Theme (1 unique)
+
+- `ART`
+
+---
+## LEGO Subtheme (454 unique)
+
+- `1.0`
+- `12V`
+- `2 in 1`
+- `2.0`
+- `2021 Designer Program`
+- `3 In 1`
+- `3 in 1`
+- `4.5V`
+- `9V`
+- `Accessories`
+- `Adidas`
+- `Adventurers`
+- `Aero Tube Hangar`
+- `Ahsoka`
+- `Aircraft`
+- `Airport`
+- `Alien Conquest`
+- `Amusement Park`
+- `An Unexpected Journey`
+- `Aquasharks`
+- `Arcade`
+- `Architect Series`
+- `Architecture`
+- `Architecture Series`
+- `Arctic`
+- `Arkham Asylum`
+- `Aston Martin`
+- `Audi`
+- `Avengers Assemble`
+- `Avengers: Age of Ultron`
+- `Avengers: Endgame`
+- `Avengers: Infinity War`
+- `BMW Motorbike`
+- `Back to the Future`
+- `Bandmates Series 2`
+- `Barraki`
+- `Basketball`
+- `Batman`
+- `Batman 1989`
+- `Batman Returns`
+- `Batman: The Animated Series`
+- `Battle Pack`
+- `Battle Packs`
+- `Battlefront`
+- `Beauty and the Beast`
+- `Bike`
+- `Black Falcons`
+- `Black Knights`
+- `Black Panther`
+- `Blacktron`
+- `Board Games`
+- `Bonsai Tree`
+- `Book Nook: Hogwarts Express`
+- `Book Parts`
+- `Boost`
+- `Botanical`
+- `Botanical Collection`
+- `Botanical Tiny Plants`
+- `Botanicals`
+- `Botanicals Collection`
+- `Brain Attack`
+- `Brick Link`
+- `Bugatti`
+- `Buildable Figures`
+- `Building`
+- `CITY`
+- `Camaro`
+- `Captain America`
+- `Car`
+- `Cargo`
+- `Cars`
+- `Cars 3`
+- `Castle`
+- `Castle Nocturnia`
+- `Castle System`
+- `Chamber of Secrets`
+- `Chevrolet`
+- `Chinese Traditional Festivals`
+- `Chomping Monster Book Of Monsters`
+- `Christmas`
+- `Cinderella`
+- `City Wildlife`
+- `Classic`
+- `Classic Space`
+- `Coast Guard`
+- `Collectible`
+- `Construction`
+- `Corvette`
+- `Cowboys`
+- `Creator`
+- `Creator Expert`
+- `DC`
+- `DC Comics Super Heroes`
+- `DC Super Heroes`
+- `DC Universe Super Heroes`
+- `DINOSAURS`
+- `DISNEY 100 YEAR ANNIVERSARY`
+- `DUNGEONS AND DRAGONS`
+- `DUPLO`
+- `Day of the Departed`
+- `Desert`
+- `Designer Program Series 1`
+- `Designer Program Series 2`
+- `Designer Program Series 3`
+- `Designer Program Series 4`
+- `Diagon Alley`
+- `Diorama Collection`
+- `Disney`
+- `Disney 100`
+- `Disney Parks`
+- `Disney Princess`
+- `Disney Stitch Angel`
+- `Doctor Strange`
+- `Dodge`
+- `Does not apply`
+- `Dominion`
+- `Dragon`
+- `Dragon Knights`
+- `Dragon Masters`
+- `Dragons`
+- `Dragons Rising`
+- `Dragons Rising Season 3`
+- `Dungeons & Dragons`
+- `Educational`
+- `Elphaba's Retreat`
+- `Emergency`
+- `Empire Strikes Back`
+- `Employee Gift`
+- `Episode 7`
+- `Episode I`
+- `Episode II`
+- `Episode III`
+- `Episode IV`
+- `Episode IX`
+- `Episode V`
+- `Episode VI`
+- `Exclusives`
+- `Expansion Set`
+- `Explore`
+- `FRIENDS`
+- `Fabuland`
+- `Fairground`
+- `Fantastic Beasts`
+- `Fantasy Era`
+- `Farm`
+- `Fast & Furious`
+- `Ferrari`
+- `Fire`
+- `Flight`
+- `Flowers`
+- `Football`
+- `Ford`
+- `Forest`
+- `Forestmen`
+- `Formula 1`
+- `Formula One`
+- `Fortnite`
+- `Fountain Garden`
+- `Fright Knights`
+- `Frozen`
+- `Frozen II`
+- `Futuron`
+- `GWP`
+- `Galaxy Squad`
+- `Game Boy`
+- `Gaming`
+- `General`
+- `Ghostbusters`
+- `Gift With Purchase`
+- `Gingerbread Train Ornament`
+- `Glatorian Legends`
+- `Goonies`
+- `Great Vehicles`
+- `Gremlins, Gizmo`
+- `Gringotts Vault`
+- `Guardians of the Galaxy Vol 2`
+- `Hard To Find`
+- `Harry Potter`
+- `Harry Potter and the Chamber of Secrets`
+- `Harry Potter and the Deathly Hallows`
+- `Harry Potter and the Goblet of Fire`
+- `Harry Potter and the Half-Blood Prince`
+- `Heartlake City`
+- `Helmet Collection`
+- `Hogwarts Castle`
+- `Hogwarts Moments`
+- `Hogwartsâ¢ Castle Owlery`
+- `Holiday & Event`
+- `Horizon Forbidden West`
+- `IDEAS`
+- `Icons`
+- `Ideas`
+- `Imperial Armada`
+- `Indiana Jones`
+- `Insiders`
+- `Islanders`
+- `Jabba's Sail Barge`
+- `Jaguar`
+- `Jazz club`
+- `Jurassic Park`
+- `Jurassic World`
+- `KNIGHTS' KINGDOM`
+- `Kingdoms`
+- `LEGO Helmet Collection`
+- `LEGO Light Kit`
+- `LEGOLAND`
+- `LICENSED`
+- `Lamborghini`
+- `Landmark Series`
+- `Last Crusade`
+- `Legacy`
+- `Legends`
+- `Lego`
+- `Lego Christmas`
+- `Lego House`
+- `Licenced`
+- `Licensed`
+- `Lightyear`
+- `Lilo & Stitch`
+- `Lion Knights`
+- `Little Forest Friends`
+- `Looney Tunes`
+- `Lord Of The Rings`
+- `MINDSTORMS`
+- `Maintenance`
+- `Mandrake`
+- `Mario Kart`
+- `Mars Mission`
+- `Marvel Studios`
+- `Marvel Super Heroes`
+- `Marvel Super Heroes, Avengers Endgame`
+- `Master Builder Series`
+- `McLaren`
+- `Mechs`
+- `Medical`
+- `Medieval`
+- `Mercedes`
+- `Message Board`
+- `Microtechnic`
+- `Minecraft`
+- `Mini`
+- `Mini Building Set`
+- `Mini Orchid Artificial Plant`
+- `Mining`
+- `Miscellaneous`
+- `Mission moon`
+- `Model`
+- `Modular`
+- `Modular Buildings`
+- `Modular Buildings Collection`
+- `Motor`
+- `Motor Racing`
+- `Muppets`
+- `Musical`
+- `Mystery`
+- `N/A`
+- `NASA`
+- `Nativity`
+- `Ninjago`
+- `Nissan`
+- `None`
+- `Not specified`
+- `Obi-Wan Kenobi`
+- `One Pice`
+- `Orient Expedition`
+- `Original`
+- `Original Film`
+- `Packs`
+- `Paintings`
+- `Paradisa`
+- `Paris Skyline`
+- `Park`
+- `Party`
+- `Pets`
+- `Philosopher's Stone`
+- `Piraka`
+- `Pirates`
+- `Pirates System`
+- `Pirates of the Caribbean`
+- `Pixar`
+- `Playsets`
+- `Police`
+- `Police, Airport and Vehicles`
+- `Porsche`
+- `Postcard`
+- `Power Functions`
+- `Prisoner of Azkaban`
+- `Promotional`
+- `Racing`
+- `Racing Cars`
+- `Rahi`
+- `Raiders of the Lost Ark`
+- `Raya and the Last Dragon`
+- `Rebels`
+- `Rescue`
+- `Resistance`
+- `Retro`
+- `Robotics`
+- `Rogue One`
+- `Rolling Acres Ranch`
+- `STAR TREK`
+- `STAR WARS`
+- `Scooby-Doo`
+- `Sculptures`
+- `Season 1`
+- `Season 3`
+- `Season 4`
+- `Seasonal`
+- `Secrets of the Forbidden Spinjitzu`
+- `Seinfeld`
+- `Series 1`
+- `Series 2`
+- `Series 28`
+- `Series 3`
+- `Series 4`
+- `Series 5`
+- `Series 8`
+- `Sesame Street`
+- `Sherlock Holmes`
+- `Shoe`
+- `Shops & Services`
+- `Skylines`
+- `Snow Resort`
+- `Solo`
+- `Solo A Star Wars Story`
+- `Space`
+- `Space Police`
+- `Space System`
+- `Space. The final frontier...`
+- `Special`
+- `Spider-Man`
+- `Spider-Man: Miles Morales`
+- `Spider-Man: No Way Home`
+- `Spike`
+- `Spinjitzu`
+- `Star Trek`
+- `Star Trek 60 Years Next Generation`
+- `Star Wars`
+- `Star Wars: Andor`
+- `Stars`
+- `Starship Collection`
+- `Starter Course`
+- `Stitch`
+- `Storage`
+- `Storage Container`
+- `Stranger Things`
+- `Studios`
+- `Stuntz`
+- `Super Heroes`
+- `Superheroes`
+- `System`
+- `TECHNIC`
+- `TRON`
+- `TV Shows`
+- `Team GB Series`
+- `Teenage Mutant Ninja Turtles`
+- `The Bad Batch`
+- `The Batman`
+- `The Battle of the Five Armies`
+- `The Book of Boba Fett`
+- `The Clone Wars`
+- `The Desolation of Smaug`
+- `The Fellowship of the Ring`
+- `The Final Battle`
+- `The Golden Weapons`
+- `The Goonies`
+- `The LEGO Batman Movie`
+- `The LEGO Movie`
+- `The LEGO Movie 2`
+- `The Last Jedi`
+- `The Little Mermaid`
+- `The Lord of the Rings`
+- `The Mandalorian`
+- `The Office`
+- `The Old Republic`
+- `The Return of the King`
+- `The Rise of Skywalker`
+- `The Simpsons`
+- `The Two Towers`
+- `Thor: Love and Thunder`
+- `Tiny Turbos`
+- `Titan Warriors`
+- `Titans`
+- `Toa Nuva`
+- `Town`
+- `Toy Story`
+- `Toy Story 3`
+- `Toyota`
+- `Train`
+- `Train Set`
+- `Trains`
+- `Transformers`
+- `Trials of the Dream Chasers`
+- `Trucks`
+- `Tudor Corner`
+- `Turaga`
+- `Twilight`
+- `UCS`
+- `Ultimate`
+- `Ultimate Collector Series`
+- `Unitron`
+- `VEHICLES`
+- `Vehicle`
+- `Vehicles`
+- `Vincent van Gogh â Sunflowers`
+- `Volvo`
+- `Wall-E`
+- `Walt Disney Camera`
+- `Warriors`
+- `Wednesday`
+- `Wednesday & Enid`
+- `Wicked`
+- `Williams Racing FW46 F1Â® Race Car`
+- `Willy Wonka`
+- `Winnie The Pooh`
+- `Winter Village`
+- `Winter Village Collection`
+- `Wintertime Carriage Ride`
+- `Wizarding World`
+- `Wonders of the Natural World`
+- `World City`
+- `X-Men`
+- `_`
+- `all sorts`
+- `animals`
+- `batman`
+- `bookshop`
+- `bricklink`
+- `disney`
+- `does not apply`
+- `dragons`
+- `dreamzzz`
+- `ewok village`
+- `fast and furious`
+- `formula 1`
+- `fortnite`
+- `gaming`
+- `holiday`
+- `icons`
+- `ideas`
+- `lego`
+- `minifigures`
+- `motorbike`
+- `n/a`
+- `pier`
+- `scooby doo`
+- `space`
+- `stitch`
+- `super Mario`
+- `table decoration`
+- `technic`
+- `the Twilight`
+- `the goonies`
+- `wicked`
+
+---
+## LEGO Theme (202 unique)
+
+- `60 year aniversary`
+- `ART`
+- `Advanced Models`
+- `Advent/Christmas`
+- `Adventurers`
+- `Agents`
+- `Alien Conquest`
+- `Angry Birds`
+- `Animal Crossing`
+- `Aquazone`
+- `Arcade`
+- `Architecture`
+- `Art`
+- `Avatar`
+- `BELVILLE`
+- `BIONICLE`
+- `BRICKHEADZ`
+- `Basic`
+- `Batman`
+- `Batman DC`
+- `Bluey`
+- `Boost`
+- `Botanicals`
+- `Bricklink`
+- `Bricklink Designer Program`
+- `Bricklink Designer Series 1`
+- `Buildings`
+- `CITY`
+- `CREATOR`
+- `Cars`
+- `Castle`
+- `Chinese New Year`
+- `Christmas`
+- `Collectors`
+- `Creator`
+- `Creator Expert`
+- `DC`
+- `DC Comics Super Heroes`
+- `DC Universe Super Heroes`
+- `DOTS`
+- `DUPLO`
+- `DUPLO My First`
+- `Dacta`
+- `Dc Batman`
+- `Dc Comics Super Heroes`
+- `Despicable Me`
+- `Dinosaurs`
+- `Disney`
+- `Disney Classic`
+- `Disney Princess`
+- `DreamZzz`
+- `Dreamzzz`
+- `Education`
+- `Elves`
+- `Employee Gift`
+- `Exclusive`
+- `Explore`
+- `F1`
+- `FABULAND`
+- `FRIENDS`
+- `Factory`
+- `Flowers`
+- `Forma`
+- `Fortnite`
+- `Gabby's Dollhouse`
+- `Games`
+- `Gaming`
+- `Ghostbusters`
+- `HERO Factory`
+- `HIDDEN SIDE`
+- `HO 1:87 Scale`
+- `Harry Potter`
+- `Harry Potterâ¢`
+- `Hobby Set`
+- `Home Alone`
+- `Horizon`
+- `House`
+- `IDEAS`
+- `Iconic, Seasonal`
+- `Icons`
+- `Ideas`
+- `Indiana Jones`
+- `Insiders`
+- `Juniors`
+- `Jurassic World`
+- `LEGENDS OF CHIMA`
+- `LEGO ARCHITECTURE`
+- `LEGO CLASSIC`
+- `LEGO City`
+- `LEGO EDUCATION`
+- `LEGO Games`
+- `LEGO Ideas`
+- `LEGOLAND`
+- `Lego`
+- `Lego House exclusive`
+- `Lego Iconic`
+- `Lego System Islanders`
+- `Life On Mars`
+- `Lightyear`
+- `Lunar New Year`
+- `MARS MISSION`
+- `MINDSTORMS`
+- `MINIFIGURES`
+- `MIXELS`
+- `MONKIE KID`
+- `Mario Kart`
+- `Marvel`
+- `Marvel Superheroes`
+- `Message Board`
+- `Minecraft`
+- `Minions`
+- `Miscellaneous`
+- `Model Team`
+- `Modular Buildings`
+- `Monster Fighter`
+- `Monster Fighters`
+- `NEXO KNIGHTS`
+- `NIKE`
+- `NINJAGO`
+- `Nike`
+- `ONE PIECE`
+- `One Piece`
+- `Originals`
+- `Overwatch`
+- `Paradisa`
+- `Pirates`
+- `Pirates of the Caribbean`
+- `Polybags`
+- `Power Functions`
+- `Power Miners`
+- `Promotional`
+- `Racers`
+- `Random`
+- `Rock Raiders`
+- `SCULPTURES`
+- `SPEED CHAMPIONS`
+- `Scooby-Doo`
+- `Seasonal`
+- `Series 1`
+- `Space`
+- `Speed Champions`
+- `Spider-Man`
+- `SpongeBob SquarePants`
+- `Sports`
+- `Star Trek`
+- `Star Wars`
+- `Star Wars TM`
+- `Stranger Things`
+- `Super Heroes`
+- `Super Heroes (Marvel)`
+- `Super Mario`
+- `System`
+- `TECHNIC`
+- `TV & Film`
+- `Table`
+- `Technic`
+- `Technic, Formula 1`
+- `Teenage Mutant Ninja Turtles`
+- `The Beatles`
+- `The Botanical Collection`
+- `The Hobbit`
+- `The LEGO Batman Movie`
+- `The LEGO Movie`
+- `The LEGO Movie 2`
+- `The LEGO Ninjago Movie`
+- `The Legend of Zelda`
+- `The Lone Ranger`
+- `The Lord of the Rings`
+- `The Simpsons`
+- `Town`
+- `Toy Story`
+- `Train`
+- `Trains`
+- `Tribute`
+- `Trolls`
+- `Ultra Agents`
+- `Universal Building Set`
+- `VIDIYO`
+- `Wednesday`
+- `Western`
+- `Wicked`
+- `Winter Village`
+- `World City`
+- `World Cup 2026`
+- `all sorts`
+- `batman arkham asylum`
+- `bricklink`
+- `christmas`
+- `city`
+- `does not apply`
+- `employee gift`
+- `film`
+- `fortnite`
+- `home alone`
+- `ideas`
+- `lego kingdoms`
+- `marvel super heroes`
+- `mos eilsey cantina`
+- `porsche`
+- `star trek`
+- `star wars`
+- `tree house`
+
+---
+## LEGO Theme World (1 unique)
+
+- `Pirates`
+
+---
+## LEGO Themenwelt (24 unique)
+
+- `Aquazone`
+- `BIONICLE`
+- `Batman`
+- `Bricklink`
+- `CITY`
+- `Castle`
+- `Creator Expert`
+- `Exklusive Sets`
+- `Harry Potter`
+- `Icons`
+- `Ideas`
+- `LEGO ARCHITECTURE`
+- `LEGO CLASSIC`
+- `MINIFIGUREN`
+- `Marvel`
+- `Minecraft`
+- `NINJAGO`
+- `Piraten`
+- `Polybags`
+- `Star Wars`
+- `System`
+- `TECHNIC`
+- `The Hobbit`
+- `Weltraum`
+
+---
+## LEGO Unterthema (21 unique)
+
+- `Bricklink Designer Program`
+- `CITY`
+- `Classic Space`
+- `Flughafen`
+- `Forestmen`
+- `GebÃ¤ude`
+- `Harry Potter`
+- `Hydronauts`
+- `Kingdoms`
+- `Mini`
+- `Pirates`
+- `Polizei`
+- `Porsche`
+- `Protectors`
+- `Ritterburg`
+- `Schiff`
+- `Star Wars`
+- `TECHNIC`
+- `The Clone Wars`
+- `Traffic`
+- `employee`
+
+---
+## Language (2 unique)
+
+- `English`
+- `French`
+
+---
+## Largeur de l'article (1 unique)
+
+- `14.9 in`
+
+---
+## Launch Date (101 unique)
+
+- `01/01/2015`
+- `01/01/2018`
+- `01/01/2019`
+- `01/01/2020`
+- `01/01/2021`
+- `01/01/2022`
+- `01/01/2023`
+- `01/01/2024`
+- `01/01/2025`
+- `01/02/2020`
+- `01/02/2021`
+- `01/02/2023`
+- `01/03/2013`
+- `01/03/2016`
+- `01/03/2020`
+- `01/03/2022`
+- `01/03/2023`
+- `01/03/2024`
+- `01/03/2025`
+- `01/04/2015`
+- `01/04/2017`
+- `01/04/2019`
+- `01/04/2020`
+- `01/04/2023`
+- `01/05/2020`
+- `01/05/2021`
+- `01/05/2022`
+- `01/05/2023`
+- `01/05/2024`
+- `01/06/2019`
+- `01/06/2020`
+- `01/06/2021`
+- `01/06/2022`
+- `01/06/2023`
+- `01/06/2024`
+- `01/07/2018`
+- `01/07/2021`
+- `01/07/2023`
+- `01/08/2013`
+- `01/08/2014`
+- `01/08/2017`
+- `01/08/2018`
+- `01/08/2020`
+- `01/08/2021`
+- `01/08/2022`
+- `01/08/2023`
+- `01/08/2024`
+- `01/09/2013`
+- `01/09/2019`
+- `01/09/2020`
+- `01/09/2021`
+- `01/09/2022`
+- `01/09/2023`
+- `01/09/2024`
+- `01/10/2019`
+- `01/10/2021`
+- `01/10/2023`
+- `01/10/2024`
+- `01/11/2016`
+- `01/11/2019`
+- `01/11/2020`
+- `01/11/2021`
+- `01/11/2024`
+- `01/12/2019`
+- `01/12/2022`
+- `01/12/2023`
+- `01/12/2024`
+- `02/04/2014`
+- `02/06/2017`
+- `02/09/2017`
+- `03/02/2014`
+- `03/03/2010`
+- `03/03/2012`
+- `04/01/2010`
+- `04/06/2011`
+- `04/10/2019`
+- `04/19/2020`
+- `05/03/2014`
+- `05/09/2015`
+- `06/10/2016`
+- `14/04/2018`
+- `15/02/2021`
+- `15/12/2011`
+- `17/02/2017`
+- `19/07/2011`
+- `19/10/2008`
+- `19/10/2022`
+- `23/07/2012`
+- `24/10/2007`
+- `25/09/2015`
+- `25/12/2010`
+- `26/04/2021`
+- `26/04/2022`
+- `27/05/2014`
+- `27/06/2008`
+- `27/08/2014`
+- `28/07/2008`
+- `28/12/2012`
+- `30/07/2010`
+- `30/07/2016`
+- `30/12/2009`
+
+---
+## Launch Month (4 unique)
+
+- `06/17`
+- `06/18`
+- `08/17`
+- `08/18`
+
+---
+## Length (1 unique)
+
+- `60`
+
+---
+## Light Source Type (1 unique)
+
+- `Led`
+
+---
+## Listing Package (1 unique)
+
+- `No`
+
+---
+## Longueur de l'article (1 unique)
+
+- `22.9 in`
+
+---
+## LÃ¤nge (8 unique)
+
+- `170 mm`
+- `378 mm`
+- `384 mm`
+- `480 mm`
+- `540 mm`
+- `582 mm`
+- `598 mm`
+- `ca. 2,0 cm`
+
+---
+## MPN (1444 unique)
+
+- `...`
+- `0`
+- `10021`
+- `10024`
+- `10027`
+- `10030`
+- `10144`
+- `10155`
+- `10174`
+- `10175`
+- `10178`
+- `10181`
+- `10182`
+- `10187`
+- `10188`
+- `10194`
+- `10197`
+- `10198`
+- `10199`
+- `10211`
+- `10213`
+- `10214`
+- `10217`
+- `10218`
+- `10219`
+- `10220`
+- `10221`
+- `10222`
+- `10224`
+- `10226`
+- `10228`
+- `10229`
+- `10231`
+- `10232`
+- `10233`
+- `10234`
+- `10236`
+- `10237`
+- `10240`
+- `10242`
+- `10243`
+- `10244`
+- `10245`
+- `10246`
+- `10247`
+- `10248`
+- `10249`
+- `10251`
+- `10252`
+- `10253`
+- `10254`
+- `10255`
+- `10256`
+- `10257`
+- `10258`
+- `10259`
+- `10260`
+- `10261`
+- `10262`
+- `10263`
+- `10264`
+- `10265`
+- `10266`
+- `10267`
+- `10269`
+- `10270`
+- `10271`
+- `10272`
+- `10273`
+- `10274`
+- `10275`
+- `10276`
+- `10277`
+- `10278`
+- `10279`
+- `10280`
+- `10281`
+- `10282`
+- `10283`
+- `10289`
+- `10290`
+- `10292`
+- `10293`
+- `10294`
+- `10295`
+- `10297`
+- `10298`
+- `10299`
+- `10300`
+- `10302`
+- `10303`
+- `10304`
+- `10305`
+- `10306`
+- `10307`
+- `10308`
+- `10309`
+- `10311`
+- `10312`
+- `10313`
+- `10316`
+- `10317`
+- `10318`
+- `10320`
+- `10321`
+- `10323`
+- `10325`
+- `10326`
+- `10328`
+- `10329`
+- `10331-1`
+- `10332`
+- `10334`
+- `10335`
+- `10335-1`
+- `10337`
+- `10338`
+- `10339`
+- `10340`
+- `10341`
+- `10343`
+- `10344`
+- `10349`
+- `10350`
+- `10351`
+- `10352`
+- `10353`
+- `10354`
+- `10355`
+- `10356`
+- `10358`
+- `10359`
+- `10360`
+- `10361`
+- `10365`
+- `10366`
+- `10367`
+- `10368`
+- `10370`
+- `10372`
+- `10375`
+- `10422`
+- `10497`
+- `10515`
+- `10569`
+- `10696`
+- `10698`
+- `10764`
+- `10788`
+- `10907`
+- `10937`
+- `10954`
+- `10975`
+- `10993`
+- `10998`
+- `11032`
+- `11202`
+- `11203`
+- `112110`
+- `17101`
+- `200`
+- `20150`
+- `2025`
+- `21000`
+- `21002`
+- `21005`
+- `21007`
+- `21008`
+- `21011`
+- `21017`
+- `21020`
+- `21022`
+- `21024`
+- `21028`
+- `21029`
+- `21032`
+- `21034`
+- `21035`
+- `21036`
+- `21037`
+- `21043`
+- `21044`
+- `21045`
+- `21047`
+- `21050`
+- `21051`
+- `21052`
+- `21054`
+- `21056`
+- `21057`
+- `21060`
+- `21061`
+- `21062`
+- `21063`
+- `21103`
+- `21108`
+- `21109`
+- `21110`
+- `21118`
+- `21122`
+- `21132`
+- `21154`
+- `21176`
+- `21180`
+- `21187`
+- `21188`
+- `21189`
+- `21226`
+- `21246`
+- `21250`
+- `21256`
+- `21265`
+- `21276`
+- `21277`
+- `21278`
+- `21279`
+- `21280`
+- `21301`
+- `21302`
+- `21303`
+- `21304`
+- `21306`
+- `21307`
+- `21309`
+- `21310`
+- `21311`
+- `21314`
+- `21317`
+- `21318`
+- `21319`
+- `21320`
+- `21321`
+- `21322`
+- `21323`
+- `21324`
+- `21325`
+- `21326`
+- `21327`
+- `21328`
+- `21329`
+- `21330`
+- `21331`
+- `21332`
+- `21333`
+- `21334`
+- `21335`
+- `21336`
+- `21338`
+- `21340`
+- `21341`
+- `21342`
+- `21343`
+- `21344`
+- `21345`
+- `21347`
+- `21348`
+- `21349`
+- `21350`
+- `21351`
+- `21353`
+- `21354`
+- `21356`
+- `21358`
+- `21360`
+- `21361`
+- `21362`
+- `21363`
+- `2263`
+- `30210`
+- `30343`
+- `30585`
+- `30662`
+- `30687`
+- `3070`
+- `30701`
+- `30709`
+- `31019`
+- `31051`
+- `31066`
+- `31080`
+- `31081`
+- `31088`
+- `31091`
+- `31097`
+- `31109`
+- `31119`
+- `31120`
+- `31129`
+- `31130`
+- `31132`
+- `31135`
+- `31141`
+- `31142`
+- `31152`
+- `31154`
+- `31156`
+- `31161`
+- `31165`
+- `31168`
+- `31198`
+- `31202`
+- `31203`
+- `31206`
+- `31208`
+- `31209`
+- `31212`
+- `31213`
+- `31215`
+- `31313`
+- `31314`
+- `3315`
+- `3353`
+- `3409`
+- `341`
+- `3433`
+- `3677`
+- `377`
+- `3827`
+- `3833`
+- `3856`
+- `3866`
+- `4002014`
+- `4002017`
+- `4002018`
+- `4002019`
+- `4002020`
+- `4002021`
+- `4002023`
+- `40139`
+- `40174`
+- `40198`
+- `40293`
+- `40305`
+- `40338`
+- `40346`
+- `40366`
+- `40410`
+- `40416`
+- `40433`
+- `40436`
+- `40478`
+- `40483`
+- `40495`
+- `40499`
+- `40501`
+- `40502`
+- `40504`
+- `40549`
+- `40565`
+- `40567`
+- `40568`
+- `40573`
+- `40574`
+- `40578`
+- `40580`
+- `40591`
+- `40601`
+- `40603`
+- `40617`
+- `40631`
+- `40642`
+- `40651`
+- `40686`
+- `40689`
+- `40692`
+- `40693`
+- `40696`
+- `40698`
+- `40699`
+- `40701`
+- `40705`
+- `40706`
+- `40713`
+- `40729-1`
+- `40730`
+- `40743`
+- `40746`
+- `40747`
+- `40755`
+- `40757`
+- `40761`
+- `40765`
+- `40768`
+- `40771`
+- `40773`
+- `40774`
+- `40775`
+- `40776`
+- `40777`
+- `40778`
+- `40782`
+- `40783`
+- `40788`
+- `40793`
+- `40794`
+- `40801`
+- `40805`
+- `40806`
+- `40809`
+- `40813`
+- `40819`
+- `40820`
+- `41039`
+- `41068`
+- `41130`
+- `41154`
+- `41169`
+- `41172`
+- `41179`
+- `41185`
+- `41193`
+- `41255`
+- `41324`
+- `41335`
+- `41340`
+- `41347`
+- `41369`
+- `41427`
+- `41429`
+- `41449`
+- `41450`
+- `41498`
+- `41588`
+- `41589`
+- `41611`
+- `41623`
+- `41630`
+- `41702`
+- `41704`
+- `41711`
+- `41713`
+- `41714`
+- `41732`
+- `41735`
+- `41748`
+- `41749`
+- `41757`
+- `4182`
+- `41839`
+- `4192`
+- `4195`
+- `42006`
+- `42008`
+- `42009`
+- `42025`
+- `42029`
+- `42030`
+- `42035`
+- `42038`
+- `42042`
+- `42043`
+- `42050`
+- `42054`
+- `42055`
+- `42056`
+- `42063`
+- `42064`
+- `42070`
+- `42073`
+- `42077`
+- `42078`
+- `42081`
+- `42082`
+- `42083`
+- `42093`
+- `42095`
+- `42096`
+- `42098`
+- `42099`
+- `4210`
+- `42100`
+- `42105`
+- `42107`
+- `42108`
+- `42109`
+- `42110`
+- `42111`
+- `42112`
+- `42113`
+- `42114`
+- `42115`
+- `42121`
+- `42122`
+- `42125`
+- `42127`
+- `42128`
+- `42129`
+- `42130`
+- `42131`
+- `42136`
+- `42139`
+- `42140`
+- `42141`
+- `42143`
+- `42144`
+- `42145`
+- `42152`
+- `42154`
+- `42156`
+- `42157`
+- `42158`
+- `42159`
+- `42160`
+- `42161`
+- `42170`
+- `42171`
+- `42172`
+- `42173`
+- `42175`
+- `42176`
+- `42177`
+- `42180`
+- `42182`
+- `42184`
+- `42202`
+- `42203`
+- `42204`
+- `42205`
+- `42206`
+- `42207`
+- `42208`
+- `42209`
+- `42212`
+- `42213`
+- `42214`
+- `42215`
+- `42605`
+- `42630`
+- `42639`
+- `42668`
+- `42673`
+- `43021`
+- `43179`
+- `43197`
+- `43205`
+- `43207`
+- `43216`
+- `43217`
+- `43222`
+- `43225`
+- `43227`
+- `43230`
+- `43242`
+- `43244`
+- `43249`
+- `43257`
+- `43263`
+- `43266`
+- `43268`
+- `43279`
+- `44009`
+- `4431`
+- `4478`
+- `4479`
+- `4501`
+- `4526 + 4527 + 4528`
+- `45300`
+- `45544`
+- `4558`
+- `45678`
+- `45681`
+- `45807`
+- `4645`
+- `4654245`
+- `4706`
+- `4707`
+- `4708`
+- `4709`
+- `4714`
+- `4720`
+- `4721`
+- `4727  75950`
+- `4729`
+- `4738`
+- `4758`
+- `4768`
+- `4841`
+- `4855`
+- `4990`
+- `50011`
+- `5004590`
+- `5004938`
+- `5004939`
+- `5005747`
+- `5009408`
+- `5009806`
+- `5010018`
+- `51515`
+- `5510`
+- `5563`
+- `5702014960961`
+- `5702016656718`
+- `5702016912807`
+- `5702016913729`
+- `5702017152332`
+- `5702017153261`
+- `5702017154183`
+- `5702017154619`
+- `5702017231044`
+- `5702017234328`
+- `5702017421964`
+- `5702017424194`
+- `5702017424941`
+- `5702017816616`
+- `5702017822426`
+- `5702017824888`
+- `5702017829906`
+- `5988`
+- `60007`
+- `60016`
+- `60022`
+- `60036`
+- `60043`
+- `60047`
+- `60050`
+- `60051`
+- `60052`
+- `60057`
+- `60060`
+- `60062`
+- `60063`
+- `60069`
+- `60080`
+- `60098`
+- `60103`
+- `60104`
+- `60108`
+- `60110`
+- `60123`
+- `60128`
+- `60130`
+- `60134`
+- `60138`
+- `60154`
+- `60167`
+- `60169`
+- `60197`
+- `60198`
+- `60215`
+- `60216`
+- `60221`
+- `60222`
+- `60246`
+- `60262`
+- `60264`
+- `60265`
+- `60282`
+- `60293`
+- `60295`
+- `60302`
+- `60307`
+- `60324`
+- `60329`
+- `60330`
+- `60336`
+- `60343`
+- `60350`
+- `60351`
+- `60365`
+- `60367`
+- `60379`
+- `60386`
+- `60419`
+- `60422`
+- `60434`
+- `60437`
+- `60440`
+- `60445`
+- `60465`
+- `60470`
+- `60473`
+- `60475`
+- `6049`
+- `6062`
+- `6066`
+- `6073`
+- `6074`
+- `6075`
+- `6076`
+- `6080`
+- `6081`
+- `6082`
+- `6086`
+- `6090`
+- `6098`
+- `6136359`
+- `6175`
+- `6190`
+- `6208`
+- `6211`
+- `6212791`
+- `6265`
+- `6267`
+- `6273`
+- `6276`
+- `6277`
+- `6278`
+- `6279`
+- `6285`
+- `6286`
+- `6294064`
+- `6335`
+- `6346098`
+- `6346106`
+- `6379`
+- `6386`
+- `6388`
+- `6395`
+- `6411`
+- `6419`
+- `6474862`
+- `6484712`
+- `6597`
+- `6605178`
+- `6605179`
+- `6683`
+- `6754`
+- `6755`
+- `6761`
+- `6769`
+- `6780`
+- `6781`
+- `6842`
+- `6867`
+- `6880`
+- `6881`
+- `6883`
+- `6893`
+- `6894`
+- `6932`
+- `6953`
+- `6970`
+- `6972`
+- `6979`
+- `6987`
+- `6989`
+- `6990`
+- `6991`
+- `70130`
+- `70144`
+- `70145`
+- `70146`
+- `70161`
+- `70165`
+- `70230`
+- `70357`
+- `70402`
+- `70403`
+- `70412`
+- `70413`
+- `70431`
+- `70434`
+- `70504`
+- `70595`
+- `70608`
+- `70612`
+- `70613`
+- `70617`
+- `70618`
+- `70620`
+- `70624`
+- `70639`
+- `70642`
+- `70643`
+- `70652`
+- `70653`
+- `70655`
+- `70657`
+- `7066`
+- `70668`
+- `70669`
+- `70670`
+- `70675`
+- `70676`
+- `70677`
+- `70707`
+- `70708`
+- `70725`
+- `70728`
+- `70731`
+- `70747`
+- `70756`
+- `70780`
+- `70788`
+- `7079`
+- `70803`
+- `70806`
+- `70810`
+- `70841`
+- `70901`
+- `70906`
+- `70917`
+- `70922`
+- `71006`
+- `71009`
+- `71016`
+- `71023`
+- `71028`
+- `71031`
+- `71040`
+- `71042`
+- `71043`
+- `71044`
+- `71051`
+- `71374`
+- `71376`
+- `71387`
+- `71401`
+- `71408`
+- `71411`
+- `71426`
+- `71427`
+- `71438`
+- `7144`
+- `71459`
+- `71461`
+- `71469`
+- `71485`
+- `7150`
+- `7151`
+- `7153`
+- `7155`
+- `71705`
+- `71719`
+- `71721`
+- `71741`
+- `71742`
+- `71746`
+- `71748`
+- `71755`
+- `71764`
+- `71765`
+- `71771`
+- `71774`
+- `71786`
+- `71796`
+- `71797`
+- `71799`
+- `71813`
+- `71821`
+- `71822`
+- `71832`
+- `71837`
+- `71841`
+- `71842`
+- `71847`
+- `7187`
+- `7197`
+- `7198`
+- `72032`
+- `72037`
+- `72043`
+- `72046`
+- `7250`
+- `7256`
+- `7257`
+- `7261`
+- `7286`
+- `7317`
+- `7412`
+- `7414`
+- `744`
+- `7498`
+- `75001`
+- `75003`
+- `75004-1`
+- `75005`
+- `75012`
+- `75015`
+- `75017`
+- `75018`
+- `75020`
+- `75021`
+- `75025`
+- `75034`
+- `75035`
+- `75036`
+- `75037`
+- `75038`
+- `75040`
+- `75041`
+- `75042`
+- `75045`
+- `75046`
+- `75049`
+- `75050`
+- `75052`
+- `75055`
+- `75058`
+- `75059`
+- `75060`
+- `75080`
+- `75082`
+- `75083`
+- `75084`
+- `75087`
+- `75089`
+- `75090`
+- `75092`
+- `75093`
+- `75094`
+- `75095`
+- `75096`
+- `75097`
+- `75103`
+- `75104`
+- `75105`
+- `75135`
+- `75137`
+- `75138`
+- `75141`
+- `75144`
+- `75145`
+- `75147`
+- `75148`
+- `75150`
+- `75151`
+- `75152`
+- `75153`
+- `75155`
+- `75156`
+- `75157`
+- `75158`
+- `75159`
+- `75165`
+- `75171`
+- `75172`
+- `75175`
+- `75178`
+- `75179`
+- `75180`
+- `75181`
+- `75187`
+- `75188`
+- `75189`
+- `75190`
+- `75191`
+- `75192`
+- `75199`
+- `75206`
+- `75211`
+- `75212`
+- `75214`
+- `75216`
+- `75218`
+- `75219`
+- `75220`
+- `75221`
+- `75222`
+- `75227`
+- `75230`
+- `75233`
+- `75243`
+- `75249`
+- `75251`
+- `75252`
+- `75254`
+- `75255`
+- `75256`
+- `75257`
+- `75258`
+- `75259`
+- `75266`
+- `75273`
+- `75274`
+- `75276`
+- `75277`
+- `75278`
+- `75280`
+- `75283`
+- `75284`
+- `75286`
+- `75288`
+- `75290`
+- `75291`
+- `75292`
+- `75300`
+- `75301`
+- `75302`
+- `75304`
+- `75305`
+- `75306`
+- `75308`
+- `75309`
+- `75311`
+- `75312`
+- `75313`
+- `75314`
+- `75315`
+- `75316`
+- `75317`
+- `75318`
+- `75319`
+- `75322`
+- `75323`
+- `75324`
+- `75326`
+- `75327`
+- `75328`
+- `75329`
+- `75330`
+- `75331`
+- `75333`
+- `75335`
+- `75336`
+- `75337`
+- `75338`
+- `75339`
+- `75340`
+- `75341`
+- `75342`
+- `75343`
+- `75347`
+- `75348`
+- `75349`
+- `75350`
+- `75351`
+- `75352`
+- `75353`
+- `75354`
+- `75355`
+- `75356`
+- `75357`
+- `75362`
+- `75364`
+- `75365`
+- `75367`
+- `75368`
+- `75371`
+- `75372`
+- `75374`
+- `75375`
+- `75377`
+- `75378`
+- `75379`
+- `75380`
+- `75382`
+- `75383`
+- `75384`
+- `75385`
+- `75387`
+- `75389`
+- `75392`
+- `75393`
+- `75394`
+- `75397`
+- `75398`
+- `75401`
+- `75403`
+- `75404`
+- `75406`
+- `75407`
+- `75408`
+- `75409`
+- `75413`
+- `75415`
+- `75416`
+- `75417`
+- `75419`
+- `75428`
+- `75431`
+- `75432`
+- `75434`
+- `75435`
+- `75537`
+- `75551`
+- `75574`
+- `75577`
+- `75579`
+- `75582`
+- `75583`
+- `75637`
+- `75639`
+- `75640`
+- `75682`
+- `75683`
+- `75684`
+- `75685`
+- `75810`
+- `75822`
+- `75876`
+- `75893`
+- `75900`
+- `75901`
+- `75902`
+- `75903`
+- `75904`
+- `75911`
+- `75913`
+- `75919`
+- `75927`
+- `75928`
+- `75932`
+- `75936`
+- `75938`
+- `7594`
+- `75941`
+- `75947`
+- `75948`
+- `75952`
+- `75954`
+- `75955`
+- `75956`
+- `75957`
+- `75969`
+- `7597`
+- `75970`
+- `75973`
+- `75978`
+- `75979`
+- `75980`
+- `76000`
+- `76006`
+- `76018`
+- `76026`
+- `76032`
+- `76034`
+- `76040`
+- `76042`
+- `76055`
+- `76057`
+- `76060`
+- `76081`
+- `76104`
+- `76107`
+- `76115`
+- `76126`
+- `76138`
+- `76139`
+- `76153`
+- `76156`
+- `76161`
+- `76165`
+- `76166`
+- `76178`
+- `76187`
+- `76188`
+- `76190`
+- `76191`
+- `76192`
+- `76199`
+- `7620`
+- `76202`
+- `76208`
+- `76209`
+- `76210`
+- `76215`
+- `76217`
+- `76218`
+- `7622`
+- `76223`
+- `76239`
+- `76240`
+- `76247`
+- `76248`
+- `76249`
+- `76250`
+- `76251`
+- `76252`
+- `76261`
+- `76262`
+- `76269`
+- `7627`
+- `76271`
+- `76273`
+- `76285`
+- `76286`
+- `76288`
+- `76291`
+- `76293`
+- `76294`
+- `76295`
+- `76297`
+- `76300`
+- `76304`
+- `76311`
+- `76312`
+- `76320`
+- `76321`
+- `76322`
+- `76324`
+- `76326`
+- `76328`
+- `76329`
+- `7636`
+- `76382, 76396, 76397`
+- `76382, 76397`
+- `76384`
+- `76387`
+- `76388`
+- `76389`
+- `76391`
+- `76392`
+- `76393`
+- `76394`
+- `76401`
+- `76402`
+- `76403`
+- `76405`
+- `76406`
+- `76407`
+- `76408`
+- `76412`
+- `76414`
+- `76417`
+- `76419`
+- `76422`
+- `76423`
+- `76424`
+- `76427`
+- `76428`
+- `76429`
+- `76430`
+- `76432`
+- `76433`
+- `76435`
+- `76437`
+- `76439`
+- `76440`
+- `76444`
+- `76446`
+- `76448`
+- `76449`
+- `76450`
+- `76451`
+- `76452`
+- `76453`
+- `76454`
+- `76457`
+- `7659`
+- `7662`
+- `7672`
+- `7674`
+- `7675`
+- `7676`
+- `7678`
+- `76780`
+- `76781`
+- `76785`
+- `76786`
+- `7680`
+- `76832`
+- `76895`
+- `76898`
+- `76899`
+- `76908`
+- `76909`
+- `76911`
+- `76914`
+- `76917`
+- `76924`
+- `76925`
+- `76939`
+- `76944`
+- `76945`
+- `76946`
+- `76948`
+- `76949`
+- `76951`
+- `76956`
+- `76956, 76961, 77015`
+- `76958, 76959, 76960, 77012, 77013`
+- `76959`
+- `76960`
+- `76961`
+- `76965`
+- `76966`
+- `76976`
+- `76989`
+- `77015`
+- `77052`
+- `77072`
+- `77073`
+- `77076`
+- `77077`
+- `77078`
+- `77092`
+- `7720`
+- `77238`
+- `77239`
+- `77241`
+- `77242`
+- `77247`
+- `77250`
+- `77251`
+- `77252`
+- `77256`
+- `7752`
+- `7754`
+- `7778`
+- `7781`
+- `77905`
+- `77940`
+- `77942`
+- `7893`
+- `79003`
+- `79007`
+- `79010`
+- `79014`
+- `79017`
+- `79018`
+- `79103`
+- `79106`
+- `79117`
+- `79119`
+- `79122`
+- `7930`
+- `7931`
+- `7938`
+- `7946`
+- `7956`
+- `7961`
+- `7964`
+- `7965`
+- `80014`
+- `80036`
+- `80039`
+- `80043`
+- `80102`
+- `80105`
+- `80109`
+- `80112`
+- `80113`
+- `8017`
+- `8037`
+- `8038`
+- `8039`
+- `8043`
+- `8063`
+- `8085`
+- `8086`
+- `8087`
+- `8088`
+- `8091`
+- `8092`
+- `8097`
+- `8098`
+- `81000`
+- `8109`
+- `8189`
+- `8258`
+- `8273`
+- `8286`
+- `8287`
+- `8307`
+- `8480`
+- `8484`
+- `852751`
+- `852922`
+- `8537`
+- `853967`
+- `8540`
+- `857`
+- `8625`
+- `8635`
+- `8640`
+- `8671`
+- `8709`
+- `8734`
+- `8778`
+- `88009, 88010, 88011`
+- `886`
+- `8860`
+- `8862`
+- `8877`
+- `8880`
+- `8881`
+- `8900 8901 8902 8903 8904 8905`
+- `8909`
+- `8920`
+- `8935`
+- `8957`
+- `8959`
+- `8960`
+- `8963`
+- `8989`
+- `910001`
+- `910004`
+- `910008`
+- `910030`
+- `910031`
+- `910033`
+- `910034`
+- `910035`
+- `910037`
+- `910038`
+- `910040`
+- `910043`
+- `910045`
+- `910046`
+- `910047`
+- `910049`
+- `912`
+- `918`
+- `92176`
+- `92177`
+- `924`
+- `928`
+- `9391`
+- `9396`
+- `9398`
+- `9443`
+- `9445`
+- `9467`
+- `9468`
+- `9468-1`
+- `9470`
+- `9472`
+- `9474`
+- `9476`
+- `9488`
+- `9492`
+- `9493`
+- `9497`
+- `9499`
+- `9516`
+- `9526`
+- `9552`
+- `9732`
+- `9748`
+- `9797`
+- `Custom Built`
+- `Does Not Apply`
+- `Does not apply`
+- `DoesNotApply`
+- `Doesnotapply`
+- `Game of Bricks`
+- `LEGO Batman Gotham City`
+- `LEGO_Light_Kit`
+- `Lego Harry Potter 76388`
+- `Lego Jurassic World 75935`
+- `Lego Jurassic World 75940`
+- `Lego Star Wars 75417`
+- `N/A`
+- `S_40720-1___GB`
+- `S_41839-1___GB`
+- `S_60446-1___GB`
+- `S_76294-1___GB`
+- `S_76300-1___GB`
+- `WTK-680167`
+- `does not apply`
+- `doesn't have`
+- `from  60233`
+- `â75408`
+
+---
+## Main Material (1 unique)
+
+- `Plastic Fiber`
+
+---
+## Manufacture (2 unique)
+
+- `LEGO`
+- `Lego`
+
+---
+## Manufacturer (2 unique)
+
+- `LEGO`
+- `Lego`
+
+---
+## Manufacturer Maximum Age (1 unique)
+
+- `1188.0`
+
+---
+## Manufacturer Minimum Age (1 unique)
+
+- `108.0`
+
+---
+## Manufacturer Part Number (3 unique)
+
+- `31202`
+- `6286`
+- `76423`
+
+---
+## Manufacturer Warranty Description (1 unique)
+
+- `tbd`
+
+---
+## Manufacturer recommended age (1 unique)
+
+- `9 years and up`
+
+---
+## Marca (1 unique)
+
+- `LEGO`
+
+---
+## Marke (3 unique)
+
+- `LEGO`
+- `LEGOÂ®`
+- `Lego`
+
+---
+## Marque (2 unique)
+
+- `LEGO`
+- `Lego`
+
+---
+## Material (14 unique)
+
+- `ABS`
+- `ABS Plastic`
+- `Acrylic`
+- `Alloy Wires`
+- `Cardboard`
+- `Karton`
+- `Kunststoff`
+- `LEGO`
+- `PET`
+- `Plant-Based Plastic`
+- `Plastic`
+- `SEE DESCRIPTION`
+- `plastic`
+- `âPlastic`
+
+---
+## Material Type (1 unique)
+
+- `Plastic`
+
+---
+## Material Type(s) (1 unique)
+
+- `Plastic`
+
+---
+## Materiale (1 unique)
+
+- `Plastica`
+
+---
+## Materials sourced from (8 unique)
+
+- `China`
+- `Czech Republic`
+- `Czechia`
+- `Denmark`
+- `Hungary`
+- `Japan`
+- `Mexico`
+- `United Kingdom`
+
+---
+## MatiÃ¨re (1 unique)
+
+- `Plastique`
+
+---
+## Mfg Recommended age (1 unique)
+
+- `9 - 99 years`
+
+---
+## Minifigure Number (1 unique)
+
+- `9`
+
+---
+## Minimum Age Recommendation (1 unique)
+
+- `108`
+
+---
+## Model (5 unique)
+
+- `10318`
+- `21349`
+- `71408`
+- `76444`
+- `77077`
+
+---
+## Model Name (1 unique)
+
+- `LEGO Horizon Adventures Aloy und Varl vs. Panzerwanderer und Sge`
+
+---
+## Model Number (3 unique)
+
+- `76321`
+- `76437`
+- `77037`
+
+---
+## Model Year (1 unique)
+
+- `2025`
+
+---
+## Modified Article (1 unique)
+
+- `No`
+
+---
+## Modified Item (1 unique)
+
+- `No`
+
+---
+## Modifizierter Artikel (1 unique)
+
+- `Nein`
+
+---
+## Mounting Type (1 unique)
+
+- `Table Mount`
+
+---
+## Name from LEGO Set (1 unique)
+
+- `legoÂ® Star Wars 75355 UCS X-Wing Starfighter`
+
+---
+## Name of LEGO set (1 unique)
+
+- `Skull's Eye Schooner`
+
+---
+## Name of the'assortment LEGO (1 unique)
+
+- `The Creeper`
+
+---
+## Name vom LEGO Set (4 unique)
+
+- `Burg im Wald`
+- `Flughafen`
+- `Forestmen Minifigures MOC`
+- `Schloss Hogwarts`
+
+---
+## Nom de l'assortiment LEGO (1 unique)
+
+- `Star Wars Sandcrawler`
+
+---
+## Nombre de piÃ¨ces (1 unique)
+
+- `1254`
+
+---
+## Non-Domestic Product (1 unique)
+
+- `No`
+
+---
+## Number (6 unique)
+
+- `10332-1`
+- `40720-1`
+- `41839-1`
+- `60446-1`
+- `76294-1`
+- `76300-1`
+
+---
+## Number Of Batteries (1 unique)
+
+- `6 Aa Batteries Required.`
+
+---
+## Number of Pieces (1022 unique)
+
+- `...`
+- `0`
+- `1`
+- `1,077`
+- `1,367`
+- `1,642`
+- `10 +kg`
+- `10+`
+- `100+`
+- `1000`
+- `10001`
+- `1002`
+- `1005`
+- `1007`
+- `1010`
+- `1015`
+- `102`
+- `1022`
+- `1023`
+- `1026`
+- `1034`
+- `1038`
+- `1039`
+- `104`
+- `1041`
+- `1047`
+- `1048`
+- `1049`
+- `105`
+- `1050`
+- `1055`
+- `1056`
+- `106`
+- `1060`
+- `1061`
+- `1062`
+- `1063`
+- `1066`
+- `1068`
+- `107`
+- `1070`
+- `1072`
+- `1074`
+- `1077`
+- `108`
+- `1082`
+- `1083`
+- `1084`
+- `1085`
+- `1086`
+- `1087`
+- `1088`
+- `1092`
+- `1093`
+- `1099`
+- `110`
+- `1100`
+- `1106`
+- `1107`
+- `1111`
+- `1115`
+- `1123`
+- `1124`
+- `1125`
+- `1132`
+- `1134`
+- `1137`
+- `1138`
+- `1140`
+- `1141`
+- `1151`
+- `1153`
+- `1154`
+- `1156`
+- `1158`
+- `1163`
+- `1164`
+- `1166`
+- `1167`
+- `1170`
+- `1171`
+- `1173`
+- `1175`
+- `1176`
+- `1186`
+- `1188`
+- `1190`
+- `1192`
+- `1194`
+- `1195`
+- `1197`
+- `12`
+- `12 Characters`
+- `1204`
+- `1205`
+- `121`
+- `1210`
+- `1212`
+- `1215`
+- `1216`
+- `122`
+- `1222`
+- `1223`
+- `1226`
+- `1229`
+- `1230`
+- `1234`
+- `1239`
+- `1248`
+- `1254`
+- `1257`
+- `126`
+- `1264`
+- `1265`
+- `1267`
+- `127`
+- `1271`
+- `1276`
+- `128`
+- `129`
+- `1292`
+- `1295`
+- `1297`
+- `1301`
+- `1302`
+- `1302 Pieces`
+- `1320`
+- `1325`
+- `1326`
+- `1327`
+- `1329`
+- `133`
+- `1330`
+- `1332`
+- `1333`
+- `1336`
+- `134`
+- `1343`
+- `135`
+- `1351`
+- `1353`
+- `1359`
+- `136`
+- `1361`
+- `1367`
+- `1368`
+- `1371`
+- `1376`
+- `1381 Pcs`
+- `1387`
+- `1389`
+- `139`
+- `1394`
+- `140`
+- `1401`
+- `1403`
+- `1408`
+- `141`
+- `1414`
+- `1416`
+- `142`
+- `1422`
+- `1426`
+- `1432`
+- `1434`
+- `1437`
+- `1440`
+- `1445`
+- `1450`
+- `1456`
+- `1458`
+- `1459`
+- `1460`
+- `1464`
+- `1466`
+- `1468`
+- `1471`
+- `1477`
+- `1478`
+- `148`
+- `148 + 63`
+- `149`
+- `1490`
+- `1492`
+- `1497`
+- `150`
+- `1500`
+- `1503`
+- `1505`
+- `1506`
+- `1508`
+- `1513`
+- `1514`
+- `1517`
+- `1518`
+- `1519`
+- `153`
+- `1540`
+- `1545`
+- `1548`
+- `1555`
+- `1559`
+- `157`
+- `1579`
+- `158`
+- `1580`
+- `1599`
+- `16`
+- `160`
+- `1601`
+- `1603`
+- `1606`
+- `1619`
+- `1626`
+- `1629`
+- `163`
+- `1636`
+- `1639`
+- `164`
+- `164+130`
+- `1642`
+- `165`
+- `1650`
+- `166`
+- `1660`
+- `1664`
+- `1669`
+- `168`
+- `1682`
+- `1684`
+- `1685`
+- `1686`
+- `1697`
+- `170`
+- `1703`
+- `171`
+- `1710`
+- `1716`
+- `172`
+- `173`
+- `1732`
+- `1739`
+- `174`
+- `1742`
+- `1743`
+- `1746`
+- `176`
+- `176+`
+- `1769`
+- `177`
+- `1771`
+- `1775`
+- `178 + 149`
+- `1781`
+- `179`
+- `180`
+- `1808`
+- `181`
+- `1810`
+- `1822`
+- `1823`
+- `183`
+- `185`
+- `186`
+- `1862`
+- `1869`
+- `1872`
+- `1877`
+- `1880`
+- `1890`
+- `190`
+- `1906`
+- `191`
+- `1913`
+- `192`
+- `1921`
+- `193`
+- `1931`
+- `1941`
+- `195`
+- `1953`
+- `1957`
+- `196`
+- `1967`
+- `1969`
+- `197`
+- `1972`
+- `1977`
+- `198`
+- `199`
+- `1990`
+- `19921`
+- `1996`
+- `1998`
+- `2`
+- `20`
+- `2001`
+- `201`
+- `2017`
+- `202`
+- `2022`
+- `2025`
+- `2032`
+- `204`
+- `2048`
+- `2049`
+- `205`
+- `2056`
+- `206`
+- `2064`
+- `2065`
+- `2079`
+- `208`
+- `2082`
+- `2083`
+- `2085`
+- `209`
+- `2090`
+- `2099`
+- `21`
+- `2103`
+- `212`
+- `2125`
+- `213`
+- `2135`
+- `214`
+- `215`
+- `216`
+- `2164`
+- `217`
+- `217 Pieces`
+- `2179`
+- `218`
+- `2182`
+- `2187`
+- `2193`
+- `2194`
+- `2196`
+- `221`
+- `222`
+- `2228`
+- `223`
+- `2231`
+- `224`
+- `225`
+- `2262`
+- `227`
+- `2274`
+- `2275`
+- `228`
+- `228 Pieces`
+- `2287`
+- `229`
+- `2294`
+- `2295`
+- `23`
+- `230`
+- `231`
+- `2314`
+- `2316`
+- `2319`
+- `232`
+- `2321`
+- `233`
+- `2331`
+- `2336`
+- `234`
+- `235`
+- `2352`
+- `2354`
+- `2359`
+- `236`
+- `236, 256`
+- `2363`
+- `237`
+- `238`
+- `2380`
+- `240`
+- `2405`
+- `241`
+- `2417`
+- `2418`
+- `242`
+- `243`
+- `244`
+- `245`
+- `246`
+- `2464`
+- `2469`
+- `248`
+- `2480`
+- `249`
+- `2493`
+- `2500`
+- `2503`
+- `2504`
+- `2509`
+- `251`
+- `251 pieces.`
+- `2523`
+- `253`
+- `2532`
+- `254`
+- `2540`
+- `2545`
+- `256`
+- `2560`
+- `2569`
+- `257`
+- `2573`
+- `2574`
+- `258`
+- `258 Pieces`
+- `2585`
+- `259`
+- `2593`
+- `2595`
+- `2598`
+- `26`
+- `260`
+- `2606`
+- `261`
+- `2615`
+- `262`
+- `263 Pieces`
+- `2637`
+- `264`
+- `2646`
+- `265`
+- `2651`
+- `2660`
+- `267`
+- `2670`
+- `268`
+- `269`
+- `269 pieces.`
+- `269pcs`
+- `27`
+- `270`
+- `2704`
+- `2706`
+- `2708`
+- `271`
+- `272`
+- `2731`
+- `274`
+- `274 pieces.`
+- `2741`
+- `275`
+- `275 pieces.`
+- `2750`
+- `2766`
+- `277`
+- `278`
+- `279`
+- `2793`
+- `280`
+- `2807`
+- `2809`
+- `281`
+- `2812`
+- `282`
+- `283`
+- `285`
+- `286`
+- `2862`
+- `2863`
+- `289`
+- `2891`
+- `2899`
+- `29`
+- `290`
+- `2912`
+- `2916`
+- `292`
+- `2923`
+- `2925`
+- `293`
+- `2933`
+- `294`
+- `2953`
+- `2961`
+- `2970`
+- `298`
+- `2989`
+- `299`
+- `2996`
+- `3`
+- `30`
+- `300`
+- `301`
+- `3010`
+- `3011`
+- `303`
+- `3036`
+- `304`
+- `305`
+- `3050`
+- `3066`
+- `308`
+- `309`
+- `3091`
+- `3093`
+- `3096`
+- `311`
+- `312`
+- `3120`
+- `3128`
+- `313`
+- `314`
+- `3145`
+- `3152`
+- `3187`
+- `319`
+- `3208`
+- `321`
+- `3228`
+- `3231`
+- `324`
+- `3244`
+- `325`
+- `3266`
+- `327`
+- `328`
+- `329`
+- `3292`
+- `3296`
+- `33`
+- `330`
+- `3304`
+- `3308`
+- `331`
+- `332`
+- `333`
+- `335`
+- `337`
+- `3374`
+- `338`
+- `340`
+- `3402`
+- `341`
+- `3428`
+- `343`
+- `3444`
+- `345`
+- `3455`
+- `347`
+- `3472`
+- `348`
+- `348 Pieces`
+- `350`
+- `351`
+- `353`
+- `3532`
+- `355`
+- `3553`
+- `356`
+- `357`
+- `3599`
+- `360`
+- `3600`
+- `3601`
+- `361`
+- `362`
+- `363`
+- `364`
+- `364 Pieces`
+- `365`
+- `366`
+- `3662`
+- `367`
+- `3696`
+- `37`
+- `370`
+- `372`
+- `373`
+- `373 Pieces`
+- `374`
+- `3745`
+- `375`
+- `3756`
+- `376`
+- `3772`
+- `3778`
+- `3789`
+- `3792`
+- `380`
+- `3803`
+- `381`
+- `382`
+- `383`
+- `384`
+- `385`
+- `386`
+- `387`
+- `389`
+- `3893`
+- `3898`
+- `39`
+- `390`
+- `391`
+- `392`
+- `3929`
+- `393`
+- `394`
+- `3942`
+- `3943`
+- `3955`
+- `396`
+- `397`
+- `398`
+- `3981`
+- `3995`
+- `4`
+- `4,056`
+- `4,154`
+- `4,210`
+- `400`
+- `4002`
+- `4003`
+- `401`
+- `4014`
+- `4016`
+- `403`
+- `404`
+- `4049`
+- `4056 - 13 Minifigs`
+- `4057`
+- `408`
+- `4080`
+- `409`
+- `4090`
+- `410`
+- `4108`
+- `4124`
+- `413`
+- `4138`
+- `4154`
+- `4163`
+- `419`
+- `42`
+- `420`
+- `421`
+- `4210`
+- `422`
+- `424`
+- `425`
+- `428`
+- `4287`
+- `430`
+- `431`
+- `433`
+- `434`
+- `435`
+- `437`
+- `4383`
+- `439`
+- `440`
+- `442`
+- `444`
+- `446`
+- `448`
+- `449`
+- `45`
+- `450`
+- `450 Pieces`
+- `451`
+- `4514`
+- `452`
+- `454`
+- `455`
+- `457`
+- `459`
+- `46`
+- `460`
+- `462`
+- `463`
+- `465`
+- `466`
+- `468`
+- `468 Pieces`
+- `469`
+- `471`
+- `472`
+- `474`
+- `476`
+- `477`
+- `4777`
+- `478`
+- `4784`
+- `479`
+- `480`
+- `4801`
+- `4803`
+- `481`
+- `482`
+- `4837`
+- `484`
+- `4867`
+- `487`
+- `488`
+- `49`
+- `490`
+- `492`
+- `493`
+- `496`
+- `497`
+- `498`
+- `499`
+- `499 Pieces`
+- `5`
+- `500`
+- `501`
+- `502`
+- `503`
+- `505`
+- `506`
+- `508`
+- `509`
+- `512`
+- `5129`
+- `516`
+- `518`
+- `519`
+- `52`
+- `5201`
+- `522`
+- `527`
+- `528`
+- `529`
+- `53`
+- `530`
+- `537`
+- `5374`
+- `539`
+- `540`
+- `541`
+- `542`
+- `544`
+- `546`
+- `550`
+- `551`
+- `553`
+- `5544`
+- `556`
+- `557`
+- `558`
+- `558 Pieces`
+- `559`
+- `560`
+- `561`
+- `564`
+- `565`
+- `567`
+- `5685`
+- `5686`
+- `570`
+- `571`
+- `573`
+- `574`
+- `578`
+- `579`
+- `579 Pieces`
+- `58`
+- `580`
+- `584`
+- `585`
+- `586`
+- `587`
+- `588`
+- `590`
+- `5923`
+- `593`
+- `594`
+- `595`
+- `596`
+- `598`
+- `601`
+- `602`
+- `6020`
+- `603`
+- `604`
+- `606`
+- `608`
+- `610`
+- `613`
+- `615`
+- `616`
+- `6163`
+- `6167`
+- `6187`
+- `62`
+- `621`
+- `622`
+- `623`
+- `625`
+- `626`
+- `63`
+- `630`
+- `636`
+- `637`
+- `640`
+- `643`
+- `645`
+- `646`
+- `647`
+- `649`
+- `649 pieces.`
+- `652`
+- `654`
+- `654 Pieces`
+- `656`
+- `658`
+- `659`
+- `660`
+- `663`
+- `664`
+- `665`
+- `667`
+- `668`
+- `669`
+- `67`
+- `670`
+- `671`
+- `671 Counted 667`
+- `674`
+- `675`
+- `677`
+- `678`
+- `6785`
+- `68`
+- `680`
+- `681`
+- `682`
+- `685`
+- `687`
+- `688`
+- `69`
+- `691`
+- `693`
+- `694`
+- `695`
+- `697`
+- `698`
+- `7`
+- `702`
+- `706`
+- `707`
+- `71`
+- `711`
+- `713`
+- `715`
+- `716`
+- `717`
+- `718`
+- `720`
+- `721`
+- `722`
+- `723`
+- `724`
+- `73`
+- `730`
+- `731`
+- `732`
+- `733`
+- `734`
+- `740`
+- `741`
+- `743`
+- `744`
+- `745`
+- `747`
+- `75`
+- `750`
+- `754`
+- `7541`
+- `755`
+- `756`
+- `757`
+- `758`
+- `759`
+- `761`
+- `764`
+- `766`
+- `768`
+- `77`
+- `771`
+- `774`
+- `777`
+- `780`
+- `783`
+- `784`
+- `785`
+- `786`
+- `788`
+- `789`
+- `79`
+- `790`
+- `792`
+- `795`
+- `797`
+- `798`
+- `799`
+- `8`
+- `801`
+- `802`
+- `806`
+- `807`
+- `808`
+- `810`
+- `811`
+- `811 pcs`
+- `813`
+- `814`
+- `815`
+- `82`
+- `822`
+- `825`
+- `827`
+- `828`
+- `829`
+- `83`
+- `831`
+- `832 Pieces`
+- `833`
+- `834`
+- `835`
+- `836`
+- `839`
+- `840`
+- `841`
+- `844`
+- `845`
+- `85`
+- `850`
+- `851`
+- `854`
+- `858`
+- `86`
+- `860`
+- `863`
+- `864`
+- `866`
+- `867`
+- `868`
+- `872`
+- `874`
+- `876`
+- `878`
+- `879`
+- `880`
+- `881`
+- `882`
+- `883`
+- `884`
+- `887`
+- `888`
+- `89`
+- `890`
+- `894`
+- `896`
+- `898`
+- `9`
+- `900`
+- `902`
+- `9023`
+- `903`
+- `9036`
+- `904`
+- `906`
+- `909`
+- `9090`
+- `910`
+- `912`
+- `913`
+- `914`
+- `919`
+- `921`
+- `922`
+- `924`
+- `927`
+- `929`
+- `933`
+- `936`
+- `937`
+- `939`
+- `943`
+- `945`
+- `949`
+- `950`
+- `954`
+- `956`
+- `957`
+- `958`
+- `96`
+- `960`
+- `962`
+- `964`
+- `969`
+- `97`
+- `971`
+- `972`
+- `973`
+- `976`
+- `979`
+- `98`
+- `980`
+- `981`
+- `984`
+- `99`
+- `990`
+- `BUILDING`
+- `CASE OF 36 SEALED PACKS`
+- `Does not apply`
+- `MANY`
+- `N/A`
+- `Random`
+- `See Description`
+- `does not apply`
+- `some`
+- `â1138`
+- `â616`
+
+---
+## Number of figurines (1 unique)
+
+- `0`
+
+---
+## Number of l'assortment LEGO (2 unique)
+
+- `21276`
+- `42096`
+
+---
+## Number of parts (1 unique)
+
+- `665`
+
+---
+## NumÃ©ro de l'assortiment LEGO (2 unique)
+
+- `75059`
+- `7965`
+
+---
+## NumÃ©ro de piÃ¨ce fabricant (2 unique)
+
+- `6714C02`
+- `sw1479`
+
+---
+## Original Box (1 unique)
+
+- `Yes`
+
+---
+## Package (2 unique)
+
+- `No`
+- `No Original Box`
+
+---
+## Package Dimensions LxWxH (1 unique)
+
+- `13.78x7.48x2.44 Inches`
+
+---
+## Package dimensions (lxwxh) (6 unique)
+
+- `26.2 x 19.1 x 7.2 cm`
+- `45.6 x 28.2 x 11.8 cm`
+- `45.6 x 28.2 x 6.1 cm`
+- `52.3 x 48 x 12.4 cm`
+- `55.5 x 37.8 x 13.2 cm`
+- `55.5 x 37.8 x 15.7 cm`
+
+---
+## Packaging (32 unique)
+
+- `Box`
+- `Box of 36 sealed foil packs`
+- `BoÃ®te`
+- `Bucket/Tub`
+- `Clear Zip-Lock Bag`
+- `Clear plastic lidded boxes.`
+- `FREE GIFT BOX OFFERED`
+- `FREE GIFT BOX OPTION`
+- `Flattened Box`
+- `Foil Pack`
+- `Grip seal bag`
+- `N/A`
+- `No Box`
+- `No Minifigures-No Box`
+- `None`
+- `None Original Box`
+- `Only outer packaging opened`
+- `Original (Unopened)`
+- `Original Boxes`
+- `Original unopened sealed packaging.`
+- `Paperbag`
+- `Polybag`
+- `Sachet transparent`
+- `Sealed Box`
+- `See photo`
+- `Shrink Wrapped`
+- `Without Box`
+- `Without Packaging`
+- `Zip-lock bag`
+- `bagged`
+- `does not apply`
+- `poly bag`
+
+---
+## Packaging. (1 unique)
+
+- `Box`
+
+---
+## Packaging: (1 unique)
+
+- `Original (Unopened - Factory Sealed)`
+
+---
+## Paese di origine (1 unique)
+
+- `Danimarca`
+
+---
+## Part Number (1 unique)
+
+- `76321`
+
+---
+## Part Type (3 unique)
+
+- `Box Sets`
+- `Custom kit`
+- `Figures`
+
+---
+## Pays d'origine (2 unique)
+
+- `Chine`
+- `Danemark`
+
+---
+## Pays de fabrication (1 unique)
+
+- `Danemark`
+
+---
+## Personaggio (1 unique)
+
+- `Stranger Things`
+
+---
+## Personaje LEGO (1 unique)
+
+- `Darth Vader`
+
+---
+## Personalise (1 unique)
+
+- `No`
+
+---
+## Personnage LEGO (4 unique)
+
+- `Hot Tub Stormtrooper`
+- `Rouge`
+- `Star Wars`
+- `Univers Marvel`
+
+---
+## Piece Count (5 unique)
+
+- `1,642`
+- `1038`
+- `1619`
+- `360`
+- `444`
+
+---
+## Pieces (1 unique)
+
+- `3599`
+
+---
+## Plastic Type (1 unique)
+
+- `ABS`
+
+---
+## Power And Plug Description (1 unique)
+
+- `Battery Powered`
+
+---
+## Power Source (1 unique)
+
+- `Battery Powered`
+
+---
+## Product Dimensions (1 unique)
+
+- `30 x 15 x 6 cm; 400g`
+
+---
+## Product Grade (1 unique)
+
+- `Open Box Grade A`
+
+---
+## Product Height (2 unique)
+
+- `392 mm`
+- `50mm`
+
+---
+## Product Length (2 unique)
+
+- `404mm`
+- `627 mm`
+
+---
+## Product Line (LEGO Game Themes) (1 unique)
+
+- `Pirates`
+
+---
+## Product Line (LEGO Theme) (43 unique)
+
+- `Alien Conquest`
+- `Architecture`
+- `Arctic`
+- `Batman`
+- `Bionicle`
+- `Botanicals`
+- `BrickLink Designer Program`
+- `City`
+- `Classic`
+- `Collectable Minifigure Series`
+- `Creator`
+- `Disney Classic`
+- `Duplo`
+- `Fortnite`
+- `Harry Potter`
+- `Icons`
+- `Ideas`
+- `Indiana Jones`
+- `Jurassic World`
+- `LEGO City`
+- `LEGO Ideas`
+- `Lego Batman Movie`
+- `Lego City`
+- `Lego Technic`
+- `Lord Of The Rings`
+- `Minecraft`
+- `Monster Fighters`
+- `Ninjago`
+- `ONE PIECE`
+- `Racers`
+- `Rock Raiders`
+- `Seasonal`
+- `Speed Champions`
+- `Star Wars`
+- `Star Wars TM`
+- `Super Heroes`
+- `Super Mario`
+- `Technic`
+- `The LEGO Ninjago Movie`
+- `Town`
+- `Wednesday`
+- `Wicked`
+- `winter village collection`
+
+---
+## Product Type (1 unique)
+
+- `Full Set`
+
+---
+## Produktart (8 unique)
+
+- `Anleitung`
+- `Bausatz`
+- `Ersatzteile`
+- `Flugzeug`
+- `Minifigur`
+- `UnvollstÃ¤ndiges Set`
+- `VollstÃ¤ndiges Set`
+- `VollstÃ¤ndigkeit: Siehe Beschreibung`
+
+---
+## Produktlinie (LEGO Spielthemen) (5 unique)
+
+- `Castle`
+- `City`
+- `Harry Potter`
+- `Lego Bricklink`
+- `Sonstiges`
+
+---
+## Range of products (theme LEGO) (2 unique)
+
+- `Minecraft`
+- `Technic`
+
+---
+## Recommend Age (1 unique)
+
+- `18+,14+y,6-12Y`
+
+---
+## Recommended Browse Nodes (1 unique)
+
+- `364074031, 26163127031`
+
+---
+## Recommended age (1 unique)
+
+- `4+`
+
+---
+## Release Date (3 unique)
+
+- `01/01/2024`
+- `01/05/2025`
+- `01/12/2024`
+
+---
+## Release Year (54 unique)
+
+- `1966`
+- `1974`
+- `1975`
+- `1976`
+- `1978`
+- `1979`
+- `1980`
+- `1981`
+- `1982`
+- `1983`
+- `1984`
+- `1985`
+- `1986`
+- `1987`
+- `1988`
+- `1989`
+- `1990`
+- `1991`
+- `1992`
+- `1993`
+- `1994`
+- `1995`
+- `1996`
+- `1997`
+- `1998`
+- `1999`
+- `2000`
+- `2001`
+- `2002`
+- `2003`
+- `2004`
+- `2005`
+- `2006`
+- `2007`
+- `2008`
+- `2009`
+- `2010`
+- `2011`
+- `2012`
+- `2013`
+- `2014`
+- `2015`
+- `2016`
+- `2017`
+- `2018`
+- `2019`
+- `2020`
+- `2021`
+- `2022`
+- `2023`
+- `2024`
+- `2025`
+- `2026`
+- `does not apply`
+
+---
+## Released in (2 unique)
+
+- `2024`
+- `2025`
+
+---
+## Retired (3 unique)
+
+- `No`
+- `Yes`
+- `does not apply`
+
+---
+## Series (5 unique)
+
+- `Bionicle`
+- `City`
+- `Creative Building`
+- `Harry Potter`
+- `Wednesday`
+
+---
+## Ships Globally (1 unique)
+
+- `Yes`
+
+---
+## Signed (1 unique)
+
+- `No`
+
+---
+## Size (1 unique)
+
+- `No box`
+
+---
+## Special feature (1 unique)
+
+- `Interchangeable, Portable`
+
+---
+## Spielsystem (1 unique)
+
+- `LEGO`
+
+---
+## Status (2 unique)
+
+- `Available`
+- `Retired backorder`
+
+---
+## Style (2 unique)
+
+- `40820 Up-scaled Santa Minifigure`
+- `76178 Daily Bugle`
+
+---
+## Sub Brand (1 unique)
+
+- `Super Heroes`
+
+---
+## Sub brand (1 unique)
+
+- `BOTANICALS`
+
+---
+## Sub-Genre (1 unique)
+
+- `Feature Films`
+
+---
+## Subject (1 unique)
+
+- `Toyota`
+
+---
+## Subject Character (1 unique)
+
+- `Spider-Man`
+
+---
+## Suitable for ages (1 unique)
+
+- `18+`
+
+---
+## Target Audience Keyword (1 unique)
+
+- `Unisex Children`
+
+---
+## Target Gender (1 unique)
+
+- `Unisex`
+
+---
+## Tema de LEGO (1 unique)
+
+- `Star Wars`
+
+---
+## Theme (20 unique)
+
+- `Aircraft`
+- `Botanicals`
+- `Cartoon`
+- `City Markets`
+- `Emergency Services`
+- `Friends TV Show`
+- `Holidays`
+- `Ideas`
+- `Insects`
+- `LEGO City`
+- `LEGO Disney`
+- `LEGO Icons`
+- `LEGO Overige`
+- `LEGO Super Heroes`
+- `Seasonal`
+- `Ships & Boats`
+- `Star Wars`
+- `Technic`
+- `Wednesday & Enid`
+- `ideas`
+
+---
+## Theme of the model (1 unique)
+
+- `Games videos`
+
+---
+## ThÃ¨me LEGO (5 unique)
+
+- `Holiday`
+- `Marvel Super Heroes`
+- `Pirates`
+- `Star Wars`
+- `Technic`
+
+---
+## ThÃ¨me du modÃ¨le (4 unique)
+
+- `Architecture`
+- `Auto`
+- `Ile`
+- `The Clone Wars Battle of Felucia Separatist`
+
+---
+## Tipo (1 unique)
+
+- `Set completo`
+
+---
+## Title (3 unique)
+
+- `LEGO DUPLO 3in1 Space Shuttle Adventure Bricks Set, Rocket Toy fo`
+- `LEGO Star Wars 75408 Jango Fett Helmet - Mandalorian Model Kit fo`
+- `LEGO Wednesday Addams Figure Set, Collectible Building Toy for Ki`
+
+---
+## Toy Building Block Type (1 unique)
+
+- `Interlocking Toy Building Block`
+
+---
+## Typ (1 unique)
+
+- `Flughafen mit Flugzeug`
+
+---
+## Type (52 unique)
+
+- `3 x Complete Sets`
+- `BUILDING`
+- `Building & Construction Toys`
+- `Building Sets`
+- `Complate Set`
+- `Complete Build (No Minifigures-No Box)`
+- `Complete No Minifigures`
+- `Complete Set`
+- `Complete Set/Pack`
+- `Complete set`
+- `Complete set apart from 2nd instruction manual`
+- `Display Case`
+- `Does Not Apply`
+- `Does not apply`
+- `Ensemble complet`
+- `Figure`
+- `Incomplete Set`
+- `Interlocking Blocks`
+- `LEGO City`
+- `LEGO Disney`
+- `LEGO FIFA WORLD CUP 2026 LIMITED EDITION`
+- `LEGO ICONS Tudor Corner`
+- `LEGO Icons`
+- `LEGO McLaren 42141`
+- `LEGO Super Heroes`
+- `LEGO Time Machine Back to the Future 77256`
+- `Lego`
+- `Lego Sealed Set`
+- `Millenium Falcon`
+- `Minifigure`
+- `Moon missions`
+- `N/A`
+- `Near Complete Set`
+- `No Original Box`
+- `Philips`
+- `Poster`
+- `Set`
+- `Sets`
+- `Ships`
+- `Spaceship`
+- `Spaceship 76286`
+- `TRAIN`
+- `TYPE`
+- `Table Building Kit`
+- `Technic 42083`
+- `Tractor Set`
+- `Train Motor Set`
+- `box set`
+- `complete set`
+- `does not apply`
+- `minifigure`
+- `mystery box`
+
+---
+## Type Of Bulb (1 unique)
+
+- `Led`
+
+---
+## Type de modÃ¨le (4 unique)
+
+- `BÃ¢timent`
+- `Construction`
+- `Vaisseau spatial`
+- `Voiture de course`
+
+---
+## Type model (1 unique)
+
+- `Construction`
+
+---
+## UPC (9 unique)
+
+- `0673419318426`
+- `673419390040`
+- `673419390996`
+- `673419392938`
+- `673419393751`
+- `673419403498`
+- `673419407403`
+- `Does Not Apply`
+- `Does not apply`
+
+---
+## Unit Count (2 unique)
+
+- `1.0`
+- `1.0 Count`
+
+---
+## Unit Quantity (1 unique)
+
+- `1`
+
+---
+## Unit Type (1 unique)
+
+- `Unit`
+
+---
+## Ursprungsland (3 unique)
+
+- `Deutschland`
+- `DÃ¤nemark`
+- `Tschechische Republik`
+
+---
+## Verpackung (4 unique)
+
+- `Box`
+- `Folienverpackung`
+- `Polybag`
+- `Schachtel`
+
+---
+## Vintage (1 unique)
+
+- `No`
+
+---
+## Warning (1 unique)
+
+- `No eat`
+
+---
+## Warnings (12 unique)
+
+- `Choking hazard. Not suitable for children under 3 years`
+- `Choking hazard. Small parts. Not suitable for under 3 years old.`
+- `Choking hazard. Small parts. be aware of children under 3`
+- `Not for Children 3 years or younger`
+- `Not suitable for children under 3 years old.`
+- `Small parts. Not suitable for children under 3.`
+- `Suitable for Under 3`
+- `Warning! Choking hazard.`
+- `Warning! Choking hazard. Not suitable for children under 3 years`
+- `Warning! Choking hazard. Not suitable for under 3 years old.`
+- `Warning! Choking hazard. Small parts.`
+- `Warning! Not suitable for children under 3 years old.`
+
+---
+## Warranty (1 unique)
+
+- `60 Day Returns`
+
+---
+## Weight (14 unique)
+
+- `0.136 kg`
+- `0.39 kg`
+- `0.469 kg`
+- `0.5 kg`
+- `1.017 KG`
+- `1.333 kg`
+- `1.94 kg`
+- `2.6 kg`
+- `239 g`
+- `2kg`
+- `3.528 KG`
+- `335 g`
+- `4.44 KG`
+- `4.737 KG`
+
+---
+## Width (7 unique)
+
+- `14 7/8in`
+- `26.2 cm`
+- `45.6 cm`
+- `48`
+- `52.3 cm`
+- `55.5 cm`
+- `95 mm`
+
+---
+## Year (11 unique)
+
+- `2007`
+- `2011`
+- `2012`
+- `2013`
+- `2016`
+- `2017`
+- `2019`
+- `2020`
+- `2021`
+- `2024`
+- `2025`
+
+---
+## Year Manufactured (39 unique)
+
+- `1976`
+- `1979`
+- `1980`
+- `1984`
+- `1985`
+- `1986`
+- `1987`
+- `1989`
+- `1990`
+- `1992`
+- `1996`
+- `1999`
+- `2000`
+- `2001`
+- `2005`
+- `2006`
+- `2007`
+- `2008`
+- `2009`
+- `2010`
+- `2010-Now`
+- `2011`
+- `2012`
+- `2013`
+- `2014`
+- `2015`
+- `2016`
+- `2017`
+- `2018`
+- `2019`
+- `2020`
+- `2020-Now`
+- `2021`
+- `2022`
+- `2023`
+- `2024`
+- `2025`
+- `2026`
+- `does not apply`
+
+---
+## Year Of Publication (2 unique)
+
+- `2021`
+- `2023`
+
+---
+## Year Retired (37 unique)
+
+- `1978`
+- `1979`
+- `1980`
+- `1984`
+- `1986`
+- `1989`
+- `1996`
+- `1997`
+- `1998`
+- `1999`
+- `2000`
+- `2001`
+- `2002`
+- `2003`
+- `2004`
+- `2006`
+- `2007`
+- `2008`
+- `2009`
+- `2010`
+- `2011`
+- `2012`
+- `2013`
+- `2014`
+- `2015`
+- `2016`
+- `2017`
+- `2018`
+- `2019`
+- `2020`
+- `2021`
+- `2022`
+- `2023`
+- `2024`
+- `2025`
+- `Not specified`
+- `does not apply`
+
+---
+## age_range_description (3 unique)
+
+- `18 years old ~ adult`
+- `adult`
+- `baby`
+
+---
+## batteries_included (1 unique)
+
+- `false`
+
+---
+## batteries_required (1 unique)
+
+- `false`
+
+---
+## color (1 unique)
+
+- `multi color`
+
+---
+## distribution_designation (1 unique)
+
+- `default`
+
+---
+## eBay Product ID (ePID) (59 unique)
+
+- `10052414270`
+- `11048267531`
+- `11053360791`
+- `12048265948`
+- `12059460100`
+- `12060463754`
+- `13037438521`
+- `13060468630`
+- `14058339162`
+- `15048276713`
+- `15053431935`
+- `15053431970`
+- `15062426032`
+- `15062426096`
+- `16048273323`
+- `16048273353`
+- `16052401999`
+- `16068373325`
+- `16074269031`
+- `16074272438`
+- `17053427106`
+- `18048276253`
+- `18068384015`
+- `19055636815`
+- `19058350124`
+- `19068381749`
+- `20048275587`
+- `20048275688`
+- `20075652389`
+- `21048279721`
+- `22052409174`
+- `22053427808`
+- `23053437450`
+- `2324478641`
+- `26062430399`
+- `27053423174`
+- `27053423374`
+- `27061766852`
+- `28048277351`
+- `28053433389`
+- `28055636771`
+- `28058425983`
+- `3048281933`
+- `3053435276`
+- `3054292611`
+- `4037434116`
+- `4053423092`
+- `4071293484`
+- `4075653217`
+- `5053434638`
+- `5053434684`
+- `5053434753`
+- `6053439367`
+- `6053439577`
+- `7053432636`
+- `7053432867`
+- `9053424486`
+- `9054502289`
+- `9054502325`
+
+---
+## educational_objective (3 unique)
+
+- `construction skills`
+- `creative thinking`
+- `creativity, creativity, spatial awareness, concentration, dexteri`
+
+---
+## included_components (2 unique)
+
+- `Assembly instructions`
+- `none`
+
+---
+## is_assembly_required (1 unique)
+
+- `true`
+
+---
+## item_package_quantity (1 unique)
+
+- `1.0`
+
+---
+## lego Sub -topic (1 unique)
+
+- `Disney`
+
+---
+## lego Subtopic (1 unique)
+
+- `The Mandalorian`
+
+---
+## lego Thematic world (1 unique)
+
+- `star wars`
+
+---
+## lego Theme world (2 unique)
+
+- `Title/ Type`
+- `star wars`
+
+---
+## manufacturer (1 unique)
+
+- `Lego`
+
+---
+## manufacturer_maximum_age (1 unique)
+
+- `1188.0`
+
+---
+## manufacturer_minimum_age (2 unique)
+
+- `120.0`
+- `216.0`
+
+---
+## material (1 unique)
+
+- `ABS`
+
+---
+## model (1 unique)
+
+- `76423`
+
+---
+## model_name (1 unique)
+
+- `Super Heroes Daily Bugle 76178`
+
+---
+## model_number (3 unique)
+
+- `43222`
+- `45681`
+- `76178`
+
+---
+## model_year (3 unique)
+
+- `2018.0`
+- `2021.0`
+- `2023.0`
+
+---
+## number_of_items (1 unique)
+
+- `604.0`
+
+---
+## number_of_pieces (3 unique)
+
+- `3772.0`
+- `47.0`
+- `600.0`
+
+---
+## package_level (1 unique)
+
+- `unit`
+
+---
+## part_number (3 unique)
+
+- `120690`
+- `43222`
+- `45681`
+
+---
+## safety_warning (1 unique)
+
+- `Products other than Lego Duplo contain small parts. Please do not`
+
+---
+## size (2 unique)
+
+- `80cm x 59cm x 33cm`
+- `does not apply`
+
+---
+## skip_offer (1 unique)
+
+- `false`
+
+---
+## special_feature (1 unique)
+
+- `Assembly type`
+
+---
+## style (1 unique)
+
+- `daily bugle`
+
+---
+## sub_brand (1 unique)
+
+- `superheroes`
+
+---
+## target_audience (1 unique)
+
+- `18 years old ~ adult`
+
+---
+## target_audience_keyword (1 unique)
+
+- `unisex`
+
+---
+## target_gender (1 unique)
+
+- `unisex`
+
+---
+## theme (2 unique)
+
+- `movie`
+- `superhero`
+
+---
+## toy_building_block_type (1 unique)
+
+- `stacking_toy_building_block`
+
+---
+## unspsc_code (1 unique)
+
+- `60141000`
+
+---
+## variation_theme (1 unique)
+
+- `STYLE_NAME`
