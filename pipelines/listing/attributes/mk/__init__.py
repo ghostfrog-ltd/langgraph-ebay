@@ -14,6 +14,7 @@ from .pokemon import pokemon_model_key
 from .samsung import samsung_model_key
 from .headphones import headphones_model_key
 
+
 def _canonicalise_key(key: Optional[str]) -> Optional[str]:
     """
     Standardise model_key formatting:
@@ -32,9 +33,9 @@ def _canonicalise_key(key: Optional[str]) -> Optional[str]:
 
 
 def normalise_model(
-    title: str,
-    attrs: Optional[Mapping[str, Any]] = None,
-    source: str = "",
+        title: str,
+        attrs: Optional[Mapping[str, Any]] = None,
+        source: str = "",
 ) -> Optional[str]:
     """
     High-level classifier used everywhere.
@@ -108,7 +109,7 @@ def normalise_model(
         return _canonicalise_key(
             samsung_model_key(attrs=safe_attrs, title=title)
         )
-    
+
     if source == "ebay-headphones":
         return _canonicalise_key(
             headphones_model_key(attrs=safe_attrs, title=title)

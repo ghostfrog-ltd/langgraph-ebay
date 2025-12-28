@@ -53,7 +53,7 @@ def _normalise_brand(raw: Any) -> str:
 
 def _tokenise_model(s: str) -> list[str]:
     s = _strip_parentheses(s)
-    s = s.replace("/", " ").replace("\", " ").replace("-", " ")
+    s = s.replace("/", " ").replace("\\", " ").replace("-", " ")
     s = " ".join(s.split())
 
     toks: list[str] = []
