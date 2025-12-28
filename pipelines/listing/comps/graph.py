@@ -269,7 +269,7 @@ def _node_done(state: CompsState) -> CompsState:
     return state
 
 
-def _build_graph():
+def build_graph():
     g = StateGraph(CompsState)
 
     g.add_node("decide", _node_decide_should_run)
@@ -299,7 +299,7 @@ def _build_graph():
     return g.compile()
 
 def save_graph_diagram(path: str = "comps_graph.mmd") -> None:
-    graph = _build_graph()
+    graph = build_graph()
     g = graph.get_graph()
 
     # Mermaid text (works everywhere)
@@ -323,7 +323,7 @@ def run(force: bool = False) -> None:
       - or GF_COMPS_WINDOW_DAYS env var if set to a positive integer
     """
     try:
-        graph = _build_graph()
+        graph = build_graph()
         graph.invoke({"force": force})
     except Exception as e:
         logger.exception("[process.comps] failed: %s", e)

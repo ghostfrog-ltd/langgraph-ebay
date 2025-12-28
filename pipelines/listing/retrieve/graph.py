@@ -234,7 +234,7 @@ def should_continue(state: RetrieveState) -> str:
 # -----------------------------
 # Build graph
 # -----------------------------
-def build_retrieve_graph():
+def build_graph():
     g = StateGraph(RetrieveState)
 
     g.add_node("init", init_state)
@@ -257,7 +257,7 @@ def build_retrieve_graph():
     return g.compile()
 
 def save_graph_diagram(path: str = "retrieve_graph.mmd") -> None:
-    graph = build_retrieve_graph()
+    graph = build_graph()
     g = graph.get_graph()
 
     # Mermaid text (works everywhere)
@@ -268,7 +268,7 @@ def save_graph_diagram(path: str = "retrieve_graph.mmd") -> None:
     logger.info(f"[scrape] wrote graph mermaid to {path}")
 
 def run(*, ebay_token: str, adapter_names: Optional[List[str]] = None) -> RetrieveState:
-    graph = build_retrieve_graph()
+    graph = build_graph()
 
     initial: RetrieveState = {"ebay_token": ebay_token}
     if adapter_names is not None:
