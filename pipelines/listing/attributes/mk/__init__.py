@@ -13,6 +13,7 @@ from .lego import lego_model_key
 from .pokemon import pokemon_model_key
 from .samsung import samsung_model_key
 from .headphones import headphones_model_key
+from .nc750 import honda_nc750_model_key
 
 
 def _canonicalise_key(key: Optional[str]) -> Optional[str]:
@@ -113,6 +114,11 @@ def normalise_model(
     if source == "ebay-headphones":
         return _canonicalise_key(
             headphones_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-honda-nc750":
+        return _canonicalise_key(
+            honda_nc750_model_key(attrs=safe_attrs, title=title)
         )
 
     # Unknown source → no classification
