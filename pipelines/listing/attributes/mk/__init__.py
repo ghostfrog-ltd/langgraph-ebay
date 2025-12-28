@@ -8,6 +8,7 @@ from .watches import watch_model_key
 from .consoles import console_or_game_model_key
 from .cameras import camera_drone_model_key
 from .tools import tools_model_key
+from .motors import motors_model_key
 
 def _canonicalise_key(key: Optional[str]) -> Optional[str]:
     """
@@ -82,6 +83,11 @@ def normalise_model(
     if source == "ebay-tools":
         return _canonicalise_key(
             tools_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-motors":
+        return _canonicalise_key(
+            motors_model_key(attrs=safe_attrs, title=title)
         )
 
     # Unknown source → no classification
