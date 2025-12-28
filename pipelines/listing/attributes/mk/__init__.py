@@ -11,6 +11,7 @@ from .tools import tools_model_key
 from .motors import motors_model_key
 from .lego import lego_model_key
 from .pokemon import pokemon_model_key
+from .samsung import samsung_model_key
 
 def _canonicalise_key(key: Optional[str]) -> Optional[str]:
     """
@@ -100,6 +101,11 @@ def normalise_model(
     if source == "ebay-pokemon":
         return _canonicalise_key(
             pokemon_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-samsung":
+        return _canonicalise_key(
+            samsung_model_key(attrs=safe_attrs, title=title)
         )
 
     # Unknown source → no classification
