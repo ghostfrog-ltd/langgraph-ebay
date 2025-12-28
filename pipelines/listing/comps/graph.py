@@ -18,7 +18,7 @@ connection = db_connection.connection
 # Tunable knobs
 # ---------------------------------
 # Default logical window; can be overridden at runtime via GF_COMPS_WINDOW_DAYS
-COMPS_WINDOW_DAYS: int = 30           # how many days of history to aggregate
+COMPS_WINDOW_DAYS: int = 365           # how many days of history to aggregate
 COMPS_MIN_INTERVAL_HOURS: int = 6     # minimum time between full recomputes
 COMPS_KEEP_PER_KEY: int = 60          # how many snapshots per model_key to retain
 
@@ -248,7 +248,7 @@ def _node_compute(state: CompsState) -> CompsState:
 
 def _node_prune_best_effort(state: CompsState) -> CompsState:
     try:
-        _prune_old_comps(COMPS_KEEP_PER_KEY)
+        # _prune_old_comps(COMPS_KEEP_PER_KEY)
     except Exception as e:
         logger.warning("[process.comps] prune_old_comps failed: %s", e)
     return state
