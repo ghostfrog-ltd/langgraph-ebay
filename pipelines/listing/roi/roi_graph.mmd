@@ -1,0 +1,28 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	load_listings(load_listings)
+	load_comps(load_comps)
+	compute_all_for_roi(compute_all_for_roi)
+	persist_roi_estimates(persist_roi_estimates)
+	process_roi_alerts(process_roi_alerts)
+	shortlist(shortlist)
+	log_top(log_top)
+	record_alerts_and_email(record_alerts_and_email)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> load_listings;
+	compute_all_for_roi --> persist_roi_estimates;
+	load_comps --> compute_all_for_roi;
+	load_listings --> load_comps;
+	log_top --> record_alerts_and_email;
+	persist_roi_estimates --> process_roi_alerts;
+	process_roi_alerts --> shortlist;
+	shortlist --> log_top;
+	record_alerts_and_email --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
