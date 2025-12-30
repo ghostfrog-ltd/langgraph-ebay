@@ -317,7 +317,7 @@ class EbayAdapterBase:
             )
             return []
 
-        increment_api_usage("ebay")
+        increment_api_usage("ebay_base_fetch_category_items_v1")
 
         try:
             payload = r.json()
@@ -404,7 +404,7 @@ class EbayAdapterBase:
                     else:
                         return all_items
 
-                increment_api_usage("ebay")
+                increment_api_usage("ebay_base_seller_items_v1")
 
                 try:
                     payload = r.json()
@@ -550,7 +550,7 @@ class EbayAdapterBase:
                 )
                 continue
 
-            increment_api_usage("ebay")
+            increment_api_usage("ebay_base_fetch_items_by_id_v1")
 
             try:
                 item = r.json()

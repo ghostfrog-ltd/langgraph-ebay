@@ -145,7 +145,7 @@ class EbayAuth:
             raise EbayAuthError(f"Token request failed with HTTP {resp.status_code}")
 
         # ✅ At this point the call to eBay succeeded, so count it
-        increment_api_usage("ebay")
+        increment_api_usage("ebay_auth_v1")
 
         payload = resp.json()
         access_token = payload.get("access_token")

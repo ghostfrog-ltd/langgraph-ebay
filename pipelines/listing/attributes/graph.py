@@ -89,7 +89,7 @@ def _call_trading_get_item(item_id: str) -> Optional[str]:
         return None
 
     try:
-        increment_api_usage("ebay")
+        increment_api_usage("ebay_attributes_v1")
     except Exception as e:
         logger.warning(f"[maint.attributes] increment_api_usage failed: {e}")
 

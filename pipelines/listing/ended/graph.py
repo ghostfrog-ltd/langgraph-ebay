@@ -330,7 +330,7 @@ def node_process_next_candidate(state: EndedState) -> EndedState:
 
     try:
         # rate/usage tracking (keeps your old habit)
-        increment_api_usage("ebay_trading_get_item")
+        increment_api_usage("ebay_ended_v1")
 
         resp = _call_trading_get_item(item_id)
         parsed = _parse_trading_get_item(resp.text)

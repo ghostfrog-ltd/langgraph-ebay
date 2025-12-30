@@ -1,6 +1,8 @@
 # infrastructure/utils/usage_tracker.py
 from __future__ import annotations
 
+from typing import Dict
+
 from utils.db_connection import create_connection
 from utils.logger import get_logger
 
@@ -64,6 +66,44 @@ def get_api_usage_today(service: str) -> int:
 
         conn.commit()  # harmless for SELECT
         return today
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def get_all_api_usage_today() -> Dict[str, int]:
+    """
+    Return today's API usage counts for ALL services.
+
+    Returns a dict like:
+        {
+            "ebay": 123,
+            "openai": 45,
+            ...
+        }
+
+    If there are no rows for today, returns an empty dict.
+    """
+    conn = create_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT service, call_count
+                FROM api_usage
+                WHERE date = CURRENT_DATE
+                """
+            )
+            rows = cur.fetchall() or []
+
+        # No need to commit, but harmless if we do for consistency
+        conn.commit()
+
+        usage: Dict[str, int] = {service: int(count) for service, count in rows}
+        logger.info("[Usage] All services today = %s", usage)
+        return usage
     finally:
         try:
             conn.close()
