@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import os
 import traceback
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, TypedDict
+from zoneinfo import ZoneInfo
 
 from langgraph.graph import StateGraph, END
 
@@ -25,6 +27,73 @@ from .adapters.headphones import Adapter as HeadphonesAdapter
 from .adapters.hondaNc750 import Adapter as Nc750Adapter
 
 logger = get_logger(__name__)
+
+# -----------------------------
+# Time-window config
+# -----------------------------
+
+SCRAPE_TZ = ZoneInfo(os.getenv("GF_SCRAPE_TZ", "Europe/London"))
+
+# Allowed hours in local time [START_HOUR, END_HOUR)
+SCRAPE_START_HOUR = int(os.getenv("GF_SCRAPE_START_HOUR", "7"))
+SCRAPE_END_HOUR = int(os.getenv("GF_SCRAPE_END_HOUR", "23"))  # exclusive
+
+
+def _is_within_scrape_hours(now_utc: datetime) -> bool:
+    """
+    Return True if the given UTC time falls within the configured scrape window
+    in SCRAPE_TZ local time.
+    Assumes a simple non-wrapping window (start < end) by default.
+    """
+    local = now_utc.astimezone(SCRAPE_TZ)
+    hour = local.hour
+
+    if SCRAPE_START_HOUR < SCRAPE_END_HOUR:
+        # Simple daytime window, e.g. 7–23
+        return SCRAPE_START_HOUR <= hour < SCRAPE_END_HOUR
+
+    # Fallback for a window that wraps past midnight, e.g. 22–6
+    return hour >= SCRAPE_START_HOUR or hour < SCRAPE_END_HOUR
+
+
+def _next_allowed_time(now_utc: datetime) -> datetime:
+    """
+    Compute the next UTC timestamp when scraping is allowed again,
+    based on the configured local scrape window.
+    """
+    local = now_utc.astimezone(SCRAPE_TZ)
+
+    # Normal non-wrapping window (default case)
+    if SCRAPE_START_HOUR < SCRAPE_END_HOUR:
+        start_today = local.replace(
+            hour=SCRAPE_START_HOUR,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+
+        if local.hour < SCRAPE_START_HOUR:
+            next_local = start_today
+        elif local.hour >= SCRAPE_END_HOUR:
+            next_local = start_today + timedelta(days=1)
+        else:
+            # Already within window; next allowed is "now"
+            next_local = local
+    else:
+        # For wrapping windows, just say "start of next window" = next SCRAPE_START_HOUR
+        start_today = local.replace(
+            hour=SCRAPE_START_HOUR,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        if local.hour < SCRAPE_START_HOUR:
+            next_local = start_today
+        else:
+            next_local = start_today + timedelta(days=1)
+
+    return next_local.astimezone(timezone.utc)
+
 
 # -----------------------------
 # Adapter registry (serializable names)
@@ -81,6 +150,18 @@ def _gate_should_run(domain: str) -> Dict[str, Any]:
     """
     now = datetime.now(timezone.utc)
 
+    # First, respect global scrape hours
+    if not _is_within_scrape_hours(now):
+        next_time = _next_allowed_time(now)
+        return {
+            "ok": False,
+            "reason": "off_hours",
+            "interval": 0,
+            "last_run": None,
+            "next_time": next_time,
+        }
+
+    # Then apply per-source interval gating as before
     with connection.cursor() as cur:
         cur.execute(
             """
@@ -183,23 +264,42 @@ def run_current_adapter(state: RetrieveState) -> RetrieveState:
     gate = _gate_should_run(domain)
 
     if not gate["ok"]:
-        if gate["reason"] == "gated":
+        reason = gate["reason"]
+        if reason == "gated":
             logger.info(
                 f"[scrape:{domain}] gated → next allowed run at "
                 f"{gate['next_time'].strftime('%H:%M:%S')} (interval={gate['interval']}s)"
             )
+        elif reason == "off_hours":
+            nt = gate["next_time"]
+            if nt is not None:
+                local_nt = nt.astimezone(SCRAPE_TZ)
+                logger.info(
+                    f"[scrape:{domain}] off-hours window; next allowed run at "
+                    f"{local_nt.strftime('%Y-%m-%d %H:%M:%S %Z')}"
+                )
+            else:
+                logger.info(f"[scrape:{domain}] off-hours window; skipping")
         else:
             logger.warning(f"[scrape:{domain}] skipped (no source record or disabled)")
+
+        status = (
+            "gated"
+            if reason == "gated"
+            else ("off_hours" if reason == "off_hours" else "skipped")
+        )
 
         state["results"].append(
             {
                 "adapter": name,
                 "domain": domain,
-                "status": "gated" if gate["reason"] == "gated" else "skipped",
-                "reason": gate["reason"],
+                "status": status,
+                "reason": reason,
                 "interval": gate["interval"],
                 "last_run": gate["last_run"].isoformat() if gate["last_run"] else None,
-                "next_time": gate["next_time"].isoformat() if gate["next_time"] else None,
+                "next_time": gate["next_time"].isoformat()
+                if gate["next_time"]
+                else None,
             }
         )
         state["idx"] = int(state.get("idx", 0)) + 1
@@ -215,7 +315,9 @@ def run_current_adapter(state: RetrieveState) -> RetrieveState:
 
         state["results"].append({"adapter": name, "domain": domain, "status": "ran"})
     except Exception as e:
-        logger.warning(f"[scrape:{domain}] API fetch failed: {e}\n{traceback.format_exc()}")
+        logger.warning(
+            f"[scrape:{domain}] API fetch failed: {e}\n{traceback.format_exc()}"
+        )
         connection.rollback()
         state["results"].append(
             {"adapter": name, "domain": domain, "status": "failed", "error": str(e)}
@@ -256,6 +358,7 @@ def build_graph():
 
     return g.compile()
 
+
 def save_graph_diagram(path: str = "retrieve_graph.mmd") -> None:
     graph = build_graph()
     g = graph.get_graph()
@@ -266,6 +369,7 @@ def save_graph_diagram(path: str = "retrieve_graph.mmd") -> None:
         f.write(mermaid)
 
     logger.info(f"[scrape] wrote graph mermaid to {path}")
+
 
 def run(*, ebay_token: str, adapter_names: Optional[List[str]] = None) -> RetrieveState:
     graph = build_graph()
