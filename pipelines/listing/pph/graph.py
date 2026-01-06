@@ -111,6 +111,37 @@ def _load_targets(max_rows: int = 500) -> Dict[str, List[str]]:
         LIMIT %s
     """
 
+    sql = """
+            SELECT
+                l.external_id,
+                s.domain
+            FROM auction_listings AS l
+            JOIN sources AS s
+              ON s.id = l.source_id
+            WHERE l.status = 'live'
+              AND COALESCE(l.finalized, FALSE) = FALSE
+              AND l.end_time IS NOT NULL
+              AND l.end_time > (now() AT TIME ZONE 'utc')
+              AND l.last_seen_at IS NOT NULL
+              AND (
+                    
+                    -- Soon: ends in 1–24 hours -> refresh if older than 120 minutes
+                    (
+                      l.end_time >  (now() AT TIME ZONE 'utc') + interval '1 hour'
+                      AND l.end_time <= (now() AT TIME ZONE 'utc') + interval '24 hours'
+                      AND l.last_seen_at < (now() AT TIME ZONE 'utc') - interval '120 minutes'
+                    )
+                    OR
+                    -- Far away: ends in more than 24 hours -> refresh if older than 1440 minutes (1 day)
+                    (
+                      l.end_time > (now() AT TIME ZONE 'utc') + interval '24 hours'
+                      AND l.last_seen_at < (now() AT TIME ZONE 'utc') - interval '1440 minutes'
+                    )
+                  )
+            ORDER BY l.end_time ASC
+            LIMIT %s
+        """
+
     with connection.cursor() as cur:
         cur.execute(sql, (max_rows,))
         rows = cur.fetchall()
