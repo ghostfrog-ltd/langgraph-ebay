@@ -11,7 +11,10 @@ from utils.logger import get_logger
 from utils.db_schema import connection
 
 # Adjust this import to match where you put the helper you pasted
-from pipelines.listing.assess.model_client import post_to_model
+#from pipelines.listing.assess.model_client import post_to_model
+
+# TRY GOOGLE GEMINI
+from pipelines.listing.assess.gemini_model_client import post_to_gemini as post_to_model
 
 logger = get_logger(__name__)
 
@@ -29,47 +32,15 @@ class AssessState(TypedDict, total=False):
 # DB access
 # -----------------------------
 def _load_candidates(limit: int) -> List[Dict[str, Any]]:
-    """
-    Load listings that still need an LLM assessment.
-
-    Strategy:
-      - status='live'
-      - No existing row in listing_assessments
-      - Oldest end_time first (so we prioritise near-ending stuff)
-    """
     sql = """
         SELECT
-            l.id,
-            l.external_id,
-            l.source,
-            l.title,
-            l.price_current,
-            l.price_bid_current,
-            l.bids_count,
-            l.end_time,
-            l.status,
-            l.url,
-            l.first_seen,
-            l.fetched_at,
-            l.roi_estimate,
-            l.max_bid,
-            l.notes,
-            l.source_id,
-            l.final_price,
-            l.sale_type,
-            l.model_key,
-            l.time_left_s,
-            l.finalized,
-            l.brand,
-            l.product_family,
-            l.model_name,
-            l.storage_gb,
-            l.colour,
-            l.epid,
-            l.raw_attrs,
-            l.last_seen_at,
-            l.bucket_key
+            l.*,
+            c.median_final_price,
+            c.mean_final_price,
+            c.samples AS comp_samples
         FROM auction_listings AS l
+        LEFT JOIN latest_comps AS c
+          ON l.model_key = c.model_key
         LEFT JOIN listing_assessments AS a
           ON a.listing_id = l.id
         WHERE l.status = 'live'
@@ -79,81 +50,59 @@ def _load_candidates(limit: int) -> List[Dict[str, Any]]:
         LIMIT %s
     """
 
+    # Using RealDictCursor (if using psycopg2) makes this much cleaner:
+    # from psycopg2.extras import RealDictCursor
+    # with connection.cursor(cursor_factory=RealDictCursor) as cur:
+
     with connection.cursor() as cur:
         cur.execute(sql, (limit,))
+        colnames = [desc[0] for desc in cur.description]
         rows = cur.fetchall()
 
     candidates: List[Dict[str, Any]] = []
     for row in rows:
-        (
-            listing_id,
-            external_id,
-            source,
-            title,
-            price_current,
-            price_bid_current,
-            bids_count,
-            end_time,
-            status,
-            url,
-            first_seen,
-            fetched_at,
-            roi_estimate,
-            max_bid,
-            notes,
-            source_id,
-            final_price,
-            sale_type,
-            model_key,
-            time_left_s,
-            finalized,
-            brand,
-            product_family,
-            model_name,
-            storage_gb,
-            colour,
-            epid,
-            raw_attrs,
-            last_seen_at,
-            bucket_key,
-        ) = row
+        # Create a dict from row/colnames to preserve everything
+        d = dict(zip(colnames, row))
 
-        candidates.append(
-            {
-                "listing_id": listing_id,
-                "external_id": external_id,
-                "source": source,
-                "title": title,
-                "price_current": float(price_current) if price_current is not None else None,
-                "price_bid_current": float(price_bid_current) if price_bid_current is not None else None,
-                "bids_count": int(bids_count) if bids_count is not None else None,
-                "end_time": end_time.isoformat() if end_time else None,
-                "status": status,
-                "url": url,
-                "first_seen": first_seen.isoformat() if first_seen else None,
-                "fetched_at": fetched_at.isoformat() if fetched_at else None,
-                "roi_estimate": float(roi_estimate) if roi_estimate is not None else None,
-                "max_bid": float(max_bid) if max_bid is not None else None,
-                "notes": notes,
-                "source_id": source_id,
-                "final_price": float(final_price) if final_price is not None else None,
-                "sale_type": sale_type,
-                "model_key": model_key,
-                "time_left_s": int(time_left_s) if time_left_s is not None else None,
-                "finalized": bool(finalized) if finalized is not None else None,
-                "brand": brand,
-                "product_family": product_family,
-                "model_name": model_name,
-                "storage_gb": float(storage_gb) if storage_gb is not None else None,
-                "colour": colour,
-                "epid": epid,
-                "raw_attrs": raw_attrs,  # JSON/text as-is; model can inspect
-                "last_seen_at": last_seen_at.isoformat() if last_seen_at else None,
-                "bucket_key": bucket_key,
-            }
-        )
+        # Clean up types for the LLM / JSON state
+        candidates.append({
+            "listing_id": d["id"],
+            "external_id": d["external_id"],
+            "source": d["source"],
+            "title": d["title"],
+            "price_current": float(d["price_current"]) if d["price_current"] is not None else None,
+            "price_bid_current": float(d["price_bid_current"]) if d["price_bid_current"] is not None else None,
+            "bids_count": int(d["bids_count"]) if d["bids_count"] is not None else None,
+            "end_time": d["end_time"].isoformat() if d["end_time"] else None,
+            "status": d["status"],
+            "url": d["url"],
+            "first_seen": d["first_seen"].isoformat() if d["first_seen"] else None,
+            "fetched_at": d["fetched_at"].isoformat() if d["fetched_at"] else None,
+            "roi_estimate": float(d["roi_estimate"]) if d["roi_estimate"] is not None else None,
+            "max_bid": float(d["max_bid"]) if d["max_bid"] is not None else None,
+            "notes": d["notes"],
+            "source_id": d["source_id"],
+            "final_price": float(d["final_price"]) if d["final_price"] is not None else None,
+            "sale_type": d["sale_type"],
+            "model_key": d["model_key"],
+            "time_left_s": int(d["time_left_s"]) if d["time_left_s"] is not None else None,
+            "finalized": bool(d["finalized"]),
+            "brand": d["brand"],
+            "product_family": d["product_family"],
+            "model_name": d["model_name"],
+            "storage_gb": float(d["storage_gb"]) if d["storage_gb"] is not None else None,
+            "colour": d["colour"],
+            "epid": d["epid"],
+            "raw_attrs": d["raw_attrs"],
+            "last_seen_at": d["last_seen_at"].isoformat() if d["last_seen_at"] else None,
+            "bucket_key": d["bucket_key"],
+            # NEW MARKET DATA FIELDS
+            "market_median": float(d["median_final_price"]) if d["median_final_price"] is not None else None,
+            "market_mean": float(d["mean_final_price"]) if d["mean_final_price"] is not None else None,
+            "comp_samples": d["comp_samples"] or 0
+        })
 
-    logger.info("[assess] loaded %s listings for LLM assessment", len(candidates))
+    logger.info("[assess] loaded %s listings with full metadata and comps", len(candidates))
     return candidates
 
 
