@@ -32,7 +32,7 @@ logger = get_logger(__name__)
 # SOURCE = "ebay-apple"
 # SOURCE = "ebay-actioncams"
 # SOURCE = "ebay-retro-pc"
-# SOURCE = "ebay-watches"
+SOURCE = "ebay-watches"
 # SOURCE = "ebay-tools"
 # SOURCE = "motomine"
 # SOURCE = "ebay-motors"
@@ -40,7 +40,7 @@ logger = get_logger(__name__)
 # SOURCE = "ebay-pokemon"
 # SOURCE = "ebay-samsung"
 # SOURCE = "ebay-headphones"
-SOURCE= "ebay-honda-nc750"
+# SOURCE= "ebay-honda-nc750"
 
 
 def _to_str(v: Any) -> str | None:

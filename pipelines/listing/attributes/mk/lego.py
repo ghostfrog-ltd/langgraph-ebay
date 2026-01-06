@@ -1,3 +1,4 @@
+# agent/model_keys/lego.py
 from __future__ import annotations
 
 import re
@@ -7,172 +8,147 @@ from utils.condition import _derive_condition_grade
 
 UNKNOWN_KEY = "unknown"
 
+# Theme prefixes for minifigures
+MINIFIG_THEME_MAP = {
+    "sw": "star-wars",
+    "sh": "super-heroes",
+    "hp": "harry-potter",
+    "col": "collectible-minifigures",
+    "loc": "legends-of-chima",
+    "mo": "monkie-kid",
+    "pj": "ninjago",
+    "poc": "pirates-of-the-caribbean",
+    "pop": "prince-of-persia",
+    "spd": "spiderman",
+    "toy": "toy-story",
+    "u": "ultra-agents",
+    "v": "vidiyo",
+    "w": "western",
+}
+
+# High-level LEGO themes found in the dataset
+THEME_KEYWORDS = {
+    "star-wars": ["star wars", "falcon", "vader", "jedi", "sith"],
+    "technic": ["technic", "mclaren", "bugatti", "tractor", "motor"],
+    "ninjago": ["ninjago", "kai", "lloyd", "zane", "spinjitzu"],
+    "city": ["city", "police", "fire station", "tractor"],
+    "super-heroes": ["super heroes", "marvel", "dc", "batman", "avengers"],
+    "icons": ["icons", "tudor", "time machine", "creator expert"],
+    "harry-potter": ["harry potter", "hogwarts", "wizarding world"],
+    "disney": ["disney", "princess", "mickey", "minnie"],
+}
+
 
 def _clean(s: Any) -> str:
     """Basic string cleaner: None -> "", strip whitespace."""
-    if s is None:
-        return ""
+    if s is None: return ""
+    if isinstance(s, list):
+        return " ".join(str(v).lower() for v in s)
     return str(s).strip()
 
 
-def _normalise_brand(raw: Any) -> str:
-    """Normalise Brand into a compact token for the key.
+def _derive_theme(attrs: Mapping[str, Any], title: str) -> str:
+    """Identifies the LEGO theme for categorization."""
+    t = _clean(attrs.get("Type")).lower()
+    lego_theme = _clean(attrs.get("LEGO Theme")).lower()
+    title_low = title.lower()
+    full_text = f"{t} {lego_theme} {title_low}"
 
-    For ebay-lego we mostly collapse to:
-      - "lego" for genuine LEGO
-      - "moclego" for MOC / compatible builds
+    for theme, keywords in THEME_KEYWORDS.items():
+        if any(kw in full_text for kw in keywords):
+            return theme
+    return "generic"
 
-    Rules:
-    - Lowercase
-    - If the brand contains "moc" anywhere -> moclego
-    - Else -> lego (even if user typed "Lego", "LEGO®", etc)
-    """
+
+def _derive_completeness_suffix(attrs: Mapping[str, Any], title: str) -> str:
+    """Adjusts the grade suffix based on completeness signals."""
+    t = _clean(attrs.get("Type")).lower()
+    desc = _clean(attrs.get("Bundle Description")).lower()
+    full_text = f"{t} {desc} {title.lower()}"
+
+    if any(sig in full_text for sig in ["incomplete", "missing pieces", "no minifigures"]):
+        return "INC"
+
+    missing_box = any(sig in full_text for sig in ["no box", "loose", "no original box"])
+    missing_manual = any(sig in full_text for sig in ["no manual", "no instructions", "missing manual"])
+
+    if missing_box and missing_manual: return "L"
+    if missing_box: return "NB"
+    if missing_manual: return "NM"
+    return "C"
+
+
+def _is_joblot(attrs: Mapping[str, Any], title: str) -> bool:
+    """Detects if the listing is a bulk lot or joblot."""
+    t = _clean(attrs.get("Type")).lower()
+    title_low = title.lower()
+    if any(sig in t for sig in ["joblot", "bulk", "mystery box", "kg"]):
+        return not ("minifig" in t or "minifigure" in t)
+    return any(sig in title_low for sig in ["joblot", "mixed", "uncounted"]) or bool(re.search(r'\d+\s?kg', title_low))
+
+
+def _is_minifigure(attrs: Mapping[str, Any], title: str) -> bool:
+    """Detects standalone minifigures or minifigure bundles."""
+    t = _clean(attrs.get("Type")).lower()
+    title_low = title.lower()
+    if any(sig in t for sig in ["minifigure", "figure", "figurine"]):
+        return not ("no minifigure" in t or "no box" in t)
+    return ("minifigure" in title_low or "minifig" in title_low) and not any(
+        x in title_low for x in ["with", "no", "without"])
+
+
+def _normalise_brand(raw: Any, is_minifig: bool = False, is_bulk: bool = False) -> str:
+    """Normalise Brand into a compact token."""
+    if is_bulk: return "legobulk"
+    if is_minifig: return "legominifig"
     s = _clean(raw)
-    if not s:
-        return ""
-
+    if not s: return "lego"
     low = s.lower()
-    if "moc" in low:
-        return "moclego"
-
-    # If it's any flavour of LEGO, normalise to lego
-    if "lego" in low:
-        return "lego"
-
-    # Fallback: compact alnum brand (rare in this feed)
-    out = []
-    for ch in low:
-        if ch.isalnum():
-            out.append(ch)
-    return "".join(out) or "lego"
+    if "moc" in low: return "moclego"
+    return "lego"
 
 
-def _parse_int_like(raw: Any) -> str:
-    """Extract a compact numeric token from an attribute value.
-
-    Accepts values like:
-      - "10214"
-      - "S_76294-1___GB"  -> "76294"
-      - "4002025" (corporate / special sets)
-      - "Nicht zutreffend", "Does not apply" -> ""
-    """
+def _parse_id(raw: Any, is_minifig: bool = False, is_bulk: bool = False, title: str = "") -> str:
+    """Extracts a Set number, Minifigure ID, Weight, or Bundle Count."""
     s = _clean(raw)
-    if not s:
-        return ""
-
-    low = s.lower()
-
-    BAD = {
-        "n/a", "na", "none", "not applicable", "does not apply", "doesnotapply",
-        "does not apply.", "doesn't apply", "doesntapply", "nicht zutreffend",
-        "see description", "see photo", "random",
-    }
-    if low in BAD or "does not apply" in low or "nicht zutreffend" in low:
-        return ""
-
-    # Pull the first run of 3..7 digits (covers old 3-digit sets + 4-5 digit modern + 7-digit corporate)
-    m = re.search(r"\b(\d{3,7})\b", s)
-    if not m:
-        return ""
-
-    num = m.group(1)
-
-    # Avoid obvious years (these appear a lot in titles / attrs)
-    try:
-        year = int(num)
-        if 1950 <= year <= 2035:
-            return ""
-    except Exception:
-        pass
-
-    return num
-
-
-def _set_number_from_attrs(attrs: Mapping[str, Any]) -> str:
-    """Best-effort extraction of a LEGO set/model number from attrs."""
-    # Order matters: prefer explicit "MPN-ish" fields, then "Model", then translated variants.
-    CANDIDATE_KEYS = [
-        # Common eBay keys
-        "MPN",
-        "Manufacturer Part Number",
-        "Model Number",
-        "Model",
-        "Part Number",
-        "Artikelnummer",
-        "Herstellernummer",
-
-        # Variants seen in the source export (different languages/encodings)
-        "Numéro de l'assortiment LEGO",
-        "NumÃ©ro de l'assortiment LEGO",
-        "Number of l'assortment LEGO",
-        "NumÃ©ro de l'assortiment LEGO",
-        "Item model number",
-    ]
-
-    for k in CANDIDATE_KEYS:
-        if k in attrs:
-            val = _parse_int_like(attrs.get(k))
-            if val:
-                return val
-
-    return ""
-
-
-def _set_number_from_title(title: str) -> str:
-    """Fallback: try to find a plausible set number in the title."""
-    t = _clean(title)
-    if not t:
-        return ""
-
-    # Collect all numeric candidates, then pick the first plausible one.
-    candidates = re.findall(r"\b(\d{3,7})\b", t)
-    for num in candidates:
-        # Skip years
-        try:
-            year = int(num)
-            if 1950 <= year <= 2035:
-                continue
-        except Exception:
-            pass
-
-        # Most LEGO set numbers are 3-5 digits, but keep 6-7 too (e.g. corporate / special)
+    full_text = f"{s} {title.lower()}"
+    if is_bulk:
+        m = re.search(r'(\d+)\s?kg', full_text)
+        return f"{m.group(1)}kg" if m else "mixed"
+    if is_minifig:
+        bm = re.search(r'(\d+)\s?(?:x|minifig|figure)', full_text)
+        if bm and int(bm.group(1)) > 1: return f"bundle-{bm.group(1)}"
+        fm = re.search(r"\b([a-z]{1,4})(\d{3,5}[a-z]?)\b", s.lower())
+        if fm:
+            theme = MINIFIG_THEME_MAP.get(fm.group(1), fm.group(1))
+            return f"{theme}-{fm.group(2)}"
+    sm = re.search(r"\b(\d{3,7})\b", s)
+    if sm:
+        num = sm.group(1)
+        if 1950 <= int(num) <= 2035: return ""  # Avoid year collisions
         return num
-
     return ""
 
 
-def lego_model_key(
-    attrs: Mapping[str, Any],
-    title: str = "",
-) -> Optional[str]:
-    """Build a canonical model key for LEGO listings (source='ebay-lego').
+def lego_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
+    """Canonical model key for LEGO with theme and completeness tracking."""
+    is_bulk = _is_joblot(attrs, title)
+    is_minifig = False if is_bulk else _is_minifigure(attrs, title)
+    brand = _normalise_brand(attrs.get("Brand"), is_minifig, is_bulk)
+    theme = _derive_theme(attrs, title)
 
-    Output format (console-style):
+    CANDIDATE_KEYS = ["MPN", "Manufacturer Part Number", "Model Number", "Model",
+                      "Numéro de l'assortiment LEGO", "NumÃ©ro de l'assortiment LEGO", "Herstellernummer"]
 
-        {brand}-{setnum}_{grade}
+    set_id = ""
+    for k in CANDIDATE_KEYS:
+        set_id = _parse_id(attrs.get(k), is_minifig, is_bulk, title)
+        if set_id: break
+    if not set_id: set_id = _parse_id(title, is_minifig, is_bulk, title)
+    if not brand or not set_id: return UNKNOWN_KEY
 
-    Examples:
-        Brand="LEGO", Herstellernummer="10214"
-            -> "lego-10214_B"
-
-        Brand="MOC LEGO", Model="S_76294-1___GB"
-            -> "moclego-76294_B"
-
-    Rules:
-    - Uses attrs["Brand"] and (preferably) a set/model number from attrs
-      (MPN/Herstellernummer/Model/Model Number/etc)
-    - Falls back to extracting a plausible number from the title
-    - Passes attrs + title into _derive_condition_grade for grade
-    - If no usable Brand or no usable set number -> returns UNKNOWN_KEY ("unknown")
-    """
-    raw_brand = attrs.get("Brand")
-    brand = _normalise_brand(raw_brand)
-
-    setnum = _set_number_from_attrs(attrs) or _set_number_from_title(title)
-
-    if not brand or not setnum:
-        return UNKNOWN_KEY
-
-    base_key = f"{brand}-{setnum}"
     grade = _derive_condition_grade(attrs, title)
-    return f"{base_key}_{grade}"
+    completeness = _derive_completeness_suffix(attrs, title)
+
+    # Final key structure: {brand}-{theme}-{id}_{grade}-{completeness}
+    return f"{brand}-{theme}-{set_id}_{grade}-{completeness}"

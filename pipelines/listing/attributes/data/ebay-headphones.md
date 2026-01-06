@@ -1,6 +1,6 @@
 # Attribute values for source: `ebay-headphones`
 
-Total attributes: **109**
+Total attributes: **110**
 
 ---
 ## Active Noice Cancelling (1 unique)
@@ -13,10 +13,12 @@ Total attributes: **109**
 - `ð¢ 100% Genuine`
 
 ---
-## Band (4 unique)
+## Band (6 unique)
 
+- `2.4 GHz`
 - `Beats Powerbeats Pro 2`
 - `HF`
+- `N/A`
 - `UHF`
 - `VHF`
 
@@ -88,13 +90,14 @@ Total attributes: **109**
 - `soundcore`
 
 ---
-## Cable Length (10 unique)
+## Cable Length (11 unique)
 
 - `0.2 m`
 - `0.8 m`
 - `1.2 m`
 - `1.5 m`
 - `1m`
+- `2.99m`
 - `2m`
 - `3ft`
 - `3m`
@@ -119,15 +122,17 @@ Total attributes: **109**
 - `Yes`
 
 ---
-## Color (4 unique)
+## Color (6 unique)
 
 - `Black`
+- `Desert Gold`
 - `Electric Orange`
 - `NA`
+- `Red/Black`
 - `Silver`
 
 ---
-## Colour (27 unique)
+## Colour (31 unique)
 
 - `As Shown`
 - `Beige`
@@ -136,6 +141,7 @@ Total attributes: **109**
 - `Blue`
 - `Chestnut`
 - `Clear`
+- `Desert Gold`
 - `Electric Orange`
 - `Green`
 - `Grey`
@@ -148,12 +154,15 @@ Total attributes: **109**
 - `Orange`
 - `Pink`
 - `Platinum Silver`
+- `Quick Sand`
+- `Red/Black`
 - `SandStone`
 - `Sandstone`
 - `Silver`
 - `White`
 - `White Smoke`
 - `Yellow`
+- `green mist`
 - `ice blue`
 - `view pictures if unsure ask`
 
@@ -168,7 +177,7 @@ Total attributes: **109**
 - `Google Assistant, Amazon Alexa, Siri`
 
 ---
-## Connectivity (23 unique)
+## Connectivity (25 unique)
 
 - `2.5mm Jack`
 - `2.5mm-3.5mm jack`
@@ -178,6 +187,8 @@ Total attributes: **109**
 - `3.5mm low profile angled plug`
 - `4.4 mm balanced`
 - `6.35 mm (1/4 in)`
+- `6.35mm`
+- `6.35mm Jack`
 - `6.3mm (1/4in)`
 - `AUX Cable`
 - `Bluetooth`
@@ -216,12 +227,13 @@ Total attributes: **109**
 - `Earbud`
 
 ---
-## Country of Origin (7 unique)
+## Country of Origin (8 unique)
 
 - `China`
 - `Germany`
 - `Japan`
 - `Malaysia`
+- `South Korea (Republic of Korea)`
 - `United Kingdom`
 - `United States`
 - `Vietnam`
@@ -245,7 +257,7 @@ Total attributes: **109**
 - `4-15`
 
 ---
-## Driver Size (9 unique)
+## Driver Size (10 unique)
 
 - `11mm`
 - `19.5 x 18 x 7.8 cm; 272.16 g`
@@ -255,13 +267,15 @@ Total attributes: **109**
 - `40 mm`
 - `42 mm`
 - `50 mm`
+- `9.2mm`
 - `Beats Powerbeats Pro 2`
 
 ---
-## EAN (9 unique)
+## EAN (10 unique)
 
 - `0017817847681`
 - `017817846172`
+- `195949121845`
 - `195949591044`
 - `4548736142374`
 - `810015586921`
@@ -276,21 +290,26 @@ Total attributes: **109**
 - `Silicone`
 
 ---
-## Earpiece Design (1 unique)
+## Earpiece Design (2 unique)
 
+- `Ear-Cup (Over the Ear)`
 - `Earbud (In Ear)`
 
 ---
-## Features (68 unique)
+## Features (83 unique)
 
+- `10H/50H Worry-Free Battery`
 - `12 hours of continuous use`
 - `40-Hour Playtime`
 - `40H Playtime`
 - `50H Playtime`
+- `6-Mic AI Clear Calls`
 - `Active Noise Canceling`
+- `Active Noise Cancelling (ANC)`
 - `Adaptive Noise Cancelling`
 - `Adjustable Headband`
 - `Adjustable Headband, Built-in Microphone, Volume Control`
+- `Adjustable Sensory Bass`
 - `Ambient Sound Mode`
 - `Bluetooth`
 - `Bluetooth Multi-point`
@@ -304,19 +323,24 @@ Total attributes: **109**
 - `Closed Back`
 - `Coiled Cable`
 - `Comfortable Fit`
+- `Crisp Sound with 3Ã More Detail`
+- `Designed for Simple Connections`
 - `Detachable Cable`
 - `Echo Cancellation`
 - `Extra Bass`
 - `Fast Charge`
+- `Fast Charging`
 - `Foam Tips`
 - `Foldable`
 - `Foldaway/Compact`
 - `HD Voice`
 - `Hi-Res Sound`
+- `IPX4 Water-Resistant`
 - `In-Line Control`
 - `JBL Pure Bass Sound`
 - `LE Audio`
 - `Leather Cushions`
+- `Microphone`
 - `Microphone Mute Button`
 - `Motion-detecting accelerometer`
 - `Multiple Modes`
@@ -324,6 +348,7 @@ Total attributes: **109**
 - `NFC Bluetooth Pairing`
 - `Noise Cancellation`
 - `Noise Cancelling`
+- `Noise Cancelling Adapts to Ears and Environments`
 - `Noise Isolation`
 - `Open Back`
 - `Passive noise-isolating`
@@ -331,16 +356,21 @@ Total attributes: **109**
 - `Pressure-Free Comfort`
 - `Push-to-talk (PTT)`
 - `Rechargeable Battery`
+- `Reduce Noise By Up to 98.5%`
+- `Replaceable Ear Pads`
 - `Replaceable Ear Tips`
 - `Replaceable Earpads`
 - `Retractable Cable`
 - `Rotating Ear Cups`
+- `Sculpt Your Sound Profile`
 - `Stereo`
 - `Supreme Comfort with Ergonomic Design`
 - `Surround Sound`
 - `Sweat-Proof`
 - `Ten levels of noise cancellation`
+- `Tileâ¢ Tracking`
 - `Touch Control`
+- `USB-C Charging`
 - `USB-PD (fast charging)`
 - `Unmatched Battery Life and Rapid Charging`
 - `Volume Control`
@@ -358,16 +388,17 @@ Total attributes: **109**
 - `Over Head Over Ear`
 
 ---
-## Form Factor (5 unique)
+## Form Factor (6 unique)
 
 - `Ear-hook`
 - `Headband`
 - `In Ear`
 - `In-Ear Only`
 - `Over Ear`
+- `Over-Ear`
 
 ---
-## Frequency Range (17 unique)
+## Frequency Range (18 unique)
 
 - `10 - 20000Hz`
 - `10 m`
@@ -375,6 +406,7 @@ Total attributes: **109**
 - `20 - 20kHz`
 - `20 Hz`
 - `20 Hz - 20,000 Hz`
+- `20 Hz â 20 kHz`
 - `20-20000 Hz`
 - `20Hz - 20,000Hz`
 - `4 Hz - 40000 Hz`
@@ -394,7 +426,7 @@ Total attributes: **109**
 - `20cm`
 
 ---
-## Impedance (15 unique)
+## Impedance (16 unique)
 
 - `16 ohm`
 - `18 ohm`
@@ -407,6 +439,7 @@ Total attributes: **109**
 - `38 Ohms`
 - `470 Ohm`
 - `600ohms`
+- `63 Ohms`
 - `8 ohm`
 - `80`
 - `Beats Powerbeats Pro 2`
@@ -476,11 +509,12 @@ Total attributes: **109**
 - `8cm`
 
 ---
-## MPN (80 unique)
+## MPN (91 unique)
 
 - `1006832`
 - `504779`
 - `507435`
+- `508231`
 - `508948`
 - `560S`
 - `700074`
@@ -492,6 +526,7 @@ Total attributes: **109**
 - `882826-0010`
 - `884367-0100`
 - `890101-0100`
+- `A3004`
 - `A3004G11`
 - `A3004G11-F0`
 - `A3004G31`
@@ -502,14 +537,17 @@ Total attributes: **109**
 - `A3035G11-F0`
 - `A3040`
 - `A3062`
+- `A3947`
 - `A3947G21-F0`
 - `A39490F1`
 - `A3952021`
 - `A3955`
+- `A3957`
 - `A3959`
 - `ACAEBT`
 - `ATH-M50X`
 - `BEOPLAY H9 3RD GENERATION`
+- `Beoplay EX`
 - `CFRS-UK-02006-01-002`
 - `Does Not Apply`
 - `GPN700HAHCIWA`
@@ -521,13 +559,17 @@ Total attributes: **109**
 - `JBLT720BTBLK`
 - `JBLT760NCBLK`
 - `M3IETW2`
+- `MDR-7506`
 - `MDRZX110`
 - `MDRZX110BAE`
 - `MK2F3ZM / A`
 - `MQTP3ZM/A`
+- `MUW33ZM/A`
 - `MV6Y2LL/A`
 - `MX3X2ZM/A`
+- `MX733ZMA`
 - `MX743ZM/A`
+- `MX743ZMA`
 - `MXJ92LL/A`
 - `MXJ92LL/A, MX3Y2ZMA`
 - `Major 5`
@@ -540,10 +582,12 @@ Total attributes: **109**
 - `S2IYW-N740`
 - `S2TVW-N896`
 - `S6CAW-R740`
+- `S6CAW-S696`
 - `S6CPW-M448`
 - `S6CRW-K590`
 - `S6EVW-N740`
 - `T1 2nd`
+- `WF-1000XM4`
 - `WF-1000XM5`
 - `WH-1000XM3`
 - `WH-1000XM4`
@@ -592,7 +636,7 @@ Total attributes: **109**
 - `S6EVW-N740`
 
 ---
-## Manufacturer Warranty (9 unique)
+## Manufacturer Warranty (10 unique)
 
 - `1 Month`
 - `1 Year`
@@ -600,6 +644,7 @@ Total attributes: **109**
 - `18 Months`
 - `18 month`
 - `18Month`
+- `18months`
 - `2 Years`
 - `3 Months`
 - `None`
@@ -611,9 +656,10 @@ Total attributes: **109**
 - `ceramic`
 
 ---
-## Materials sourced from (3 unique)
+## Materials sourced from (4 unique)
 
 - `China`
+- `Japan`
 - `Malaysia`
 - `United Kingdom`
 
@@ -631,13 +677,15 @@ Total attributes: **109**
 - `None`
 
 ---
-## Model (126 unique)
+## Model (140 unique)
 
 - `570BT`
 - `882826-0010`
 - `ATH-M50X`
 - `Anker Liberty 4 NC`
 - `Anker Q20i`
+- `BEOPLAY EX`
+- `BOSE QC ULTRA HEADPHONES 2GEN`
 - `Bang & Olufsen BeoPlay H9 3rd Gen`
 - `Bang & Olufsen Beoplay H8`
 - `Bang & Olufsen Beoplay H95`
@@ -666,7 +714,9 @@ Total attributes: **109**
 - `Bose Quietcomfort`
 - `Bose Quietcomfort 45`
 - `Bose Quietcomfort Ultra`
+- `Bose QuiteComfort`
 - `Bose Ultra`
+- `Bose Ultra Open Earbuds`
 - `BoseÂ SoundLink around ear wireless 2`
 - `Crusher`
 - `Crusher ANC`
@@ -675,6 +725,7 @@ Total attributes: **109**
 - `Dr Dre Beats`
 - `For Samsung Galaxy`
 - `H30i`
+- `HD 206`
 - `HD 560S`
 - `HD599`
 - `IE 600`
@@ -690,6 +741,7 @@ Total attributes: **109**
 - `JBL Tune 770 NC`
 - `JBL Tune 770NC`
 - `JBLLIVE660NCBLK`
+- `Liberty 5`
 - `Life Q30`
 - `Live Flex`
 - `MDR-CD1700`
@@ -706,6 +758,7 @@ Total attributes: **109**
 - `N700NC M2`
 - `PX 200 ii`
 - `Powerbeats Fit`
+- `Powerbeats Pro`
 - `Q30`
 - `QC35 Generation 1`
 - `Quiet Comfort Ultra`
@@ -715,8 +768,10 @@ Total attributes: **109**
 - `RS120`
 - `RS175`
 - `Razer Opus`
+- `Sennheiser CX160`
 - `Sennheiser HD 505`
 - `Sennheiser HD 650`
+- `Sennheiser HD 660 S`
 - `Sennheiser HD 820`
 - `Sennheiser HD25`
 - `Sennheiser MOMENTUM`
@@ -726,7 +781,10 @@ Total attributes: **109**
 - `Shure SE535`
 - `Skullcandy Crusher ANC`
 - `Skullcandy Crusher Evo`
+- `Solo 4`
+- `Sony MDR-7506`
 - `Sony MDR-MV1`
+- `Sony WF-1000XM4`
 - `Sony WF-1000XM5`
 - `Sony WF-C510 Truly`
 - `Sony WH-1000XM3`
@@ -738,6 +796,7 @@ Total attributes: **109**
 - `Sony XM6`
 - `Soundcore A30`
 - `Soundcore P40i`
+- `Soundcore Sleep A30`
 - `Space One`
 - `Space One Pro`
 - `Space Q45`
@@ -757,6 +816,7 @@ Total attributes: **109**
 - `se353`
 - `soundcore Liberty 3 Pro`
 - `soundcore P30i`
+- `soundcore by Anker Liberty 4 NC`
 - `soundcore by Anker P20i`
 - `soundcore by Anker Q20i`
 
@@ -798,9 +858,10 @@ Total attributes: **109**
 - `Original Retail or Brown Box Packaging`
 
 ---
-## Personalisation Instructions (2 unique)
+## Personalisation Instructions (3 unique)
 
 - `Beats Powerbeats Pro 2`
+- `N/A`
 - `Samsung`
 
 ---
@@ -921,20 +982,28 @@ Total attributes: **109**
 - `Trusted Seller - Quick Dispatch - Fast Free Shipping`
 
 ---
-## Suitable For (13 unique)
+## Suitable For (21 unique)
 
 - `.`
+- `ALL`
 - `Apple`
+- `Commuting`
 - `DJ`
+- `Everyday Use`
 - `For All Ages`
+- `Gaming`
+- `General Listening`
 - `General Use`
 - `Headphones`
 - `Live Monitoring`
 - `Media Streaming`
+- `Music`
 - `N/A`
 - `Radio`
 - `Studio Monitoring`
 - `TV`
+- `Travel`
+- `sport`
 - `type c devices`
 
 ---
@@ -961,9 +1030,10 @@ Total attributes: **109**
 - `in Ear`
 
 ---
-## UPC (2 unique)
+## UPC (3 unique)
 
 - `0017817846172`
+- `195949121845`
 - `6925281967665`
 
 ---
@@ -986,9 +1056,10 @@ Total attributes: **109**
 - `Unit`
 
 ---
-## Use (1 unique)
+## Use (2 unique)
 
 - `Personal Audio, MobileCellular`
+- `Portable Audio`
 
 ---
 ## Volume Control (1 unique)
@@ -1018,6 +1089,11 @@ Total attributes: **109**
 ## Water Resistance Level (1 unique)
 
 - `Water Resist`
+
+---
+## Waterproof (1 unique)
+
+- `IPX7`
 
 ---
 ## Weight (2 unique)

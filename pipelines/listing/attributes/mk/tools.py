@@ -1,249 +1,107 @@
 # agent/model_keys/tools.py
 from __future__ import annotations
 
+import re
 from typing import Mapping, Any, Optional
-
 from utils.condition import _derive_condition_grade
 
 UNKNOWN_KEY = "unknown"
 
 
 def _clean(s: Any) -> str:
-    """
-    Basic string cleaner:
-    - Convert None → ""
-    - Strip whitespace
-    """
-    if s is None:
-        return ""
+    if s is None: return ""
+    if isinstance(s, list):
+        return " ".join(str(v).lower() for v in s)
     return str(s).strip()
 
 
-def _strip_parentheses(s: str) -> str:
+def _extract_voltage(attrs: Mapping[str, Any], title: str) -> str:
+    """Standardizes Voltage (e.g., '18v', '54v')."""
+    raw_v = _clean(attrs.get("Voltage"))
+    search_text = f"{raw_v} {title.lower()}"
+
+    match = re.search(r'\b(\d{2,3})\s?v\b', search_text)
+    if match: return f"{match.group(1)}v"
+
+    decimal_match = re.search(r'\b(\d\.\d)\s?v\b', search_text)
+    if decimal_match: return f"{decimal_match.group(1).replace('.', '')}v"
+    return ""
+
+
+def _is_bare_tool(attrs: Mapping[str, Any], title: str) -> bool:
+    """Detects 'Body Only' vs 'Kit' status."""
+    t = _clean(attrs.get("Type")).lower()
+    title_low = title.lower()
+    bare_signals = {"body only", "bare tool", "no battery", "unit only", "no charger"}
+    return any(sig in title_low for sig in bare_signals) or any(sig in t for sig in bare_signals)
+
+
+def _is_brushless(attrs: Mapping[str, Any], title: str) -> str:
     """
-    Remove anything inside parentheses, including the parentheses themselves.
-    Example:
-        "Dewalt DCF899N-XJ (Body Only)" -> "Dewalt DCF899N-XJ "
+    Detects Brushless motor technology.
+    A critical price anchor: Brushless tools are worth ~30% more.
     """
-    cleaned = []
-    depth = 0
-    for ch in s:
-        if ch == "(":
-            depth += 1
-            continue
-        if ch == ")":
-            if depth > 0:
-                depth -= 1
-            continue
-        if depth == 0:
-            cleaned.append(ch)
-    return "".join(cleaned)
+    # Check attributes and title for the 'brushless' keyword
+    search_text = f"{_clean(attrs.get('Type'))} {_clean(attrs.get('Features'))} {title.lower()}"
+
+    if "brushless" in search_text:
+        return "brushless"
+    # Optional: We could mark as 'brushed' but usually better to leave empty
+    # if unknown to avoid mislabeling legacy tools.
+    return ""
 
 
 def _normalise_brand(raw: Any) -> str:
-    """
-    Normalise Brand into a compact token for the key.
-
-    Rules:
-    - Use Brand only
-    - Lowercase
-    - Remove spaces and non-alphanumeric chars
-
-    Examples:
-        "DEWALT"     -> "dewalt"
-        "Makita"     -> "makita"
-        "Pro-Max Professional Quality Tools" -> "promaxprofessionalqualitytools"
-    """
-    s = _clean(raw)
-    if not s:
-        return ""
-
-    out = []
-    for ch in s.lower():
-        if ch.isalnum():
-            out.append(ch)
-    return "".join(out)
+    s = _clean(raw).lower()
+    if not s or s in {"unbranded", "does not apply"}: return ""
+    return "".join(ch for ch in s if ch.isalnum())
 
 
-def _is_garbage_model(s: str) -> bool:
-    """
-    Heuristics for useless model strings we should treat as missing.
-    """
-    low = s.lower()
-    if not low:
-        return True
-
-    bad_exact = {
-        "n/a",
-        "na",
-        "unknown",
-        "does not apply",
-        "doesn't apply",
-        "doesnt apply",
-        "see description",
-        "see descriptions",
-        "see pictures",
-        "as the description shows",
-        "other",
-    }
-    if low in bad_exact:
-        return True
-
-    if "does not apply" in low:
-        return True
-
-    return False
-
-
-def _tokenise_model_like(s: str) -> list[str]:
-    """
-    Common tokenisation logic for Model/MPN/Type:
-    - strip parentheses
-    - normalise separators (/, \, -) to spaces
-    - collapse multiple spaces
-    - split, strip non-alphanumerics per token
-    - lowercase
-    """
-    s = _strip_parentheses(s)
-
-    s = s.replace("/", " ")
-    s = s.replace("\\", " ")
-    s = s.replace("-", " ")
-    s = " ".join(s.split())
-
-    if not s:
-        return []
-
-    tokens: list[str] = []
-    for tok in s.split():
-        alnum = "".join(ch for ch in tok if ch.isalnum())
-        if not alnum:
-            continue
-        tokens.append(alnum.lower())
-
-    return tokens
-
-
-def _normalise_model_from_model(raw_model: Any, raw_brand: Any) -> str:
-    """
-    Normalise the Model into a compact, bucketable token.
-
-    Priority path:
-    - Use attrs["Model"], cleaned
-    - Drop leading brand token if it repeats Brand
-      e.g. Brand="DEWALT", Model="DEWALT DCF899N-XJ" -> "dcf899nxj"
-    - Return "" if it's garbage/unusable.
-    """
+def _normalise_model(raw_model: Any, brand: str) -> str:
+    """Extracts stable model family."""
     s = _clean(raw_model)
-    if not s or _is_garbage_model(s):
-        return ""
+    if not s or "does not apply" in s or len(s) < 2: return ""
 
-    tokens = _tokenise_model_like(s)
-    if not tokens:
-        return ""
+    # Strip parentheses and join first two tokens
+    s = re.sub(r'\(.*?\)', '', s)
+    s = s.replace("/", " ").replace("-", " ").replace("\\", " ")
+    tokens = [t for t in s.split() if "".join(ch for ch in t.lower() if ch.isalnum())]
 
-    # Try to drop leading brand word if it matches
-    brand_clean = _clean(raw_brand)
-    brand_tokens = brand_clean.split()
-    brand_first = brand_tokens[0].lower() if brand_tokens else ""
-
-    if brand_first and tokens and tokens[0] == brand_first.lower():
-        tokens = tokens[1:]
-
-    if not tokens:
-        return ""
-
-    return "".join(tokens)
-
-
-def _normalise_model_from_mpn(raw_mpn: Any) -> str:
-    """
-    Fallback: build a model-like token from MPN if Model was useless/missing.
-    """
-    s = _clean(raw_mpn)
-    if not s or _is_garbage_model(s):
-        return ""
-
-    tokens = _tokenise_model_like(s)
-    if not tokens:
-        return ""
-
-    return "".join(tokens)
-
-
-def _normalise_model_from_type(raw_type: Any) -> str:
-    """
-    Second fallback: use Type as the model-like token (angle grinder, planer, etc.)
-    """
-    s = _clean(raw_type)
-    if not s or _is_garbage_model(s):
-        return ""
-
-    tokens = _tokenise_model_like(s)
-    if not tokens:
-        return ""
-
-    return "".join(tokens)
+    if tokens and tokens[0].lower() == brand: tokens = tokens[1:]
+    return "".join("".join(ch for ch in t.lower() if ch.isalnum()) for t in tokens[:2])
 
 
 def tools_model_key(
-    attrs: Mapping[str, Any],
-    title: str = "",
+        attrs: Mapping[str, Any],
+        title: str = "",
 ) -> Optional[str]:
     """
-    Build a canonical model key for power tools (source='ebay-tools') using ONLY attrs.
+    Builds canonical tools key: {brand}-{model}-{voltage}-{motor?}-{bare/kit}_{grade}
 
-    New output style (console-style with grade):
-        {brand}-{model}_{grade}
-
-    Examples (given your attributes):
-        Brand="DEWALT", Model="DEWALT DCF899N-XJ"
-            -> "dewalt-dcf899nxj_B"
-
-        Brand="DEWALT", Model="DCS565N"
-            -> "dewalt-dcs565n_B"
-
-        Brand="Makita", Model="DHS680Z"
-            -> "makita-dhs680z_A"
-
-        Brand="Bosch", Model="Bosch PSA 700 E"
-            -> "bosch-psa700e_B"
-
-        Brand="Terratek", Model="Terratek Rotary Multi Tool 150 pcs"
-            -> "terratek-rotarymultitool150pcs_B"
-
-    Fallbacks:
-        - If Model is missing/garbage, use MPN.
-        - If MPN is missing/garbage, use Type.
-        - If Brand missing OR all candidates for model are missing/garbage → "unknown".
-
-    `title` is ignored for model selection but passed into _derive_condition_grade
-    to keep grading consistent with other categories.
+    Example: "dewalt-dcd996-18v-brushless-bare_B".
     """
-    raw_brand = attrs.get("Brand")
-    raw_model = attrs.get("Model")
-    raw_mpn = attrs.get("MPN")
-    raw_type = attrs.get("Type")
+    brand = _normalise_brand(attrs.get("Brand"))
 
-    brand = _normalise_brand(raw_brand)
-    if not brand:
+    # Cascade: Model -> MPN -> Type
+    model_core = _normalise_model(attrs.get("Model"), brand) or \
+                 _normalise_model(attrs.get("MPN"), brand) or \
+                 _normalise_model(attrs.get("Type"), brand)
+
+    if not brand or not model_core:
         return UNKNOWN_KEY
 
-    # 1) Primary: Model
-    model = _normalise_model_from_model(raw_model, raw_brand)
+    # Specs Extraction
+    voltage = _extract_voltage(attrs, title)
+    motor = _is_brushless(attrs, title)
+    bare_status = "bare" if _is_bare_tool(attrs, title) else "kit"
 
-    # 2) Fallback: MPN
-    if not model:
-        model = _normalise_model_from_mpn(raw_mpn)
+    # Construction
+    parts = [brand, model_core]
+    if voltage: parts.append(voltage)
+    if motor: parts.append(motor)
+    parts.append(bare_status)
 
-    # 3) Fallback: Type
-    if not model:
-        model = _normalise_model_from_type(raw_type)
-
-    if not model:
-        return UNKNOWN_KEY
-
-    base_key = f"{brand}-{model}"
+    base_key = "-".join(parts)
     grade = _derive_condition_grade(attrs, title)
 
     return f"{base_key}_{grade}"

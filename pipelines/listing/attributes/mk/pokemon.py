@@ -1,3 +1,4 @@
+# agent/model_keys/pokemon.py
 from __future__ import annotations
 
 import re
@@ -10,8 +11,9 @@ UNKNOWN_KEY = "unknown"
 
 def _clean(s: Any) -> str:
     """Basic string cleaner: None -> "", strip whitespace."""
-    if s is None:
-        return ""
+    if s is None: return ""
+    if isinstance(s, list):
+        return " ".join(str(v).lower() for v in s)
     return str(s).strip()
 
 
@@ -20,220 +22,144 @@ def _alnum_token(s: str) -> str:
     return "".join(ch for ch in s.lower() if ch.isalnum())
 
 
-def _normalise_franchise(attrs: Mapping[str, Any]) -> str:
-    """Pick a stable franchise token.
-
-    This feed sometimes includes non-Pokémon CCG items (Yu-Gi-Oh, MTG, Gundam, etc).
-    We attempt to detect Pokémon and otherwise fall back to a compact token.
-
-    Priority:
-      1) Franchise
-      2) Game
-      3) Manufacturer
-
-    If any field clearly indicates Pokémon -> "pokemon"
+def _extract_professional_grade(attrs: Mapping[str, Any], title: str) -> str:
     """
+    Identifies professional grading (PSA, BGS, CGC) and numeric scores.
+    Scans Autograph Authentication, Professional Grader, and Title.
+    """
+    # Cascade check for professional grading signals
+    auth = _clean(attrs.get("Autograph Authentication"))
+    grader = _clean(attrs.get("Professional Grader"))
+    search_text = f"{auth} {grader} {title.lower()}"
+
+    # 1. Identify the company
+    company = ""
+    if "psa" in search_text or "professional sports authenticator" in search_text:
+        company = "psa"
+    elif "beckett" in search_text or "bgs" in search_text or "bas" in search_text:
+        company = "bgs"
+    elif "cgc" in search_text:
+        company = "cgc"
+
+    if not company:
+        return ""
+
+    # 2. Extract the numeric grade (1-10)
+    # Looks for patterns like 'PSA 10', 'Grade 9', or 'BGS 9.5'
+    grade_match = re.search(rf'{company}\s?(\d{{1,2}}(?:\.\d)?)', search_text)
+    if grade_match:
+        return f"{company}{grade_match.group(1).replace('.', '')}"
+
+    return company
+
+
+def _extract_finish(attrs: Mapping[str, Any], title: str) -> str:
+    """Extracts card finish/rarity (e.g., 'holo', 'rev', 'vmax')."""
+    candidates = [
+        _clean(attrs.get("Speciality")),
+        _clean(attrs.get("Spezialkarte")),
+        _clean(attrs.get("Features")),
+        title.lower()
+    ]
+    blob = " ".join(candidates)
+
+    if "reverse holo" in blob or "rev holo" in blob: return "rev"
+    if "holo" in blob: return "holo"
+    if "vmax" in blob: return "vmax"
+    if "vstar" in blob: return "vstar"
+    if "gx" in blob: return "gx"
+    if " ex" in blob or "ex " in blob: return "ex"
+    if "promo" in blob: return "promo"
+    return ""
+
+
+def _normalise_franchise(attrs: Mapping[str, Any]) -> str:
+    """Detects franchise, defaulting to 'pokemon' if signals match."""
     candidates = [
         _clean(attrs.get("Franchise")),
         _clean(attrs.get("Game")),
         _clean(attrs.get("Manufacturer")),
     ]
-
     joined = " | ".join(candidates).lower()
-    if "pokémon" in joined or "pokemon" in joined or "the pokemon company" in joined:
+    if any(x in joined for x in ["pokémon", "pokemon", "the pokemon company"]):
         return "pokemon"
 
-    # Otherwise: compact the first non-empty candidate into a token
     for c in candidates:
-        if c:
-            t = _alnum_token(c)
-            return t or "unknown"
-
+        if c: return _alnum_token(c) or "unknown"
     return "unknown"
 
 
 def _normalise_set(raw_set: Any) -> str:
-    """Normalise Set into a compact token (lower alnum, drop separators)."""
+    """Normalises Set names (e.g., 'Evolving Skies' -> 'evolvingskies')."""
     s = _clean(raw_set)
-    if not s:
-        return ""
-
-    low = s.lower()
-
-    # Remove filler / junk buckets
-    if low in {"random", "mix", "mixed"}:
-        return ""
-
-    # Clean up separators (keep words glued together)
+    if not s or s in {"random", "mix", "mixed"}: return ""
     return _alnum_token(s)
 
 
-def _normalise_language(raw_lang: Any) -> str:
-    """Optional language token. Empty string means "don't include language"."""
-    s = _clean(raw_lang)
-    if not s:
-        return ""
-    t = _alnum_token(s)
-    # keep this short + stable
-    if t in {"english", "japanese", "korean", "chinese"}:
-        return t[:2]  # en/ja/ko/zh
-    return ""
-
-
 def _extract_card_number(raw: Any) -> str:
-    """Extract a stable 'card number' token.
-
-    Examples handled:
-      - "011/094" -> "011-094"
-      - "SV-P-113/SV-P" -> "SVP113" (compact)
-      - "SWSH241" -> "SWSH241"
-      - "001 to 159" -> "001-159"
-      - "60 Cards" -> "" (ignore)
-    """
+    """Extracts stable card number tokens like '151-165'."""
     s = _clean(raw)
-    if not s:
-        return ""
+    if not s or "cards" in s: return ""
 
-    low = s.lower()
-
-    # Ignore non-card-number-ish values
-    if "card" in low and not re.search(r"\d", s):
-        return ""
-    if "cards" in low:
-        # often bundle counts like "60 Cards"
-        if re.search(r"\b\d+\b", s) and not re.search(r"/", s):
-            return ""
-    if low in {"random", "hit"}:
-        return ""
-
-    # Pattern 1: 3/3 or 011/094 style
-    m = re.search(r"\b(\d{1,4})\s*/\s*(\d{1,4})\b", s)
+    m = re.search(r"(\d{1,4})\s*/\s*(\d{1,4})", s)
     if m:
-        a, b = m.group(1).zfill(3), m.group(2).zfill(3)
-        return f"{a}-{b}"
+        return f"{m.group(1).zfill(3)}-{m.group(2).zfill(3)}"
 
-    # Pattern 2: ranges "001 to 159", "194/193 - 213/193"
-    m = re.search(r"\b(\d{1,4})\s*(?:to|\-|–)\s*(\d{1,4})\b", low)
-    if m:
-        a, b = m.group(1).zfill(3), m.group(2).zfill(3)
-        return f"{a}-{b}"
-
-    # Pattern 3: alnum IDs like "SWSH241", "BLMM-EN014"
-    # Keep only A-Z0-9, but strip common noise
     compact = "".join(ch for ch in s.upper() if ch.isalnum())
-    # too short / too generic -> ignore
-    if len(compact) >= 4 and re.search(r"\d", compact):
+    if len(compact) >= 3 and any(ch.isdigit() for ch in compact):
         return compact
-
     return ""
 
 
 def _compress_card_name(raw: Any) -> str:
-    """Compress Card Name into a short family token.
-
-    We do NOT aim for uniqueness here, just bucketing:
-      - "Charizard ex" -> "charizardex"
-      - "Team Rocket's Giovanni" -> "teamrocketsgiovanni" (compact)
-      - "Ash Blossom & Joyous Spring" -> "ashblossom" (first two tokens)
-
-    Strategy:
-      - Lowercase
-      - Strip punctuation
-      - Keep 1-2 meaningful tokens (skip connectors)
-    """
+    """Compresses card names (e.g., 'Charizard ex' -> 'charizardex')."""
     s = _clean(raw)
-    if not s:
-        return ""
+    if not s or s in {"pokemon", "energy", "foil", "hit"}: return ""
 
-    low = s.lower()
+    low = re.sub(r"[^a-z0-9]+", " ", s.lower()).strip()
+    tokens = [t for t in low.split() if t and t not in {"the", "and", "of", "to"}]
 
-    # Some listings put generic words in Card Name
-    if low in {"pokemon", "pokémon", "energy", "foil", "bundle", "hit"}:
-        return ""
-
-    # Normalise possessives + punctuation into spaces
-    low = re.sub(r"[^a-z0-9]+", " ", low).strip()
-    if not low:
-        return ""
-
-    tokens = [t for t in low.split() if t]
-    if not tokens:
-        return ""
-
-    STOP = {"and", "or", "the", "a", "an", "of", "to", "with"}
-    tokens = [t for t in tokens if t not in STOP]
-    if not tokens:
-        return ""
-
-    # Keep at most 2 tokens, but preserve suffixes like ex/v/vmax if present
-    keep = tokens[:2]
-
-    suffixes = {"ex", "v", "vmax", "vstar", "gx", "tagteam", "promo"}
-    if tokens:
-        for tok in tokens[2:]:
-            if tok in suffixes:
-                keep.append(tok)
-                break
-
-    return "".join(keep)
+    if not tokens: return ""
+    res = tokens[:2]
+    suffixes = {"ex", "v", "vmax", "vstar", "gx", "promo"}
+    for t in tokens[2:]:
+        if t in suffixes:
+            res.append(t)
+            break
+    return "".join(res)
 
 
-def pokemon_model_key(
-    attrs: Mapping[str, Any],
-    title: str = "",
-) -> Optional[str]:
-    """Build a canonical model key for trading card listings (source='ebay-pokemon').
-
-    Output format (console-style):
-
-        {franchise}-{set}-{cardcore}{_lang?}_{grade}
-
-    Where:
-      - franchise: usually "pokemon" (but we degrade gracefully if feed includes other games)
-      - set: compact token from attrs["Set"]
-      - cardcore: prefer Card Number token; else compressed Card Name token
-      - lang: optional 2-letter language (en/ja/ko/zh) when present
-      - grade: from _derive_condition_grade(attrs, title)
-
-    Examples:
-        Franchise="Pokemon", Set="SV: Scarlet & Violet 151", Card Number="199/165"
-            -> "pokemon-svscarletviolet151-199-165_B"
-
-        Manufacturer="The Pokemon Company", Set="Evolving Skies", Card Name="Umbreon"
-            -> "pokemon-evolvingskies-umbreon_B"
-
-        Game="Yu-Gi-Oh! TCG", Set="PHANTASMAL FLAMES", Card Number="PHRE-EN024"
-            -> "yugiohtcg-phantasmalflames-PHREEN024_B"
-
-    Rules:
-    - Uses attrs["Set"] + (Card Number OR Card Name) and optional Language
-    - If set is missing, still tries to key by franchise + cardcore
-    - If we can't extract any meaningful identity -> returns UNKNOWN_KEY
+def pokemon_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
     """
-    franchise = _normalise_franchise(attrs)
+    Builds canonical card key: {franchise}-{set}-{cardcore}-{finish}{_lang?}_{grade}
+    """
+    franchise = _normalise_brand = _normalise_franchise(attrs)
     set_token = _normalise_set(attrs.get("Set"))
-    lang = _normalise_language(attrs.get("Language"))
 
     card_num = _extract_card_number(attrs.get("Card Number"))
     card_name = _compress_card_name(attrs.get("Card Name"))
-
     card_core = card_num or card_name
+
     if not card_core:
-        # try a last-ditch parse from title (common patterns like "199/165" or "SWSH241")
         card_core = _extract_card_number(title) or _compress_card_name(title)
 
-    if not franchise or franchise == "unknown" and not card_core:
-        return UNKNOWN_KEY
-    if not card_core:
-        return UNKNOWN_KEY
+    if not card_core: return UNKNOWN_KEY
 
-    base = franchise
-    if set_token:
-        base = f"{base}-{set_token}"
-    base = f"{base}-{card_core}"
+    # Specs Layer
+    finish = _extract_finish(attrs, title)
+    pro_grade = _extract_professional_grade(attrs, title)
+    lang = _clean(attrs.get("Language"))[:2] if attrs.get("Language") else ""
 
-    if lang:
-        base = f"{base}_{lang}"
+    base_parts = [franchise]
+    if set_token: base_parts.append(set_token)
+    base_parts.append(card_core)
+    if finish: base_parts.append(finish)
 
-    grade = _derive_condition_grade(attrs, title)
-    return f"{base}_{grade}"
+    base_key = "-".join(base_parts)
+    if lang: base_key += f"_{lang}"
+
+    # Condition & Professional Grade
+    condition_grade = _derive_condition_grade(attrs, title)
+    final_grade = f"{condition_grade}-{pro_grade}" if pro_grade else condition_grade
+
+    return f"{base_key}_{final_grade}"

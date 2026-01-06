@@ -179,7 +179,7 @@ Total attributes: **295**
 - `2011`
 
 ---
-## Anzahl der Teile (22 unique)
+## Anzahl der Teile (23 unique)
 
 - `0`
 - `1267`
@@ -190,6 +190,7 @@ Total attributes: **295**
 - `1957`
 - `1969`
 - `2187`
+- `2287`
 - `2617`
 - `3011`
 - `348`
@@ -241,14 +242,16 @@ Total attributes: **295**
 - `No`
 
 ---
-## Batteries Required? (1 unique)
+## Batteries Required? (2 unique)
 
 - `No`
+- `âNo`
 
 ---
-## Batteries included? (1 unique)
+## Batteries included? (2 unique)
 
 - `No`
+- `âNo`
 
 ---
 ## Batteries required (1 unique)
@@ -299,8 +302,9 @@ Total attributes: **295**
 - `without Box`
 
 ---
-## Brand (6 unique)
+## Brand (7 unique)
 
+- `BrickAura`
 - `LEGO`
 - `LEGOÂ®`
 - `Lego`
@@ -370,8 +374,9 @@ Total attributes: **295**
 - `Iron Man`
 
 ---
-## Character Family (1 unique)
+## Character Family (2 unique)
 
+- `Scooby-Doo`
 - `aircraft`
 
 ---
@@ -401,11 +406,12 @@ Total attributes: **295**
 - `LEGO Wicked`
 
 ---
-## Color (4 unique)
+## Color (5 unique)
 
 - `Multicolor`
 - `Paper manual`
 - `color`
+- `does not apply`
 - `multicolor`
 
 ---
@@ -470,7 +476,7 @@ Total attributes: **295**
 - `June 2025`
 
 ---
-## Depth (8 unique)
+## Depth (9 unique)
 
 - `118 mm`
 - `19.1 cm`
@@ -480,6 +486,7 @@ Total attributes: **295**
 - `59 mm`
 - `70.5 mm`
 - `78 mm`
+- `91 mm`
 
 ---
 ## Description (1 unique)
@@ -492,7 +499,7 @@ Total attributes: **295**
 - `NEW ORIGINAL NEW MISB`
 
 ---
-## EAN (267 unique)
+## EAN (275 unique)
 
 - `0013201204351`
 - `0042884060756`
@@ -510,6 +517,7 @@ Total attributes: **295**
 - `0673419129053`
 - `0673419129077`
 - `0673419130561`
+- `0673419139625`
 - `0673419144537`
 - `0673419145596`
 - `0673419145909`
@@ -561,6 +569,7 @@ Total attributes: **295**
 - `5702014974784`
 - `5702014974807`
 - `5702014974876`
+- `5702014982734`
 - `5702015006965`
 - `5702015064835`
 - `5702015115810`
@@ -615,6 +624,7 @@ Total attributes: **295**
 - `5702016615586`
 - `5702016616460`
 - `5702016616644`
+- `5702016617207`
 - `5702016617276`
 - `5702016617320`
 - `5702016617696`
@@ -625,6 +635,8 @@ Total attributes: **295**
 - `5702016667998`
 - `5702016668001`
 - `5702016668018`
+- `5702016668032`
+- `5702016669404`
 - `5702016683325`
 - `5702016719062`
 - `5702016756401`
@@ -639,6 +651,7 @@ Total attributes: **295**
 - `5702016913217`
 - `5702016913415`
 - `5702016913484`
+- `5702016913682`
 - `5702016913736`
 - `5702016914061`
 - `5702016914139`
@@ -656,6 +669,7 @@ Total attributes: **295**
 - `5702017100104`
 - `5702017117324`
 - `5702017152066`
+- `5702017153254`
 - `5702017153261`
 - `5702017153742`
 - `5702017153988`
@@ -744,6 +758,7 @@ Total attributes: **295**
 - `5702017812915`
 - `5702017812939`
 - `5702017815503`
+- `5702017815657`
 - `5702017815862`
 - `5702017815879`
 - `5702017816258`
@@ -850,11 +865,12 @@ Total attributes: **295**
 - `10+`
 
 ---
-## Features (231 unique)
+## Features (242 unique)
 
 - `10 minifigures`
 - `100% Complete`
 - `12 LEGO Harry Potter minifigures`
+- `12V`
 - `2 Horse Figures`
 - `2 Iconic Buildings In 1 Playset`
 - `2 detailed cabins`
@@ -915,6 +931,7 @@ Total attributes: **295**
 - `Custom Printed`
 - `Detachable Escape Pods`
 - `Detachable minifigure cockpit`
+- `Dinosaur`
 - `Disassembled into numbered bags as per LEGO instructions`
 - `Discontinued`
 - `Display Chopper as if his arms and wheel have been retracted into`
@@ -941,6 +958,8 @@ Total attributes: **295**
 - `Glow in the Dark`
 - `Handmade`
 - `Hard To Find`
+- `Harry Potter`
+- `Has Sun Damage`
 - `Hassle-Free Removal`
 - `Hogwarts Train`
 - `Hyena Droid Bomber`
@@ -1000,6 +1019,7 @@ Total attributes: **295**
 - `New`
 - `New Sealed Set`
 - `New and Sealed`
+- `New and sealed`
 - `New parts`
 - `None`
 - `Not applicable`
@@ -1014,6 +1034,7 @@ Total attributes: **295**
 - `Plug-in Power`
 - `Pneumatic`
 - `Pneumatics`
+- `Poseable build`
 - `Power Functions`
 - `Pre-Routed Channels`
 - `Pre-Set Wiring Layout`
@@ -1034,6 +1055,8 @@ Total attributes: **295**
 - `Sealed box`
 - `Sold by Weight`
 - `Sopwith Camel`
+- `Sound brick`
+- `Space`
 - `Spring-Loaded Shooters`
 - `Step-by-Step Online Videos`
 - `Stud Shooter`
@@ -1043,16 +1066,19 @@ Total attributes: **295**
 - `The MTT has hidden wheels for smooth movement.`
 - `The set also includes a standard-size Chopper LEGO droid figure t`
 - `Tool-Free Removal`
+- `Transformable`
 - `Turn the knob on top of the MTT to activate the rack.`
 - `Ultimate Collector Series`
 - `Ultimate Collector's Series (UCS)`
 - `Ultra-Thin Alloy Wires`
 - `Unclip the Battle Droids from the rack.`
 - `Unopened`
+- `Vehicle`
 - `Vintage`
 - `Washed & Sanitised`
 - `Washed/Sanitized`
 - `With Box`
+- `With Manuals`
 - `With Original Box`
 - `With Original Instructions`
 - `With box and Instructions`
@@ -1101,11 +1127,12 @@ Total attributes: **295**
 - `05702017587318`
 
 ---
-## Gamme de produits (thÃ¨me LEGO) (3 unique)
+## Gamme de produits (thÃ¨me LEGO) (4 unique)
 
 - `Marvel Super Heroes`
 - `Star Wars`
 - `Technic`
+- `voiture`
 
 ---
 ## Gender (4 unique)
@@ -1143,7 +1170,7 @@ Total attributes: **295**
 - `7.2 cm`
 
 ---
-## Herstellernummer (24 unique)
+## Herstellernummer (25 unique)
 
 - `10214`
 - `10253`
@@ -1161,6 +1188,7 @@ Total attributes: **295**
 - `71705`
 - `7187`
 - `75288`
+- `75810`
 - `7672`
 - `79018`
 - `80036`
@@ -1264,7 +1292,7 @@ Total attributes: **295**
 - `Weltraum`
 
 ---
-## Interests (271 unique)
+## Interests (284 unique)
 
 - `ATV/Buggy`
 - `Action/Adventure`
@@ -1298,6 +1326,8 @@ Total attributes: **295**
 - `Blue`
 - `Books`
 - `Botanicals`
+- `Brick Built Animals`
+- `Brick Built Figure`
 - `Building`
 - `Building & Construction`
 - `Buildings`
@@ -1323,8 +1353,11 @@ Total attributes: **295**
 - `Claire Dearing`
 - `Coding for Kids`
 - `Collectable`
+- `Collectibles`
 - `Comic Books`
 - `Concorde`
+- `Construction`
+- `Construction Vehicle`
 - `Construction Vehicle;Cars`
 - `Creator Expert`
 - `Custom set`
@@ -1369,6 +1402,7 @@ Total attributes: **295**
 - `Gremlins`
 - `Grogu`
 - `Hard To Find LEGO`
+- `Harry Potter`
 - `Helicopter`
 - `Helmet collection`
 - `Holidays`
@@ -1411,6 +1445,8 @@ Total attributes: **295**
 - `Lego Botanicals Petite Sunny Bouquet`
 - `Lego F1`
 - `Lego Friends`
+- `Legos`
+- `Licensed`
 - `Lilo & Stitch`
 - `Lilo & Stitch Lego`
 - `Locomotive`
@@ -1423,6 +1459,7 @@ Total attributes: **295**
 - `Miles Morales`
 - `Minecraft`
 - `Mini-Dolls`
+- `Mini-Dolls;Animals & Zoo`
 - `Mini-Dolls;House`
 - `Mini-Dolls;Playground`
 - `Mobile Home`
@@ -1491,12 +1528,14 @@ Total attributes: **295**
 - `Stranger Things`
 - `Super Heroes`
 - `Super Mario`
+- `Supercars`
 - `Superhero Masks`
 - `Superheroes`
 - `Superheroes;Cars`
 - `Superheroes;For Grown Up`
 - `Superheroes;Robots for Kids`
 - `T. Rex`
+- `TV`
 - `TV Shows`
 - `Technic`
 - `The Lord of the Rings`
@@ -1505,6 +1544,7 @@ Total attributes: **295**
 - `Trainer`
 - `Trains`
 - `Trains;Fantasy`
+- `Transformers`
 - `Travel`
 - `Tyrannosaurus Rex`
 - `USB flash drive`
@@ -1532,6 +1572,7 @@ Total attributes: **295**
 - `marvel`
 - `minecraft`
 - `mini figures and bricks`
+- `minifig`
 - `promo`
 - `reading`
 - `snakes`
@@ -1559,7 +1600,7 @@ Total attributes: **295**
 - `38.2 x 26.2 x 5.6 centimetres`
 
 ---
-## Item Height (266 unique)
+## Item Height (272 unique)
 
 - `0`
 - `0.08 cm`
@@ -1669,6 +1710,7 @@ Total attributes: **295**
 - `27cm`
 - `28.2`
 - `28.2 cm`
+- `28.4 cm`
 - `280 mm`
 - `282 mm`
 - `28cm`
@@ -1735,6 +1777,7 @@ Total attributes: **295**
 - `516 mm`
 - `518 mm`
 - `520 mm`
+- `523 mm`
 - `537 mm`
 - `540 mm`
 - `546 mm`
@@ -1745,9 +1788,11 @@ Total attributes: **295**
 - `58.5cm`
 - `58cm`
 - `59 mm`
+- `59.0 cm`
 - `590 mm`
 - `6 cm`
 - `6.1 cm`
+- `6.2 cm`
 - `6.25 cm`
 - `6.5 cm`
 - `6.9cm`
@@ -1775,6 +1820,7 @@ Total attributes: **295**
 - `700 mm`
 - `71 mm`
 - `710 mm`
+- `72 mm`
 - `720 mm`
 - `740 mm`
 - `760 mm`
@@ -1827,9 +1873,10 @@ Total attributes: **295**
 - `One Size`
 - `See Description`
 - `does not apply`
+- `see description`
 
 ---
-## Item Length (222 unique)
+## Item Length (226 unique)
 
 - `10.3`
 - `105 cm`
@@ -1853,6 +1900,7 @@ Total attributes: **295**
 - `141 mm`
 - `1410 mm`
 - `1440 mm`
+- `1450 mm`
 - `15 cm`
 - `15.1 in`
 - `15.7 cm`
@@ -1882,6 +1930,7 @@ Total attributes: **295**
 - `20.5 cm`
 - `205 mm`
 - `21cm`
+- `22.2 cm`
 - `22.9 in`
 - `2220 mm`
 - `23 cm`
@@ -1993,6 +2042,7 @@ Total attributes: **295**
 - `524 mm`
 - `525 mm`
 - `53 cm`
+- `53.5 cm`
 - `533 mm`
 - `5330 mm`
 - `5350 mm`
@@ -2053,6 +2103,7 @@ Total attributes: **295**
 - `N/A`
 - `See Description`
 - `does not apply`
+- `see description`
 
 ---
 ## Item Number (4 unique)
@@ -2068,7 +2119,7 @@ Total attributes: **295**
 - `1`
 
 ---
-## Item Type (6 unique)
+## Item Type (7 unique)
 
 - `Box Sets`
 - `Custom Kit`
@@ -2076,6 +2127,7 @@ Total attributes: **295**
 - `Flowers`
 - `Minifigs`
 - `Minifigures`
+- `Parts & Pieces`
 
 ---
 ## Item Type Name (1 unique)
@@ -2083,8 +2135,9 @@ Total attributes: **295**
 - `Building set`
 
 ---
-## Item Weight (139 unique)
+## Item Weight (146 unique)
 
+- `0.56 kg`
 - `0.79 kg`
 - `1 Kg`
 - `1.11 kg`
@@ -2113,6 +2166,8 @@ Total attributes: **295**
 - `2.06 kg`
 - `2.15 kg`
 - `2.23 kg`
+- `2.24 kg`
+- `2.25 kg`
 - `2.29 kg`
 - `2.43 kg`
 - `2.45 kg`
@@ -2133,9 +2188,11 @@ Total attributes: **295**
 - `3 kg`
 - `3.01 kg`
 - `3.04 kg`
+- `3.06 kg`
 - `3.08 kg`
 - `3.17 kg`
 - `3.2 kg`
+- `3.23 kg`
 - `3.27 kg`
 - `3.28 kg`
 - `3.29 kg`
@@ -2161,6 +2218,7 @@ Total attributes: **295**
 - `377 Grams`
 - `4.03 kg`
 - `4.07 kg`
+- `4.1 kg`
 - `4.11 kg`
 - `4.15 kg`
 - `4.21 kg`
@@ -2212,6 +2270,7 @@ Total attributes: **295**
 - `8 kg`
 - `8.11 kg`
 - `8.28 kg`
+- `8.37 kg`
 - `8.43 kg`
 - `8.54 kg`
 - `8.77 kg`
@@ -2226,8 +2285,9 @@ Total attributes: **295**
 - `994g`
 
 ---
-## Item Width (242 unique)
+## Item Width (246 unique)
 
+- `1 cm`
 - `1.4 cm`
 - `10 cm`
 - `103 mm`
@@ -2309,6 +2369,7 @@ Total attributes: **295**
 - `218 mm`
 - `22.2 cm`
 - `229 mm`
+- `2300 mm`
 - `232 mm`
 - `234 mm`
 - `236 mm`
@@ -2411,6 +2472,7 @@ Total attributes: **295**
 - `48`
 - `48 cm`
 - `48.3 cm`
+- `48.4 cm`
 - `480 mm`
 - `4800 mm`
 - `48cm`
@@ -2470,6 +2532,7 @@ Total attributes: **295**
 - `N/A`
 - `See Description`
 - `does not apply`
+- `see description`
 
 ---
 ## Item dimensions L x W x H (1 unique)
@@ -2487,13 +2550,14 @@ Total attributes: **295**
 - `0.26 Kilograms`
 
 ---
-## Jahr der Einstellung (2 unique)
+## Jahr der Einstellung (3 unique)
 
 - `2018`
+- `2021`
 - `2022`
 
 ---
-## LEGO Character (986 unique)
+## LEGO Character (1030 unique)
 
 - `01 Date Night Homer`
 - `02 Date Night Marge`
@@ -2519,6 +2583,7 @@ Total attributes: **295**
 - `4-LOM`
 - `5 Figures in total`
 - `5 Minifigures`
+- `5 asst minifigures`
 - `5 mini figs`
 - `ACU trooper`
 - `APXGP Team Race Car from F1Â® The Movie`
@@ -2551,6 +2616,7 @@ Total attributes: **295**
 - `All Ast`
 - `Aloy`
 - `Amber Grant`
+- `Amy Farrah Fowler`
 - `Anakin Skywalker`
 - `Andrea`
 - `Angel`
@@ -2577,6 +2643,7 @@ Total attributes: **295**
 - `Avak`
 - `B'omarr Monk`
 - `B-Wing Pilot`
+- `BALROG`
 - `BB-8`
 - `BUGATTI CHIRON`
 - `Baby`
@@ -2591,6 +2658,7 @@ Total attributes: **295**
 - `Barriss Offee`
 - `Bart Simpson`
 - `Bartender Guinan`
+- `Barty Crouch Sr.`
 - `Basketball Player`
 - `Batman`
 - `Battalion Brawler`
@@ -2639,12 +2707,14 @@ Total attributes: **295**
 - `Brutaka`
 - `Bullseye`
 - `Bumblebee`
+- `Bunny`
 - `C-3PO`
 - `Cad Bane`
 - `Cakey`
 - `Captain America`
 - `Captain Antilles`
 - `Captain Jean-Luc Picard`
+- `Captain Marvel`
 - `Captain Redbeard`
 - `Captain Rex`
 - `Car`
@@ -2691,6 +2761,7 @@ Total attributes: **295**
 - `Commander William Riker`
 - `Commando Droid`
 - `Conductor`
+- `Construction Worker`
 - `Construction Worker Female`
 - `Construction Worker Male`
 - `Cook`
@@ -2704,6 +2775,7 @@ Total attributes: **295**
 - `Creator Expert`
 - `Creeper`
 - `Crew Member`
+- `Crocodile`
 - `Crocodile Train`
 - `Crook`
 - `Crown Knight`
@@ -2738,8 +2810,10 @@ Total attributes: **295**
 - `Demogorgon`
 - `Dennis Nedry`
 - `Detective`
+- `Dinosaur`
 - `Diver`
 - `Dizzy`
+- `Dobby`
 - `Doc`
 - `Doc Brown`
 - `Doc Ock`
@@ -2749,6 +2823,7 @@ Total attributes: **295**
 - `Doctor Who`
 - `Does not apply`
 - `Dog`
+- `Dolphin`
 - `Dom`
 - `Donald Duck`
 - `Donna`
@@ -2770,6 +2845,7 @@ Total attributes: **295**
 - `Dr. Peter Venkman`
 - `Dr. Raymond Stantz`
 - `Draco Malfoy`
+- `Draco in the Forbidden Forest`
 - `Dragon Bolt`
 - `Dragon Knight`
 - `Drax`
@@ -2793,6 +2869,7 @@ Total attributes: **295**
 - `Emmet`
 - `Emperor Palpatine`
 - `Empress Beatrix`
+- `Enderman`
 - `Engineer`
 - `Ensign Ro`
 - `Eris`
@@ -2803,12 +2880,14 @@ Total attributes: **295**
 - `Fame`
 - `Fangdam`
 - `Farmer`
+- `Fell Beast`
 - `Female Caroler`
 - `Female Passenger`
 - `Female Skier`
 - `Fennac Shand`
 - `Fennec Shand`
 - `Fenrir Greyback`
+- `Ferris Wheel`
 - `Fifth Brother`
 - `Fili the Dwarf`
 - `Finn`
@@ -2820,10 +2899,12 @@ Total attributes: **295**
 - `First Order Snowtrooper`
 - `First Order Stormtrooper`
 - `Fish`
+- `Fleur Delacour`
 - `Flexible Gymnast`
 - `Flounder`
 - `Flowers`
 - `Flynn Rider`
+- `Football Player`
 - `Forest Elf`
 - `Forestman`
 - `Fox`
@@ -2860,6 +2941,7 @@ Total attributes: **295**
 - `Geordi La Forge`
 - `George Weasley`
 - `Ghost`
+- `Gilderoy Lockhart`
 - `Gingerbread Darth Vader`
 - `Gingerbread Man`
 - `Gingerbread Train Ornament`
@@ -2868,6 +2950,7 @@ Total attributes: **295**
 - `Glinda`
 - `Goblin King`
 - `Godric Gryffindor`
+- `Goldfish`
 - `Gollum`
 - `Goofy`
 - `Gorilla Grodd`
@@ -2919,6 +3002,7 @@ Total attributes: **295**
 - `Ice Skater`
 - `Ice Skaters`
 - `Icons`
+- `Igor Karkaroff`
 - `Imperial Crew`
 - `Imperial Gunner`
 - `Imperial Officer`
@@ -2952,8 +3036,10 @@ Total attributes: **295**
 - `Jack Skellington`
 - `Jack Sparrow`
 - `Jacob Kowalski`
+- `Jake`
 - `Jake Sully`
 - `Jake Sully Na'vi`
+- `Jaller`
 - `James`
 - `James Bond`
 - `Jango Fett`
@@ -2973,6 +3059,7 @@ Total attributes: **295**
 - `Jon Vander`
 - `Joseph`
 - `Joshua Pearce`
+- `Joyce Byers`
 - `Judo Fighter`
 - `Jyn Erso`
 - `Kai`
@@ -2990,6 +3077,7 @@ Total attributes: **295**
 - `Knight`
 - `Knight of Ren (Ushar)`
 - `Knight of Wren (Ap'lek)`
+- `Koala`
 - `Koby`
 - `Kopaka`
 - `Kranky Crane`
@@ -3001,6 +3089,7 @@ Total attributes: **295**
 - `Lady`
 - `Lando Calrissian`
 - `Larry`
+- `Laserbeak`
 - `Lasha`
 - `Laurence the boombox goon`
 - `Laval`
@@ -3019,6 +3108,7 @@ Total attributes: **295**
 - `Lieutenant Commander Geordi La Forge`
 - `Lieutenant Worf`
 - `Lighthouse Keeper/Verona Dempsey`
+- `Lion`
 - `Lion Knight`
 - `Lisa`
 - `Lisa Simpson`
@@ -3043,6 +3133,7 @@ Total attributes: **295**
 - `Mace Windu`
 - `MadTeo`
 - `Madam Rosmerta`
+- `Madame Maxime`
 - `Maggie Simpson`
 - `Majisto`
 - `Male Caroler`
@@ -3081,6 +3172,7 @@ Total attributes: **295**
 - `Mikey`
 - `Miles Morales`
 - `Miles Morales Spider-Man`
+- `Miles Quaritch`
 - `Milhouse Van Houten`
 - `Millennium Falcon`
 - `Mimban Stormtrooper`
@@ -3101,6 +3193,7 @@ Total attributes: **295**
 - `Mr. Burns`
 - `Mr. Flume`
 - `Mr. Freeze`
+- `Mr. Ollivander`
 - `Mrs. Castillo`
 - `Mrs. Flume`
 - `Mummy`
@@ -3113,6 +3206,7 @@ Total attributes: **295**
 - `NASA Apollo 11 Astronaut`
 - `Naida Riverheart`
 - `Nami`
+- `Nasa`
 - `Ned Flanders`
 - `Neel`
 - `Neville Longbottom`
@@ -3152,6 +3246,7 @@ Total attributes: **295**
 - `Paisley`
 - `Paleontologist`
 - `Pandy`
+- `Parrot`
 - `Passenger`
 - `Patroller`
 - `Penny`
@@ -3172,6 +3267,7 @@ Total attributes: **295**
 - `Pirate Captain`
 - `Pirates`
 - `Pitch`
+- `Plo Koon`
 - `Poe Dameron`
 - `Poison Ivy`
 - `Police Officer`
@@ -3181,6 +3277,7 @@ Total attributes: **295**
 - `Pong Krell`
 - `Poppy Starr`
 - `Porg`
+- `Porsche`
 - `Porsche 911 RSR`
 - `Power Miner`
 - `Power Miner Rex`
@@ -3215,6 +3312,7 @@ Total attributes: **295**
 - `Raphael`
 - `Raptor`
 - `Rapunzel`
+- `Ravage`
 - `Raven`
 - `Ray Arnold`
 - `Razar`
@@ -3266,11 +3364,13 @@ Total attributes: **295**
 - `Scout`
 - `Scout Trooper`
 - `Scrooge McDuck`
+- `Seinfeld`
 - `Senate Commando`
 - `Sensei Wu`
 - `Shaggy`
 - `Shark`
 - `Sheriff`
+- `Sheriff Hopper`
 - `Sherlock Holmes`
 - `Shock Trooper`
 - `Shredder`
@@ -3298,6 +3398,7 @@ Total attributes: **295**
 - `Soldier`
 - `Sonic the Hedgehog`
 - `Sonny Hayes`
+- `Soundwave`
 - `Soyona Santos`
 - `Space`
 - `Spaceman`
@@ -3329,6 +3430,7 @@ Total attributes: **295**
 - `Swamp Creature / Mr Brown`
 - `Swamp Explorer`
 - `T. Rex`
+- `TC-14`
 - `TIE Fighter Pilot`
 - `Tactical Tennis Player`
 - `Takadox`
@@ -3342,6 +3444,7 @@ Total attributes: **295**
 - `The Collector`
 - `The Fratellis`
 - `The Going Merry Pirate Ship`
+- `The Inquisitor`
 - `The Insect Collection`
 - `The Joker`
 - `The Never Witch`
@@ -3394,6 +3497,7 @@ Total attributes: **295**
 - `Unknown`
 - `Usopp`
 - `Vakama, Matau, Onewa, Nokama, Nuju, Whenua`
+- `Velma`
 - `Velociraptor`
 - `Venom`
 - `Veruca Salt`
@@ -3401,6 +3505,7 @@ Total attributes: **295**
 - `Vicki Vale`
 - `Viking`
 - `Viking Warrior`
+- `Viktor Krum`
 - `Villager`
 - `Vincent van Gogh`
 - `Violet Beauregarde`
@@ -3456,13 +3561,16 @@ Total attributes: **295**
 - `adidas Originals Superstar`
 - `architecture`
 - `baby groot`
+- `ben kenobi`
 - `black falcon`
 - `boolio`
 - `captain cody`
 - `city`
 - `dark trooper`
+- `diagon alley`
 - `does not apply`
 - `dustin`
+- `grand inquisitor`
 - `lego`
 - `legoÂ® Star Wars 75355 UCS X-Wing Starfighter`
 - `lucy`
@@ -3519,7 +3627,7 @@ Total attributes: **295**
 - `1st July 2025`
 
 ---
-## LEGO Set Name (1659 unique)
+## LEGO Set Name (1727 unique)
 
 - `007 Aston Martin DB5`
 - `12 Grimmauld Place`
@@ -3599,6 +3707,7 @@ Total attributes: **295**
 - `Angel`
 - `Animal Costume Fan`
 - `Antique Shop`
+- `App-Controlled Batmobile`
 - `App-Controlled Cat D11 Bulldozer`
 - `App-Controlled Top Gear Rally Car`
 - `App-Controlled Transformation Vehicle`
@@ -3643,19 +3752,23 @@ Total attributes: **295**
 - `Avengers: Endgame Thor vs. Chitauri`
 - `B-Wing`
 - `B-Wing Fighter`
+- `BALROG`
 - `BARC Speeder With Sidecar`
 - `BASH!`
 - `BB-8`
 - `BD-1`
 - `BMW M 1000 RR`
 - `BMW R 1200 GS Adventure`
+- `Back to the Future`
 - `Back to the Future Time Machine`
 - `Backhoe Grader`
+- `Backhoe Loader`
 - `Bakery`
 - `Ballarina & Nutcracker Scene`
 - `Bandit's Secret Hide-Out`
 - `Bandmates`
 - `Barc Speeder Escape`
+- `Barc Speeder with Sidecar`
 - `Barraki`
 - `Baryonyx Face-Off: The Treasure Hunt`
 - `Bat-Pod`
@@ -3693,11 +3806,13 @@ Total attributes: **295**
 - `Bell-Boeing V-22 Osprey`
 - `Benny's Space Squad`
 - `Berlin`
+- `Bespin Duel`
 - `Beta I Command Base`
 - `Betrayal at Cloud City`
 - `Big Ben`
 - `Bird of Paradise`
 - `Birds`
+- `Black Dahlia Flower`
 - `Black Falcon's Fortress`
 - `Black Knight's Castle`
 - `Black Panther`
@@ -3795,10 +3910,12 @@ Total attributes: **295**
 - `Christmas Table Decoration`
 - `Christmas Train`
 - `Christmas Tree`
+- `Chrome Stormtrooper`
 - `Chrysanthemum`
 - `Cinderella's Dream Castle`
 - `Cinderella's Dress`
 - `City Central Airport`
+- `City of Stiix`
 - `Classic Animation Scenes`
 - `Clone Commander Cody Helmet`
 - `Clone Scout Walker`
@@ -3852,6 +3969,7 @@ Total attributes: **295**
 - `Darth Vader Bust`
 - `Darth Vader Helmet`
 - `Darth Vader Meditation Chamber`
+- `Darth Vader Transformation`
 - `Darth Vader's Castle`
 - `Darth Vader's TIE Fighter`
 - `Death Star`
@@ -3875,6 +3993,7 @@ Total attributes: **295**
 - `Diagon Alley: Weasleys'Wizard Wheezes`
 - `Die Creeper Mine`
 - `Die Endurance`
+- `Die andere Seite`
 - `Dilophosaurus Triceratops Brachiosaurus T.rex`
 - `Dinosaur Fossils`
 - `Dinosaur Missions: Allosaurus Transport Truck`
@@ -3889,6 +4008,7 @@ Total attributes: **295**
 - `Disney stitch lego`
 - `Disney's Mickey Mouse`
 - `Diving Yacht`
+- `Dobby the House-Elf`
 - `Doctor Strange's Sanctum Sanctorum`
 - `Doctor Who`
 - `Dojo Showdown`
@@ -3898,6 +4018,7 @@ Total attributes: **295**
 - `Downtown Fire Brigade`
 - `Downtown Flower and Design Stores`
 - `Draco Malfoy & Cedric Diggory`
+- `Draco in the Forbidden Forest`
 - `Drag Racer`
 - `Dragon Bolt`
 - `Dragon Dance`
@@ -3942,10 +4063,12 @@ Total attributes: **295**
 - `Emperor's Throne Room Diorama`
 - `Empire State Building`
 - `Employee Christmas Gift`
+- `Employee Gift`
 - `Employee gift`
 - `Enchanted Island`
 - `Encounter on Jakku`
 - `Endor Speeder Chase Diorama`
+- `Epic Dragon Battle`
 - `Escape from Mirkwood Spiders`
 - `Escape from the Dragon's Prison`
 - `Evo 2.0`
@@ -3972,12 +4095,14 @@ Total attributes: **295**
 - `Family Tree`
 - `Family Vacation Beach Resort`
 - `Fangpyre Truck Ambush`
+- `Fangpyre Wrecking Ball`
 - `Fantastical Tree House`
 - `Farm Animals`
 - `Farmers' Market`
 - `Fast and Furious Toyota Supra Mk4`
 - `Fawkes Dumbledoreï¿½S Phoenix`
 - `Fawkes, Dumbledoreâs Phoenix`
+- `Fell Beast`
 - `Fender Stratocaster`
 - `Ferrari`
 - `Ferrari 430 Spider 1:17`
@@ -4015,6 +4140,7 @@ Total attributes: **295**
 - `Flower Bouquet`
 - `Flucht aus Dem DrachengefÃ¤ngnis`
 - `Flying Ford Anglia`
+- `Flying Ninja Fortress`
 - `Flying Phoenix Fire Temple`
 - `Forbidden Corridor`
 - `Forbidden Forest: Magical Creatures`
@@ -4113,6 +4239,7 @@ Total attributes: **295**
 - `Heavy-Duty Excavator`
 - `Heavy-Haul Train`
 - `Heavy-duty Tow Truck`
+- `Hedwigâ¢`
 - `High-Speed City Express Passenger Train`
 - `High-speed Chase`
 - `High-speed Passenger Train`
@@ -4171,11 +4298,13 @@ Total attributes: **295**
 - `Iconic Chess Set`
 - `Imperial AT-Hauler`
 - `Imperial Armoured Marauder`
+- `Imperial Assault Carrier`
 - `Imperial Assault Hovertank`
 - `Imperial At-St`
 - `Imperial Conveyex Transport`
 - `Imperial Dropship vs Rebel Scout Speeder`
 - `Imperial Hotel`
+- `Imperial Inspection`
 - `Imperial Landing Craft`
 - `Imperial Light Cruiser`
 - `Imperial Probe Droid`
@@ -4208,6 +4337,7 @@ Total attributes: **295**
 - `Jabba's Palace`
 - `Jabba's Sail Barge`
 - `Jack Skellington & Sally`
+- `Jake & Neytiriï¿½S First Banshee Flight`
 - `Jakku Quadjumper`
 - `James Bond Aston Martin DB5`
 - `Jamgo Fett Starship`
@@ -4226,6 +4356,7 @@ Total attributes: **295**
 - `Jedi Interceptor`
 - `Jedi Starfighter With Hyperdrive`
 - `Jedi Starfighter and Vulture Droid`
+- `Jedi Starfighter with Hyperdrive Booster Ring`
 - `Jedi and Clone Troopers Battle Pack`
 - `Jeep Wrangler`
 - `Jek-14's Stealth Starfighter`
@@ -4239,6 +4370,7 @@ Total attributes: **295**
 - `Jurassic Pk Indiana Jones`
 - `K-2SO`
 - `K.K.'s Concert at the Plaza`
+- `Kai's Mech Storm Rider`
 - `Kamino Training Facility`
 - `Kanan's Speeder Bike`
 - `Karzahni`
@@ -4283,6 +4415,7 @@ Total attributes: **295**
 - `LEGO Disney Beauty and the Beast Castle`
 - `LEGO Disney Lilo and Stitch Beach House 43268`
 - `LEGO Disney WALL-E and EVE 43279`
+- `LEGO Employee Christmas Gift 2025`
 - `LEGO Friends Advent Calendar`
 - `LEGO Harry Potter Gringotts Wizarding Bank`
 - `LEGO Harry Potter Hogwarts Castle: The Main Tower`
@@ -4290,6 +4423,7 @@ Total attributes: **295**
 - `LEGO Iconic Festive Gingerbread House 40809`
 - `LEGO Iconic Up-Scaled Santa Minifigure 40820`
 - `LEGO Icons Transformers Bumblebee Model Set 10338`
+- `LEGO Icons Transformers: Soundwave`
 - `LEGO Ideas 21341 Disney Hocus Pocus: the Sanderson Sisters'`
 - `LEGO Ideas Minifigure Vending Machine`
 - `LEGO Ideas River Steamboat`
@@ -4332,6 +4466,7 @@ Total attributes: **295**
 - `Lego 21353 Idea The Botanical Garden 3472pcs 18+`
 - `Lego 40768 Star Trek Type-15 Shuttlepod`
 - `Lego 40776 Hot Chocolate Stand`
+- `Lego 43242 Disney Snow White and the Seven Dwarfs' Cottage`
 - `Lego Brand Store`
 - `Lego Disney 40774 Classic Animation Scenes`
 - `Lego Fabuland Tribute`
@@ -4391,22 +4526,27 @@ Total attributes: **295**
 - `Lunar Rocket Launcher`
 - `Lunar Roving Vehicle`
 - `MINDSTORMS EV3`
+- `MINECRAFTï¼The Village`
 - `MINI Cooper`
 - `MTT`
 - `Mace Windu's Jedi Starfighter`
 - `Macha Team Leader`
 - `Mack Anthem`
+- `Maersk Container Train`
 - `Maersk Line Container Ship`
 - `Maersk Train`
 - `Magic Rescue from the Goblin Village`
+- `Magic of Disney`
 - `Magma Mech`
 - `Main Street`
 - `Main Street Building`
 - `Majestic Tiger`
 - `Majisto's Magical Workshop`
 - `Mako Submarine`
+- `Maleficent's and Cruella De Vil's Dresses`
 - `Malevolence`
 - `Malfoy Manor`
+- `Mandalorian Fang Fighter Vs. Tie Interceptor`
 - `Mandalorian Fang Fighter vs. TIE Interceptor`
 - `Mandalorian Starfighter`
 - `Mandrake`
@@ -4433,6 +4573,7 @@ Total attributes: **295**
 - `McLaren Senna`
 - `Mclaren F1 Team Mcl38 Race Car`
 - `Mclaren Mercedes Pit Stop`
+- `Mclaren Mp4/4 & Ayrton Senna`
 - `Mclaren P1`
 - `Mecha Team Leader`
 - `Medieval Blacksmith`
@@ -4453,6 +4594,7 @@ Total attributes: **295**
 - `Message Board`
 - `Message Intercept Base`
 - `MetalBeard's Sea Cow`
+- `Metkayina Reef Home`
 - `Metroliner`
 - `Mia's House`
 - `Mia's Tree House`
@@ -4531,6 +4673,8 @@ Total attributes: **295**
 - `New York City Usa`
 - `Newsroom Van`
 - `Newt's Case of Magical Creatures`
+- `Neytiri & Thanator vs. AMP Suit Quaritch`
+- `Night Lord's Castle`
 - `Nightmare Shark Ship`
 - `Nightmare Shark Submarine`
 - `Nike Dunk Trickshot`
@@ -4603,6 +4747,7 @@ Total attributes: **295**
 - `Pirates of Barracuda Bay`
 - `Pizza Planet Truck`
 - `Plane`
+- `Plo Koon's Jedi Starfighter`
 - `Poe Dameron's X-wing Fighter`
 - `Poinsettia`
 - `Polar Copter`
@@ -4622,6 +4767,7 @@ Total attributes: **295**
 - `Porsche 911 RSR`
 - `Porsche GT4 e-Performance`
 - `Power Functions Motor Set`
+- `Pretty Pink Flower Bouquet`
 - `Princess Enchanted Journey`
 - `Princess Leia (Boushh) Helmet`
 - `Prison Island`
@@ -4631,6 +4777,7 @@ Total attributes: **295**
 - `Pyroraptor & Dilophosaurus Transport`
 - `Queen Anne's Revenge`
 - `Queen Dragon's Rescue`
+- `Quetzalcoatlus Plane Ambush`
 - `Quidditch Match`
 - `R2-D2`
 - `RIVER STEAMBOAT`
@@ -4703,6 +4850,7 @@ Total attributes: **295**
 - `Santa's Sleigh`
 - `Santa's Sleigh Ride`
 - `Santa's Workshop`
+- `Santaâs Sleigh`
 - `Santaâs Visit`
 - `Santaï¿½S Visit`
 - `Schaufelradbagger`
@@ -4731,6 +4879,7 @@ Total attributes: **295**
 - `Simpsons Minifigures Series 2`
 - `Singapore`
 - `Sith Infiltrator`
+- `Sith TIE Fighter`
 - `Sith Troopers Battle Pack`
 - `Skeleton Bowling`
 - `Skull Island`
@@ -4808,6 +4957,7 @@ Total attributes: **295**
 - `Stranger Things`
 - `Stranger Things The Creel House`
 - `Stranger Things Upside Down`
+- `Stranger Things WSQK Radio Station`
 - `Stranger Things: WSQK Radio Station`
 - `Street Race of Snake Jaguar`
 - `Stuck`
@@ -4840,6 +4990,7 @@ Total attributes: **295**
 - `T. rex Dinosaur Breakout`
 - `T. rex vs Dino-Mech Battle`
 - `TALES OF THE SPACE AGE`
+- `TC-14`
 - `THE BATMAN - BATMOBILE`
 - `TIE Advanced Prototype`
 - `TIE Bomber`
@@ -4848,6 +4999,7 @@ Total attributes: **295**
 - `TIE Fighter with Imperial Hangar Rack`
 - `TRANSFORMERS SOUNDWAVE`
 - `TRON: Legacy`
+- `Table Football`
 - `Taj Mahal`
 - `Tales of the Space Age`
 - `Talking Sorting Hat`
@@ -4860,6 +5012,7 @@ Total attributes: **295**
 - `Temple of the Golden Idol`
 - `Temple of the Goldern Idol`
 - `Terrestrial Rover`
+- `Thanos`
 - `Thanos: Ultimate Battle`
 - `The Amazing Spider-Man`
 - `The Armorerâs Mandalorian Forge`
@@ -4872,6 +5025,7 @@ Total attributes: **295**
 - `The Battle of Five Armies`
 - `The Battle of Helm's Deep`
 - `The Battle of Helms Deep`
+- `The Battle of Hogwarts`
 - `The Beatles`
 - `The Beatles Yellow Submarine`
 - `The Big Bang Theory`
@@ -4887,6 +5041,7 @@ Total attributes: **295**
 - `The Clone Wars Republic Juggernaut`
 - `The Clone Wars Republic Juggernaut Set`
 - `The Crafting Table`
+- `The Creel House`
 - `The Creeper`
 - `The Creeper Ambush`
 - `The Crimson Firehawk`
@@ -4927,14 +5082,17 @@ Total attributes: **295**
 - `The Justifier`
 - `The Knight Bus`
 - `The Kwik-E-Mart`
+- `The LEGOÂ® Van`
 - `The Lego Batman Movie Minifigure Collection`
 - `The Lighthouse of Darkness`
 - `The Little Mermaid Royal Clam Shell`
 - `The Little Mermaid Royal Clamshell`
 - `The Llama Village`
 - `The Lonely Mountain`
+- `The Lord of the Rings: Barad-Dï¿½R`
 - `The Lord of the Rings: Rivendell`
 - `The Madrigal House`
+- `The Magical Madrigal House`
 - `The Mandalorian & the Child`
 - `The Mandalorian Helmet`
 - `The Mighty Bowser`
@@ -4944,6 +5102,7 @@ Total attributes: **295**
 - `The Mine`
 - `The Ministry of Magic`
 - `The Mountain Cave`
+- `The Mushroom House`
 - `The Mystery Machine`
 - `The Nether Fortress`
 - `The Office`
@@ -4991,6 +5150,8 @@ Total attributes: **295**
 - `Time Machine from Back to the Future`
 - `Tipping Dump Truck`
 - `Titanic`
+- `Titanium Ninja Tumbler`
+- `Toa Jaller`
 - `Tokyo`
 - `Tom & Jerry`
 - `Toothless`
@@ -5024,6 +5185,7 @@ Total attributes: **295**
 - `Trevi Fountain`
 - `Triceratops Research`
 - `Triwizard Tournament: the Arrival`
+- `Triwizard Tournament: the arrival`
 - `Trophy`
 - `Tropical Aquarium`
 - `Tropical Rainforest Diorama`
@@ -5062,12 +5224,14 @@ Total attributes: **295**
 - `Venator-Class Republic Attack Cruiser`
 - `Venator-class Republic Attack Cruiser`
 - `Venice Canal Chase`
+- `Venom`
 - `Venom Figure`
 - `Venom Helmet`
 - `Venomised Groot`
 - `Vermillion Invader`
 - `Vespa 125`
 - `Victory Lap Raceway`
+- `Viking Ship Challenges the Midgard Serpent`
 - `Viking Ship and the Midgard Serpent`
 - `Viking Village`
 - `Viking Voyager`
@@ -5091,9 +5255,11 @@ Total attributes: **295**
 - `Volvo Wheel Loader`
 - `Vulture Droid`
 - `WALL-E`
+- `WSQK Radio Station`
 - `Wagon`
 - `Wall-E`
 - `Walt Disney Tribute Camera`
+- `Water Dragon`
 - `Wednesday & Enid`
 - `Wednesday & Enid's Dorm Room`
 - `Wednesday Addams Figure`
@@ -5143,6 +5309,7 @@ Total attributes: **295**
 - `Yamaha Mt-10 Sp`
 - `Yavin 4 Rebel Base`
 - `Yellow Delivery Truck`
+- `Yellow Mobile Construction Crane`
 - `Yellow Submarine`
 - `Yellow Submarine-21306`
 - `Yellow Tusk Elephant`
@@ -5154,12 +5321,14 @@ Total attributes: **295**
 - `Zaneï¿½S Ice Dragon Creature`
 - `adidas Originals Superstar`
 - `adventures in transylvania`
+- `at st`
 - `bionicle`
 - `books are my passion`
 - `buildable mecha team leader`
 - `coruscant police gunship`
 - `crane`
 - `does not apply`
+- `endertower`
 - `escape from the lost tomb`
 - `galaxy commander`
 - `gizmo`
@@ -5167,30 +5336,39 @@ Total attributes: **295**
 - `gringotts bank`
 - `hot chocolate stand`
 - `how to train your dragon`
+- `jaws`
 - `kingdoms castle`
 - `knights Kingdom chess set`
+- `lazor crest`
 - `lego`
 - `lego 40777 Gingerbread Train`
 - `lego Castle`
 - `lego minifigures series 28`
+- `lord of the rings rivendell`
+- `mclaren p1`
 - `minifigure vending machine`
 - `minifigures series 28`
+- `mountain fortress`
 - `not a set`
 - `orient express`
 - `pixar lamp`
+- `star wars tie Interceptor`
 - `the Ewok village`
+- `the creel house`
 - `the temple bounty`
 
 ---
-## LEGO Set Number (1611 unique)
+## LEGO Set Number (1659 unique)
 
 - `#21363`
 - `10 sets : Set 77242 right through to Set 77251`
+- `10018`
 - `10021`
 - `10024`
 - `10027`
 - `10030`
 - `10123`
+- `10131`
 - `10144`
 - `10155`
 - `10174`
@@ -5302,6 +5480,7 @@ Total attributes: **295**
 - `10330`
 - `10331`
 - `10332`
+- `10333`
 - `10334`
 - `10335`
 - `10337`
@@ -5309,6 +5488,7 @@ Total attributes: **295**
 - `10339`
 - `10340`
 - `10341`
+- `10342`
 - `10343`
 - `10344`
 - `10347`
@@ -5457,6 +5637,7 @@ Total attributes: **295**
 - `21334`
 - `21335`
 - `21336`
+- `21337`
 - `21338`
 - `21340`
 - `21341`
@@ -5471,6 +5652,7 @@ Total attributes: **295**
 - `2135`
 - `21350`
 - `21351`
+- `21352`
 - `21353`
 - `21354`
 - `21356`
@@ -5483,6 +5665,7 @@ Total attributes: **295**
 - `2507`
 - `2519`
 - `2521`
+- `2853590`
 - `2853835`
 - `30210`
 - `30343`
@@ -5491,6 +5674,7 @@ Total attributes: **295**
 - `30654`
 - `30662`
 - `30670`
+- `30677`
 - `30687`
 - `30701`
 - `30709`
@@ -5505,6 +5689,7 @@ Total attributes: **295**
 - `31109`
 - `31119`
 - `31120`
+- `31122`
 - `31129`
 - `31130`
 - `31132`
@@ -5614,6 +5799,7 @@ Total attributes: **295**
 - `40747`
 - `40755`
 - `40757`
+- `40758`
 - `40761`
 - `40765`
 - `40766`
@@ -5627,6 +5813,7 @@ Total attributes: **295**
 - `40776`
 - `40777`
 - `40778`
+- `40779`
 - `40782`
 - `40785`
 - `40787`
@@ -5796,8 +5983,10 @@ Total attributes: **295**
 - `43230`
 - `43242`
 - `43244`
+- `43245`
 - `43249`
 - `43257`
+- `43262`
 - `43263`
 - `43266`
 - `43268`
@@ -5846,6 +6035,7 @@ Total attributes: **295**
 - `51515`
 - `5510`
 - `5563`
+- `5580`
 - `5925`
 - `5988`
 - `60004`
@@ -5863,6 +6053,7 @@ Total attributes: **295**
 - `60062`
 - `60063`
 - `60069`
+- `60073`
 - `60080`
 - `60098`
 - `60103`
@@ -5910,6 +6101,7 @@ Total attributes: **295**
 - `60368`
 - `60379`
 - `60386`
+- `60409`
 - `60419`
 - `60421`
 - `60422`
@@ -5926,6 +6118,7 @@ Total attributes: **295**
 - `60474`
 - `60475`
 - `6049`
+- `60500`
 - `6062`
 - `6066`
 - `6073`
@@ -5937,6 +6130,7 @@ Total attributes: **295**
 - `6082`
 - `6086`
 - `6090`
+- `6093`
 - `6097`
 - `6098`
 - `6137064`
@@ -5961,6 +6155,7 @@ Total attributes: **295**
 - `6379`
 - `6386`
 - `6388`
+- `6392`
 - `6395`
 - `6411`
 - `6419`
@@ -6006,6 +6201,7 @@ Total attributes: **295**
 - `70146`
 - `70161`
 - `70165`
+- `7018`
 - `70230`
 - `70326`
 - `70357`
@@ -6016,6 +6212,7 @@ Total attributes: **295**
 - `70431`
 - `70434`
 - `70504`
+- `70588`
 - `70595`
 - `70605`
 - `70606`
@@ -6045,6 +6242,8 @@ Total attributes: **295**
 - `70725`
 - `70728`
 - `70731`
+- `70732`
+- `70740`
 - `70747`
 - `70756`
 - `70780`
@@ -6102,10 +6301,12 @@ Total attributes: **295**
 - `71705`
 - `71719`
 - `71721`
+- `71738`
 - `71741`
 - `71742`
 - `71746`
 - `71748`
+- `71754`
 - `71755`
 - `71764`
 - `71765`
@@ -6118,6 +6319,7 @@ Total attributes: **295**
 - `71813`
 - `71821`
 - `71822`
+- `71830`
 - `71832`
 - `71837`
 - `71841`
@@ -6136,6 +6338,7 @@ Total attributes: **295**
 - `7256`
 - `7257`
 - `7261`
+- `7264`
 - `7317`
 - `7412`
 - `7414`
@@ -6190,6 +6393,7 @@ Total attributes: **295**
 - `75103`
 - `75104`
 - `75105`
+- `75106`
 - `75112`
 - `75135`
 - `75137`
@@ -6217,6 +6421,7 @@ Total attributes: **295**
 - `75179`
 - `75180`
 - `75181`
+- `75183`
 - `75187`
 - `75188`
 - `75189`
@@ -6249,6 +6454,7 @@ Total attributes: **295**
 - `75258`
 - `75259`
 - `75266`
+- `75272`
 - `75273`
 - `75274`
 - `75276`
@@ -6263,6 +6469,7 @@ Total attributes: **295**
 - `75291`
 - `75292`
 - `75293`
+- `75294`
 - `75296`
 - `75299`
 - `75300`
@@ -6360,9 +6567,12 @@ Total attributes: **295**
 - `75534`
 - `75537`
 - `75551`
+- `75571`
+- `75572`
 - `75573`
 - `75574`
 - `75577`
+- `75578`
 - `75579`
 - `75582`
 - `75583`
@@ -6428,6 +6638,7 @@ Total attributes: **295**
 - `76081`
 - `76104`
 - `76107`
+- `76112`
 - `76115`
 - `76126`
 - `76138`
@@ -6487,6 +6698,7 @@ Total attributes: **295**
 - `76311`
 - `76312`
 - `76317`
+- `76319`
 - `76320`
 - `76321`
 - `76322`
@@ -6516,9 +6728,11 @@ Total attributes: **295**
 - `7641`
 - `76412`
 - `76414`
+- `76415`
 - `76417`
 - `76419`
 - `7642`
+- `76421`
 - `76422`
 - `76423`
 - `76424`
@@ -6541,7 +6755,9 @@ Total attributes: **295**
 - `76453`
 - `76454`
 - `76457`
+- `76466`
 - `7659`
+- `7661`
 - `7662`
 - `7672`
 - `7674`
@@ -6550,6 +6766,7 @@ Total attributes: **295**
 - `7678`
 - `76780`
 - `76781`
+- `76784`
 - `76785`
 - `76786`
 - `7680`
@@ -6573,6 +6790,7 @@ Total attributes: **295**
 - `76944`
 - `76945`
 - `76946`
+- `76947`
 - `76948`
 - `76949`
 - `76951`
@@ -6666,6 +6884,7 @@ Total attributes: **295**
 - `8039`
 - `8043`
 - `8063`
+- `8069`
 - `8071`
 - `8085`
 - `8086`
@@ -6673,6 +6892,7 @@ Total attributes: **295**
 - `8088`
 - `8091`
 - `8092`
+- `8093`
 - `8096`
 - `8097`
 - `8098`
@@ -6704,9 +6924,11 @@ Total attributes: **295**
 - `8671`
 - `8707`
 - `8709`
+- `8727`
 - `8734`
 - `8778`
 - `8781`
+- `880`
 - `88009, 88010, 88011`
 - `8857`
 - `8859`
@@ -6762,6 +6984,8 @@ Total attributes: **295**
 - `9398`
 - `9443`
 - `9445`
+- `9450`
+- `9457`
 - `9463`
 - `9467`
 - `9468`
@@ -6797,7 +7021,7 @@ Total attributes: **295**
 - `set`
 
 ---
-## LEGO Set Nummer (29 unique)
+## LEGO Set Nummer (30 unique)
 
 - `10214`
 - `10253`
@@ -6818,6 +7042,7 @@ Total attributes: **295**
 - `7187`
 - `75288`
 - `75417`
+- `75810`
 - `7672`
 - `7780`
 - `7787`
@@ -6835,7 +7060,7 @@ Total attributes: **295**
 - `ART`
 
 ---
-## LEGO Subtheme (454 unique)
+## LEGO Subtheme (468 unique)
 
 - `1.0`
 - `12V`
@@ -6852,6 +7077,7 @@ Total attributes: **295**
 - `Aero Tube Hangar`
 - `Ahsoka`
 - `Aircraft`
+- `Airjitzu`
 - `Airport`
 - `Alien Conquest`
 - `Amusement Park`
@@ -6953,6 +7179,7 @@ Total attributes: **295**
 - `Dodge`
 - `Does not apply`
 - `Dominion`
+- `Draco in the Forbidden Forest`
 - `Dragon`
 - `Dragon Knights`
 - `Dragon Masters`
@@ -7056,6 +7283,7 @@ Total attributes: **295**
 - `Licensed`
 - `Lightyear`
 - `Lilo & Stitch`
+- `Limited edition, Employee Gift`
 - `Lion Knights`
 - `Little Forest Friends`
 - `Looney Tunes`
@@ -7121,10 +7349,12 @@ Total attributes: **295**
 - `Police`
 - `Police, Airport and Vehicles`
 - `Porsche`
+- `Possession`
 - `Postcard`
 - `Power Functions`
 - `Prisoner of Azkaban`
 - `Promotional`
+- `Race`
 - `Racing`
 - `Racing Cars`
 - `Rahi`
@@ -7134,9 +7364,11 @@ Total attributes: **295**
 - `Rescue`
 - `Resistance`
 - `Retro`
+- `Rivendell`
 - `Robotics`
 - `Rogue One`
 - `Rolling Acres Ranch`
+- `Roman Colosseum`
 - `STAR TREK`
 - `STAR WARS`
 - `Scooby-Doo`
@@ -7158,6 +7390,7 @@ Total attributes: **295**
 - `Sherlock Holmes`
 - `Shoe`
 - `Shops & Services`
+- `Skeleton Crew`
 - `Skylines`
 - `Snow Resort`
 - `Solo`
@@ -7172,6 +7405,7 @@ Total attributes: **295**
 - `Spider-Man: No Way Home`
 - `Spike`
 - `Spinjitzu`
+- `Spinjitzu Masters`
 - `Star Trek`
 - `Star Trek 60 Years Next Generation`
 - `Star Wars`
@@ -7186,11 +7420,14 @@ Total attributes: **295**
 - `Studios`
 - `Stuntz`
 - `Super Heroes`
+- `Supercars`
+- `Superhero`
 - `Superheroes`
 - `System`
 - `TECHNIC`
 - `TRON`
 - `TV Shows`
+- `Talking Sorting Hat`
 - `Team GB Series`
 - `Teenage Mutant Ninja Turtles`
 - `The Bad Batch`
@@ -7265,6 +7502,7 @@ Total attributes: **295**
 - `batman`
 - `bookshop`
 - `bricklink`
+- `christmas`
 - `disney`
 - `does not apply`
 - `dragons`
@@ -7278,6 +7516,7 @@ Total attributes: **295**
 - `icons`
 - `ideas`
 - `lego`
+- `lego Leaning Tower of Pisa`
 - `minifigures`
 - `motorbike`
 - `n/a`
@@ -7293,7 +7532,7 @@ Total attributes: **295**
 - `wicked`
 
 ---
-## LEGO Theme (202 unique)
+## LEGO Theme (210 unique)
 
 - `60 year aniversary`
 - `ART`
@@ -7322,12 +7561,14 @@ Total attributes: **295**
 - `Bricklink Designer Program`
 - `Bricklink Designer Series 1`
 - `Buildings`
+- `Bulk Bricks`
 - `CITY`
 - `CREATOR`
 - `Cars`
 - `Castle`
 - `Chinese New Year`
 - `Christmas`
+- `City`
 - `Collectors`
 - `Creator`
 - `Creator Expert`
@@ -7340,6 +7581,7 @@ Total attributes: **295**
 - `Dacta`
 - `Dc Batman`
 - `Dc Comics Super Heroes`
+- `Dc Super Heroes`
 - `Despicable Me`
 - `Dinosaurs`
 - `Disney`
@@ -7397,6 +7639,7 @@ Total attributes: **295**
 - `Lunar New Year`
 - `MARS MISSION`
 - `MINDSTORMS`
+- `MINECRAFT`
 - `MINIFIGURES`
 - `MIXELS`
 - `MONKIE KID`
@@ -7473,6 +7716,7 @@ Total attributes: **295**
 - `Ultra Agents`
 - `Universal Building Set`
 - `VIDIYO`
+- `Vikings`
 - `Wednesday`
 - `Western`
 - `Wicked`
@@ -7492,11 +7736,14 @@ Total attributes: **295**
 - `ideas`
 - `lego kingdoms`
 - `marvel super heroes`
+- `mclaren p1`
 - `mos eilsey cantina`
 - `porsche`
 - `star trek`
 - `star wars`
 - `tree house`
+- `ultimate Collectors`
+- `ultimate series`
 
 ---
 ## LEGO Theme World (1 unique)
@@ -7504,7 +7751,7 @@ Total attributes: **295**
 - `Pirates`
 
 ---
-## LEGO Themenwelt (24 unique)
+## LEGO Themenwelt (25 unique)
 
 - `Aquazone`
 - `BIONICLE`
@@ -7526,13 +7773,14 @@ Total attributes: **295**
 - `Piraten`
 - `Polybags`
 - `Star Wars`
+- `Stranger Things`
 - `System`
 - `TECHNIC`
 - `The Hobbit`
 - `Weltraum`
 
 ---
-## LEGO Unterthema (21 unique)
+## LEGO Unterthema (22 unique)
 
 - `Bricklink Designer Program`
 - `CITY`
@@ -7551,6 +7799,7 @@ Total attributes: **295**
 - `Ritterburg`
 - `Schiff`
 - `Star Wars`
+- `Stranger Things`
 - `TECHNIC`
 - `The Clone Wars`
 - `Traffic`
@@ -7568,7 +7817,7 @@ Total attributes: **295**
 - `14.9 in`
 
 ---
-## Launch Date (101 unique)
+## Launch Date (103 unique)
 
 - `01/01/2015`
 - `01/01/2018`
@@ -7626,6 +7875,7 @@ Total attributes: **295**
 - `01/09/2024`
 - `01/10/2019`
 - `01/10/2021`
+- `01/10/2022`
 - `01/10/2023`
 - `01/10/2024`
 - `01/11/2016`
@@ -7654,6 +7904,7 @@ Total attributes: **295**
 - `15/02/2021`
 - `15/12/2011`
 - `17/02/2017`
+- `19/04/2020`
 - `19/07/2011`
 - `19/10/2008`
 - `19/10/2022`
@@ -7713,7 +7964,7 @@ Total attributes: **295**
 - `ca. 2,0 cm`
 
 ---
-## MPN (1444 unique)
+## MPN (1491 unique)
 
 - `...`
 - `0`
@@ -7721,6 +7972,7 @@ Total attributes: **295**
 - `10024`
 - `10027`
 - `10030`
+- `10131`
 - `10144`
 - `10155`
 - `10174`
@@ -7825,8 +8077,10 @@ Total attributes: **295**
 - `10326`
 - `10328`
 - `10329`
+- `10330`
 - `10331-1`
 - `10332`
+- `10333`
 - `10334`
 - `10335`
 - `10335-1`
@@ -7835,6 +8089,7 @@ Total attributes: **295**
 - `10339`
 - `10340`
 - `10341`
+- `10342`
 - `10343`
 - `10344`
 - `10349`
@@ -7874,6 +8129,7 @@ Total attributes: **295**
 - `11202`
 - `11203`
 - `112110`
+- `11370`
 - `17101`
 - `200`
 - `20150`
@@ -7962,6 +8218,7 @@ Total attributes: **295**
 - `21334`
 - `21335`
 - `21336`
+- `21337`
 - `21338`
 - `21340`
 - `21341`
@@ -7974,6 +8231,7 @@ Total attributes: **295**
 - `21349`
 - `21350`
 - `21351`
+- `21352`
 - `21353`
 - `21354`
 - `21356`
@@ -7983,10 +8241,13 @@ Total attributes: **295**
 - `21362`
 - `21363`
 - `2263`
+- `2521`
+- `2853590`
 - `30210`
 - `30343`
 - `30585`
 - `30662`
+- `30677`
 - `30687`
 - `3070`
 - `30701`
@@ -8002,6 +8263,7 @@ Total attributes: **295**
 - `31109`
 - `31119`
 - `31120`
+- `31122`
 - `31129`
 - `31130`
 - `31132`
@@ -8013,6 +8275,7 @@ Total attributes: **295**
 - `31156`
 - `31161`
 - `31165`
+- `31167`
 - `31168`
 - `31198`
 - `31202`
@@ -8095,6 +8358,7 @@ Total attributes: **295**
 - `40747`
 - `40755`
 - `40757`
+- `40758`
 - `40761`
 - `40765`
 - `40768`
@@ -8117,6 +8381,7 @@ Total attributes: **295**
 - `40813`
 - `40819`
 - `40820`
+- `40891`
 - `41039`
 - `41068`
 - `41130`
@@ -8199,6 +8464,7 @@ Total attributes: **295**
 - `42121`
 - `42122`
 - `42125`
+- `42126`
 - `42127`
 - `42128`
 - `42129`
@@ -8259,8 +8525,10 @@ Total attributes: **295**
 - `43230`
 - `43242`
 - `43244`
+- `43245`
 - `43249`
 - `43257`
+- `43262`
 - `43263`
 - `43266`
 - `43268`
@@ -8318,6 +8586,7 @@ Total attributes: **295**
 - `5702017421964`
 - `5702017424194`
 - `5702017424941`
+- `5702017815909`
 - `5702017816616`
 - `5702017822426`
 - `5702017824888`
@@ -8337,6 +8606,7 @@ Total attributes: **295**
 - `60062`
 - `60063`
 - `60069`
+- `60073`
 - `60080`
 - `60098`
 - `60103`
@@ -8399,6 +8669,8 @@ Total attributes: **295**
 - `6082`
 - `6086`
 - `6090`
+- `6093`
+- `6097`
 - `6098`
 - `6136359`
 - `6175`
@@ -8459,6 +8731,7 @@ Total attributes: **295**
 - `70146`
 - `70161`
 - `70165`
+- `7018`
 - `70230`
 - `70357`
 - `70402`
@@ -8468,6 +8741,7 @@ Total attributes: **295**
 - `70431`
 - `70434`
 - `70504`
+- `70588`
 - `70595`
 - `70608`
 - `70612`
@@ -8495,6 +8769,8 @@ Total attributes: **295**
 - `70725`
 - `70728`
 - `70731`
+- `70732`
+- `70740`
 - `70747`
 - `70756`
 - `70780`
@@ -8544,6 +8820,7 @@ Total attributes: **295**
 - `71742`
 - `71746`
 - `71748`
+- `71754`
 - `71755`
 - `71764`
 - `71765`
@@ -8556,12 +8833,14 @@ Total attributes: **295**
 - `71813`
 - `71821`
 - `71822`
+- `71830`
 - `71832`
 - `71837`
 - `71841`
 - `71842`
 - `71847`
 - `7187`
+- `7194`
 - `7197`
 - `7198`
 - `72032`
@@ -8572,6 +8851,7 @@ Total attributes: **295**
 - `7256`
 - `7257`
 - `7261`
+- `7264`
 - `7286`
 - `7317`
 - `7412`
@@ -8622,6 +8902,7 @@ Total attributes: **295**
 - `75103`
 - `75104`
 - `75105`
+- `75106`
 - `75135`
 - `75137`
 - `75138`
@@ -8647,6 +8928,7 @@ Total attributes: **295**
 - `75179`
 - `75180`
 - `75181`
+- `75183`
 - `75187`
 - `75188`
 - `75189`
@@ -8678,6 +8960,7 @@ Total attributes: **295**
 - `75258`
 - `75259`
 - `75266`
+- `75272`
 - `75273`
 - `75274`
 - `75276`
@@ -8691,6 +8974,7 @@ Total attributes: **295**
 - `75290`
 - `75291`
 - `75292`
+- `75294`
 - `75300`
 - `75301`
 - `75302`
@@ -8781,8 +9065,11 @@ Total attributes: **295**
 - `75435`
 - `75537`
 - `75551`
+- `75571`
+- `75572`
 - `75574`
 - `75577`
+- `75578`
 - `75579`
 - `75582`
 - `75583`
@@ -8840,6 +9127,7 @@ Total attributes: **295**
 - `76081`
 - `76104`
 - `76107`
+- `76112`
 - `76115`
 - `76126`
 - `76138`
@@ -8892,6 +9180,7 @@ Total attributes: **295**
 - `76304`
 - `76311`
 - `76312`
+- `76319`
 - `76320`
 - `76321`
 - `76322`
@@ -8919,8 +9208,10 @@ Total attributes: **295**
 - `76408`
 - `76412`
 - `76414`
+- `76415`
 - `76417`
 - `76419`
+- `76421`
 - `76422`
 - `76423`
 - `76424`
@@ -8944,6 +9235,7 @@ Total attributes: **295**
 - `76453`
 - `76454`
 - `76457`
+- `76466`
 - `7659`
 - `7662`
 - `7672`
@@ -8971,6 +9263,7 @@ Total attributes: **295**
 - `76944`
 - `76945`
 - `76946`
+- `76947`
 - `76948`
 - `76949`
 - `76951`
@@ -9044,12 +9337,14 @@ Total attributes: **295**
 - `8039`
 - `8043`
 - `8063`
+- `8069`
 - `8085`
 - `8086`
 - `8087`
 - `8088`
 - `8091`
 - `8092`
+- `8093`
 - `8097`
 - `8098`
 - `81000`
@@ -9073,6 +9368,7 @@ Total attributes: **295**
 - `8640`
 - `8671`
 - `8709`
+- `8727`
 - `8734`
 - `8778`
 - `88009, 88010, 88011`
@@ -9094,6 +9390,7 @@ Total attributes: **295**
 - `910001`
 - `910004`
 - `910008`
+- `910029`
 - `910030`
 - `910031`
 - `910033`
@@ -9118,6 +9415,7 @@ Total attributes: **295**
 - `9398`
 - `9443`
 - `9445`
+- `9457`
 - `9467`
 - `9468`
 - `9468-1`
@@ -9188,10 +9486,11 @@ Total attributes: **295**
 - `108.0`
 
 ---
-## Manufacturer Part Number (3 unique)
+## Manufacturer Part Number (4 unique)
 
 - `31202`
 - `6286`
+- `75572`
 - `76423`
 
 ---
@@ -9217,8 +9516,9 @@ Total attributes: **295**
 - `Lego`
 
 ---
-## Marque (2 unique)
+## Marque (3 unique)
 
+- `BrickAura`
 - `LEGO`
 - `Lego`
 
@@ -9246,9 +9546,10 @@ Total attributes: **295**
 - `Plastic`
 
 ---
-## Material Type(s) (1 unique)
+## Material Type(s) (2 unique)
 
 - `Plastic`
+- `âPlastic`
 
 ---
 ## Materiale (1 unique)
@@ -9288,11 +9589,12 @@ Total attributes: **295**
 - `108`
 
 ---
-## Model (5 unique)
+## Model (6 unique)
 
 - `10318`
 - `21349`
 - `71408`
+- `75572`
 - `76444`
 - `77077`
 
@@ -9387,7 +9689,7 @@ Total attributes: **295**
 - `6 Aa Batteries Required.`
 
 ---
-## Number of Pieces (1022 unique)
+## Number of Pieces (1043 unique)
 
 - `...`
 - `0`
@@ -9428,6 +9730,7 @@ Total attributes: **295**
 - `1063`
 - `1066`
 - `1068`
+- `1069`
 - `107`
 - `1070`
 - `1072`
@@ -9446,6 +9749,7 @@ Total attributes: **295**
 - `1099`
 - `110`
 - `1100`
+- `1103`
 - `1106`
 - `1107`
 - `1111`
@@ -9482,6 +9786,8 @@ Total attributes: **295**
 - `1197`
 - `12`
 - `12 Characters`
+- `1200`
+- `1201`
 - `1204`
 - `1205`
 - `121`
@@ -9591,6 +9897,7 @@ Total attributes: **295**
 - `1548`
 - `1555`
 - `1559`
+- `1560`
 - `157`
 - `1579`
 - `158`
@@ -9635,6 +9942,7 @@ Total attributes: **295**
 - `1742`
 - `1743`
 - `1746`
+- `175`
 - `176`
 - `176+`
 - `1769`
@@ -9653,6 +9961,7 @@ Total attributes: **295**
 - `183`
 - `185`
 - `186`
+- `1860`
 - `1862`
 - `1869`
 - `1872`
@@ -9755,6 +10064,7 @@ Total attributes: **295**
 - `233`
 - `2331`
 - `2336`
+- `2339`
 - `234`
 - `235`
 - `2352`
@@ -9840,6 +10150,7 @@ Total attributes: **295**
 - `275`
 - `275 pieces.`
 - `2750`
+- `276`
 - `2766`
 - `277`
 - `278`
@@ -9869,6 +10180,7 @@ Total attributes: **295**
 - `293`
 - `2933`
 - `294`
+- `295`
 - `2953`
 - `2961`
 - `2970`
@@ -9887,6 +10199,7 @@ Total attributes: **295**
 - `304`
 - `305`
 - `3050`
+- `306`
 - `3066`
 - `308`
 - `309`
@@ -9930,6 +10243,7 @@ Total attributes: **295**
 - `340`
 - `3402`
 - `341`
+- `342`
 - `3428`
 - `343`
 - `3444`
@@ -10038,6 +10352,7 @@ Total attributes: **295**
 - `425`
 - `428`
 - `4287`
+- `4295`
 - `430`
 - `431`
 - `433`
@@ -10071,6 +10386,7 @@ Total attributes: **295**
 - `468`
 - `468 Pieces`
 - `469`
+- `470`
 - `471`
 - `472`
 - `474`
@@ -10116,6 +10432,7 @@ Total attributes: **295**
 - `52`
 - `5201`
 - `522`
+- `524`
 - `527`
 - `528`
 - `529`
@@ -10129,6 +10446,7 @@ Total attributes: **295**
 - `542`
 - `544`
 - `546`
+- `5471`
 - `550`
 - `551`
 - `553`
@@ -10147,8 +10465,10 @@ Total attributes: **295**
 - `5686`
 - `570`
 - `571`
+- `572`
 - `573`
 - `574`
+- `575`
 - `578`
 - `579`
 - `579 Pieces`
@@ -10173,6 +10493,7 @@ Total attributes: **295**
 - `604`
 - `606`
 - `608`
+- `609`
 - `610`
 - `613`
 - `615`
@@ -10261,6 +10582,7 @@ Total attributes: **295**
 - `744`
 - `745`
 - `747`
+- `749`
 - `75`
 - `750`
 - `754`
@@ -10393,6 +10715,7 @@ Total attributes: **295**
 - `972`
 - `973`
 - `976`
+- `978`
 - `979`
 - `98`
 - `980`
@@ -10467,7 +10790,7 @@ Total attributes: **295**
 - `55.5 x 37.8 x 15.7 cm`
 
 ---
-## Packaging (32 unique)
+## Packaging (33 unique)
 
 - `Box`
 - `Box of 36 sealed foil packs`
@@ -10493,6 +10816,7 @@ Total attributes: **295**
 - `Polybag`
 - `Sachet transparent`
 - `Sealed Box`
+- `Sealed Numbered Bags`
 - `See photo`
 - `Shrink Wrapped`
 - `Without Box`
@@ -10556,9 +10880,10 @@ Total attributes: **295**
 - `No`
 
 ---
-## Personnage LEGO (4 unique)
+## Personnage LEGO (5 unique)
 
 - `Hot Tub Stormtrooper`
+- `Renault 5`
 - `Rouge`
 - `Star Wars`
 - `Univers Marvel`
@@ -10593,8 +10918,9 @@ Total attributes: **295**
 - `Battery Powered`
 
 ---
-## Product Dimensions (1 unique)
+## Product Dimensions (2 unique)
 
+- `19.1 x 26.2 x 7.2 cm ; 436 Grams`
 - `30 x 15 x 6 cm; 400g`
 
 ---
@@ -10620,7 +10946,7 @@ Total attributes: **295**
 - `Pirates`
 
 ---
-## Product Line (LEGO Theme) (43 unique)
+## Product Line (LEGO Theme) (47 unique)
 
 - `Alien Conquest`
 - `Architecture`
@@ -10636,6 +10962,7 @@ Total attributes: **295**
 - `Disney Classic`
 - `Duplo`
 - `Fortnite`
+- `Friends`
 - `Harry Potter`
 - `Icons`
 - `Ideas`
@@ -10648,15 +10975,18 @@ Total attributes: **295**
 - `Lego Technic`
 - `Lord Of The Rings`
 - `Minecraft`
+- `Minifigures`
 - `Monster Fighters`
 - `Ninjago`
 - `ONE PIECE`
+- `Polybags`
 - `Racers`
 - `Rock Raiders`
 - `Seasonal`
 - `Speed Champions`
 - `Star Wars`
 - `Star Wars TM`
+- `Stranger Things`
 - `Super Heroes`
 - `Super Mario`
 - `Technic`
@@ -10667,9 +10997,10 @@ Total attributes: **295**
 - `winter village collection`
 
 ---
-## Product Type (1 unique)
+## Product Type (2 unique)
 
 - `Full Set`
+- `does not apply`
 
 ---
 ## Produktart (8 unique)
@@ -10792,8 +11123,9 @@ Total attributes: **295**
 - `does not apply`
 
 ---
-## Series (5 unique)
+## Series (6 unique)
 
+- `3 in 1`
 - `Bionicle`
 - `City`
 - `Creative Building`
@@ -10883,14 +11215,16 @@ Total attributes: **295**
 - `Star Wars`
 
 ---
-## Theme (20 unique)
+## Theme (22 unique)
 
 - `Aircraft`
 - `Botanicals`
 - `Cartoon`
 - `City Markets`
+- `Creator`
 - `Emergency Services`
 - `Friends TV Show`
+- `Gaming`
 - `Holidays`
 - `Ideas`
 - `Insects`
@@ -10912,13 +11246,14 @@ Total attributes: **295**
 - `Games videos`
 
 ---
-## ThÃ¨me LEGO (5 unique)
+## ThÃ¨me LEGO (6 unique)
 
 - `Holiday`
 - `Marvel Super Heroes`
 - `Pirates`
 - `Star Wars`
 - `Technic`
+- `Voitures`
 
 ---
 ## ThÃ¨me du modÃ¨le (4 unique)
@@ -10951,10 +11286,11 @@ Total attributes: **295**
 - `Flughafen mit Flugzeug`
 
 ---
-## Type (52 unique)
+## Type (55 unique)
 
 - `3 x Complete Sets`
 - `BUILDING`
+- `Box Only`
 - `Building & Construction Toys`
 - `Building Sets`
 - `Complate Set`
@@ -10964,11 +11300,13 @@ Total attributes: **295**
 - `Complete Set/Pack`
 - `Complete set`
 - `Complete set apart from 2nd instruction manual`
+- `Desk Display`
 - `Display Case`
 - `Does Not Apply`
 - `Does not apply`
 - `Ensemble complet`
 - `Figure`
+- `Figurine`
 - `Incomplete Set`
 - `Interlocking Blocks`
 - `LEGO City`
@@ -11100,12 +11438,13 @@ Total attributes: **295**
 - `60 Day Returns`
 
 ---
-## Weight (14 unique)
+## Weight (15 unique)
 
 - `0.136 kg`
 - `0.39 kg`
 - `0.469 kg`
 - `0.5 kg`
+- `0.77 kg`
 - `1.017 KG`
 - `1.333 kg`
 - `1.94 kg`
@@ -11129,8 +11468,9 @@ Total attributes: **295**
 - `95 mm`
 
 ---
-## Year (11 unique)
+## Year (12 unique)
 
+- `2002`
 - `2007`
 - `2011`
 - `2012`
@@ -11193,7 +11533,7 @@ Total attributes: **295**
 - `2023`
 
 ---
-## Year Retired (37 unique)
+## Year Retired (39 unique)
 
 - `1978`
 - `1979`
@@ -11201,6 +11541,7 @@ Total attributes: **295**
 - `1984`
 - `1986`
 - `1989`
+- `1990`
 - `1996`
 - `1997`
 - `1998`
@@ -11210,6 +11551,7 @@ Total attributes: **295**
 - `2002`
 - `2003`
 - `2004`
+- `2005`
 - `2006`
 - `2007`
 - `2008`
@@ -11261,7 +11603,7 @@ Total attributes: **295**
 - `default`
 
 ---
-## eBay Product ID (ePID) (59 unique)
+## eBay Product ID (ePID) (61 unique)
 
 - `10052414270`
 - `11048267531`
@@ -11279,6 +11621,7 @@ Total attributes: **295**
 - `15062426096`
 - `16048273323`
 - `16048273353`
+- `16048273395`
 - `16052401999`
 - `16068373325`
 - `16074269031`
@@ -11319,6 +11662,7 @@ Total attributes: **295**
 - `6053439577`
 - `7053432636`
 - `7053432867`
+- `9048271641`
 - `9053424486`
 - `9054502289`
 - `9054502325`

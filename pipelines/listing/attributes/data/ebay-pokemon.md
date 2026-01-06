@@ -29,13 +29,14 @@ Total attributes: **79**
 - `[P] Psyshock (10)`
 
 ---
-## Attribute/MTG:Color (9 unique)
+## Attribute/MTG:Color (10 unique)
 
 - `Colorless Energy`
 - `Dark`
 - `Dragon`
 - `Fighting`
 - `Grass`
+- `Light`
 - `Lightning`
 - `Metal`
 - `Multi-Color`
@@ -107,7 +108,7 @@ Total attributes: **79**
 - `new`
 
 ---
-## Card Name (179 unique)
+## Card Name (181 unique)
 
 - `Abra`
 - `Aerial Eater`
@@ -234,6 +235,7 @@ Total attributes: **79**
 - `Pikachu ex`
 - `Piloswine`
 - `Pokemon`
+- `PokÃ©mon Reversal`
 - `Poppy`
 - `Premium Power Pro`
 - `Primite Drillbeam`
@@ -284,13 +286,14 @@ Total attributes: **79**
 - `Victini Ex`
 - `Vulpix`
 - `Waifu`
+- `Wigglytuff ex`
 - `Wing Gundam Zero`
 - `Zekrom`
 - `ex base`
 - `pokemon`
 
 ---
-## Card Number (96 unique)
+## Card Number (98 unique)
 
 - `001 to 159`
 - `005/025`
@@ -387,6 +390,8 @@ Total attributes: **79**
 - `RP02-EN050`
 - `SV-P-113/SV-P`
 - `SWSH241`
+- `Svp123`
+- `XY166`
 - `op10-092`
 
 ---
@@ -416,7 +421,7 @@ Total attributes: **79**
 - `Trap`
 
 ---
-## Character (147 unique)
+## Character (153 unique)
 
 - `Ace`
 - `Aerial Eater`
@@ -449,6 +454,7 @@ Total attributes: **79**
 - `Dugtrio`
 - `Eelektross`
 - `Ekans`
+- `Electabuzz`
 - `Electivire`
 - `Enneapolis`
 - `Exeggcute`
@@ -463,6 +469,7 @@ Total attributes: **79**
 - `Gengar`
 - `Gholdengo Ex`
 - `Gligar`
+- `Glimmora`
 - `Great Tusk`
 - `Hawlucha`
 - `Hecahands Yadel`
@@ -518,8 +525,11 @@ Total attributes: **79**
 - `Pokemon`
 - `Polymerization`
 - `Primite Drillbeam`
+- `Prof`
+- `Professor`
 - `Professor Oak`
 - `Professor's Research`
+- `Professorâs Research`
 - `Psycho Gundam`
 - `Psyduck`
 - `Radiant Typhoon Vision`
@@ -541,6 +551,7 @@ Total attributes: **79**
 - `Suicune`
 - `Sylveon`
 - `Tangela`
+- `Team Rocket`
 - `Teemo`
 - `Togedemaru`
 - `Triple Tactics Talent`
@@ -573,7 +584,7 @@ Total attributes: **79**
 - `Pikachu`
 
 ---
-## Convention/Event (7 unique)
+## Convention/Event (8 unique)
 
 - `Japan Expo`
 - `NO`
@@ -582,6 +593,7 @@ Total attributes: **79**
 - `PokÃ©mon League`
 - `PokÃ©mon World Championship`
 - `bandai card fest`
+- `pokemon`
 
 ---
 ## Country of Origin (5 unique)
@@ -794,7 +806,7 @@ Total attributes: **79**
 - `2025`
 
 ---
-## Illustrator (21 unique)
+## Illustrator (22 unique)
 
 - `5ban Graphics`
 - `Akira Komayama`
@@ -803,6 +815,7 @@ Total attributes: **79**
 - `Gossan`
 - `Hironobu Yoshida`
 - `Ken Sugimori`
+- `Kodama`
 - `Kouki Saitou`
 - `Megumi Mizutani`
 - `Miki Kudo`
@@ -979,7 +992,7 @@ Total attributes: **79**
 - `Promo`
 
 ---
-## Set (84 unique)
+## Set (87 unique)
 
 - `- Yugi -`
 - `151`
@@ -1024,6 +1037,7 @@ Total attributes: **79**
 - `Phantom Revenge`
 - `Plasma Blast`
 - `Pokemon Card`
+- `PokÃ©mon GO`
 - `PokÃ©mon Trading Card Game Battle Academy`
 - `Prismatic Evolutions`
 - `Promo Cards`
@@ -1056,9 +1070,11 @@ Total attributes: **79**
 - `Sv: Scarlet & Violet 151`
 - `Sword & Shield`
 - `Sword & Shield - Lost Origin`
+- `Team Rocket`
 - `The Start Deck 100 Battle Collection`
 - `Vol .3`
 - `White Flare`
+- `Wizards Black Star Promos`
 - `best selection`
 - `dual impact`
 - `mixed`
@@ -1164,10 +1180,11 @@ Total attributes: **79**
 - `Yes`
 
 ---
-## Year Manufactured (13 unique)
+## Year Manufactured (14 unique)
 
 - `1996`
 - `1999`
+- `2000`
 - `2003`
 - `2009`
 - `2010`

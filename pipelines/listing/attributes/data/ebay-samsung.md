@@ -33,7 +33,7 @@ Total attributes: **121**
 - `Face Recognition`
 
 ---
-## Brand (11 unique)
+## Brand (12 unique)
 
 - `Google`
 - `HMD`
@@ -46,6 +46,7 @@ Total attributes: **121**
 - `Samsung`
 - `TwinSim`
 - `Unbranded`
+- `samsung`
 
 ---
 ## Cable Length (1 unique)
@@ -68,7 +69,7 @@ Total attributes: **121**
 - `Dual Led`
 
 ---
-## Camera Resolution (19 unique)
+## Camera Resolution (20 unique)
 
 - `10.0 MP`
 - `108.0 MP`
@@ -89,9 +90,10 @@ Total attributes: **121**
 - `64.0MP`
 - `8.0 MP`
 - `Not Applicable`
+- `Quad 200 MP / 50 MP / 50 MP / 10 MP main cameras`
 
 ---
-## Cellular Band (11 unique)
+## Cellular Band (12 unique)
 
 - `5G`
 - `5g`
@@ -102,6 +104,7 @@ Total attributes: **121**
 - `GSM 850`
 - `GSM 900`
 - `GSM+CDMA`
+- `HSPA`
 - `LTE 39 (1900)`
 - `N/A`
 
@@ -117,12 +120,13 @@ Total attributes: **121**
 - `Yes`
 
 ---
-## Charger and cable (1 unique)
+## Charger and cable (2 unique)
 
 - `Cable`
+- `Yes`
 
 ---
-## Chipset Model (38 unique)
+## Chipset Model (40 unique)
 
 - `Exynos 1580`
 - `Exynos 2400`
@@ -130,6 +134,7 @@ Total attributes: **121**
 - `MediaTek Dimensity 1080`
 - `MediaTek Dimensity 720`
 - `Mediatek MT6769V/CU Helio G80 (12 nm)`
+- `Octa Core`
 - `Octa-core (2x2.4 GHz Cortex-A78 & 6x2.0 GHz Cortex-A55) or Octa-c`
 - `Qualcomm APQ8084 Snapdragon 805`
 - `Qualcomm SDM855 Snapdragon 855 (7 nm)`
@@ -162,6 +167,7 @@ Total attributes: **121**
 - `Samsung Exynos 9820`
 - `Samsung Exynos 990`
 - `Snapdragon 8 Elite`
+- `Snapdragon 8 Elite processor`
 
 ---
 ## Color (2 unique)
@@ -170,7 +176,7 @@ Total attributes: **121**
 - `Crafted Black`
 
 ---
-## Colour (42 unique)
+## Colour (43 unique)
 
 - `Aura Glow`
 - `Awesome Graphite`
@@ -197,6 +203,7 @@ Total attributes: **121**
 - `Mint Green`
 - `Navy`
 - `Navy Blue`
+- `Orange`
 - `Phantom Violet`
 - `Pink`
 - `Purple`
@@ -216,27 +223,33 @@ Total attributes: **121**
 - `obsidian`
 
 ---
-## Colour Name (4 unique)
+## Colour Name (5 unique)
 
 - `Black`
 - `Jetblack`
+- `Navy`
 - `Onyx Black`
 - `Titanium Black`
 
 ---
-## Colour Options (14 unique)
+## Colour Options (19 unique)
 
 - `Awesome Black`
 - `Awesome Lavender`
 - `Awesome Lime`
 - `Awesome White`
 - `Black`
+- `Blue Black`
+- `Coral Red`
 - `Grey`
 - `Icy Blue`
 - `Jet Black`
+- `Mint`
 - `Navy`
+- `Pink Gold`
 - `Purple`
 - `Silver Blue`
+- `Silver Shadow`
 - `Titanium`
 - `White`
 - `Yellow`
@@ -436,7 +449,7 @@ Total attributes: **121**
 - `Super AMOLED`
 
 ---
-## EAN (12 unique)
+## EAN (13 unique)
 
 - `8806094504996`
 - `8806094733372`
@@ -444,6 +457,7 @@ Total attributes: **121**
 - `8806095299822`
 - `8806095815770`
 - `8806095850955`
+- `8806095852393`
 - `8806095984070`
 - `8806097301691`
 - `8806097430629`
@@ -654,7 +668,7 @@ Total attributes: **121**
 - `Unlocked`
 
 ---
-## MPN (134 unique)
+## MPN (137 unique)
 
 - `128GB`
 - `2025 Model`
@@ -768,6 +782,7 @@ Total attributes: **121**
 - `SM-S921BZKDEUB`
 - `SM-S921BZKGEUB`
 - `SM-S921BZVDEUB`
+- `SM-S921BZYGEUB`
 - `SM-S928BZKGEUB`
 - `SM-S928BZKHEUB`
 - `SM-S928BZKPEUB`
@@ -775,8 +790,10 @@ Total attributes: **121**
 - `SM-S928BZTHEUB`
 - `SM-S928BZVHEUB`
 - `SM-S928BZYGEUB`
+- `SM-S931BDBDEUB`
 - `SM-S931BLBGEUB`
 - `SM-S938B/DS`
+- `SM-S938BAKGEUB`
 - `SM-S938BZKDEUB`
 - `SMA326BZKUEUA`
 - `SMA536BZKNEEB`
@@ -803,7 +820,7 @@ Total attributes: **121**
 - `Titanium Violet`
 
 ---
-## Manufacturer Warranty (9 unique)
+## Manufacturer Warranty (10 unique)
 
 - `1 Month`
 - `1 Year`
@@ -812,6 +829,7 @@ Total attributes: **121**
 - `12 Months Seller Warranty`
 - `2 Years`
 - `6 Months`
+- `Expires 24/01/2027`
 - `N/A`
 - `None`
 
@@ -881,7 +899,7 @@ Total attributes: **121**
 - `12.0`
 
 ---
-## Model (102 unique)
+## Model (107 unique)
 
 - `A56`
 - `A60 5G - 128 GB, Black Red`
@@ -924,6 +942,7 @@ Total attributes: **121**
 - `Samsung Galaxy A71 5G`
 - `Samsung Galaxy A80`
 - `Samsung Galaxy Fold`
+- `Samsung Galaxy J3`
 - `Samsung Galaxy J4 Core`
 - `Samsung Galaxy Note10+`
 - `Samsung Galaxy Note10+ 5G`
@@ -932,6 +951,7 @@ Total attributes: **121**
 - `Samsung Galaxy S10e`
 - `Samsung Galaxy S20 FE`
 - `Samsung Galaxy S20 FE 5G`
+- `Samsung Galaxy S20 Ultra 5G`
 - `Samsung Galaxy S20+ 5G`
 - `Samsung Galaxy S21`
 - `Samsung Galaxy S21 FE 5G`
@@ -948,6 +968,7 @@ Total attributes: **121**
 - `Samsung Galaxy S23 Ultra 5G`
 - `Samsung Galaxy S23+`
 - `Samsung Galaxy S24`
+- `Samsung Galaxy S24 FE`
 - `Samsung Galaxy S24 Ultra`
 - `Samsung Galaxy S24+`
 - `Samsung Galaxy S25`
@@ -958,6 +979,7 @@ Total attributes: **121**
 - `Samsung Galaxy S25 Ultra 256GB`
 - `Samsung Galaxy S25+`
 - `Samsung Galaxy S8`
+- `Samsung Galaxy Z Flip`
 - `Samsung Galaxy Z Flip 6`
 - `Samsung Galaxy Z Flip3 5G`
 - `Samsung Galaxy Z Flip4`
@@ -965,6 +987,7 @@ Total attributes: **121**
 - `Samsung Galaxy Z Flip6`
 - `Samsung Galaxy Z Flip7`
 - `Samsung Galaxy Z Flip7 FE`
+- `Samsung Galaxy Z Fold 7`
 - `Samsung Galaxy Z Fold3 5G`
 - `Samsung Galaxy Z Fold4`
 - `Samsung Galaxy Z Fold5`
@@ -987,7 +1010,7 @@ Total attributes: **121**
 - `z fold 6`
 
 ---
-## Model Number (83 unique)
+## Model Number (85 unique)
 
 - `A063`
 - `A2643 (Gsm)`
@@ -1042,7 +1065,9 @@ Total attributes: **121**
 - `SM-S921B/DS`
 - `SM-S921BZKDEUB`
 - `SM-S928U`
+- `SM-S931BDBDEUB`
 - `SM-S931BLBGEUB`
+- `SM-S938B/DS`
 - `SM-S938BZKDEUB`
 - `SMA536BZKNEEB`
 - `Samsung Galaxy A32`
@@ -1232,10 +1257,11 @@ Total attributes: **121**
 - `Single SIM`
 
 ---
-## Screen Size (24 unique)
+## Screen Size (26 unique)
 
 - `1.9 in`
 - `10.0`
+- `3.2 in`
 - `3.4 in`
 - `4.6 in`
 - `5.5 in`
@@ -1255,6 +1281,7 @@ Total attributes: **121**
 - `6.7"`
 - `6.8 in`
 - `6.9 in`
+- `6.9" Quad HD+ Dynamic AMOLED 2X touchscreen`
 - `7.3 in`
 - `7.6 in`
 - `8 in`
@@ -1280,7 +1307,7 @@ Total attributes: **121**
 - `256Gb`
 
 ---
-## Storage Capacity (16 unique)
+## Storage Capacity (17 unique)
 
 - `1 TB`
 - `128 GB`
@@ -1298,6 +1325,7 @@ Total attributes: **121**
 - `512 GB`
 - `512GB`
 - `64 GB`
+- `8 GB`
 
 ---
 ## Style (6 unique)
