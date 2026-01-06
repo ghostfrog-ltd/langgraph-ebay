@@ -127,7 +127,7 @@ def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
     # ----------------
     rough_terms = [
         "heavy wear", "heavily used", "scratches",
-        "cosmetic damage", "cosmetically poor",
+        "cosmetic damage", "cosmetically poor","scraped screen"
     ]
     if any(term in blob for term in rough_terms):
         return "C"
