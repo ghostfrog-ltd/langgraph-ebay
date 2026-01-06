@@ -29,7 +29,11 @@ logger = get_logger(__name__)
 # API usage config
 # ---------------------------------------------------------------------------
 
+# Which service name from get_all_api_usage_today() this heartbeat cares about.
+# e.g. "ebay", "ebay_trading", etc.
 API_USAGE_SERVICE = os.getenv("EBAY_USAGE_SERVICE", "ebay")
+
+# This limit applies PER SERVICE (API_USAGE_SERVICE), not across all services.
 DEFAULT_DAILY_LIMIT = 5000
 
 # ---------------------------------------------------------------------------
@@ -52,8 +56,9 @@ class MainState(TypedDict, total=False):
     ebay_token: str
 
     # limit / skip info
-    skip: bool
-    limit_info: Dict[str, int]
+    skip: bool              # kept for backwards-compat logging ("api limit hit")
+    api_blocked: bool       # True if API_USAGE_SERVICE over its daily limit
+    limit_info: Dict[str, Any]
 
     # subgraph outputs (namespaced so nothing collides)
     ended_out: Dict[str, Any]
@@ -97,15 +102,23 @@ def _get_daily_limit() -> int:
 
 
 def init(state: MainState) -> MainState:
+    """
+    Initialise shared state:
+
+    - Fetch per-service API usage for today.
+    - Decide whether API calls for API_USAGE_SERVICE are allowed (api_blocked).
+    - Always fetch ebay_token so subgraphs that need it still have it.
+    """
     daily_limit = _get_daily_limit()
     raw_usage = get_all_api_usage_today()
 
     breakdown: Dict[str, int] = {}
+    used_today = 0
 
     # New behaviour: dict of {service: count}
     if isinstance(raw_usage, dict):
         breakdown = {str(k): int(v or 0) for k, v in raw_usage.items()}
-        used_today = sum(breakdown.values())
+        used_today = breakdown.get(API_USAGE_SERVICE, 0)
     else:
         # Backwards-compatible: plain int
         try:
@@ -117,52 +130,72 @@ def init(state: MainState) -> MainState:
             )
             used_today = 0
 
+    api_blocked = used_today >= daily_limit
+
     state["limit_info"] = {
         "used_today": used_today,
         "daily_limit": daily_limit,
-        # if you ever want it later, it's here:
-        # "breakdown": breakdown,
+        "service": API_USAGE_SERVICE,
+        "breakdown": breakdown,
     }
+    # 'skip' kept for backwards-compat; now means "API calls are blocked"
+    state["skip"] = api_blocked
+    state["api_blocked"] = api_blocked
 
-    if used_today >= daily_limit:
+    if api_blocked:
         logger.warning(
-            "[main] DAILY API LIMIT REACHED: used=%d / limit=%d. Skipping heartbeat pipeline. Breakdown=%r",
+            "[main] DAILY API LIMIT REACHED for service %r: used=%d / limit=%d. "
+            "API-using subgraphs will be skipped, DB-only work will still run. Breakdown=%r",
+            API_USAGE_SERVICE,
             used_today,
             daily_limit,
             breakdown,
         )
-        state["skip"] = True
-        return state
+    else:
+        logger.info(
+            "[main] Daily API usage for %r: used=%d / limit=%d – API-using subgraphs allowed. Breakdown=%r",
+            API_USAGE_SERVICE,
+            used_today,
+            daily_limit,
+            breakdown,
+        )
 
-    logger.info(
-        "[main] Daily API usage: used=%d / limit=%d – proceeding with run. Breakdown=%r",
-        used_today,
-        daily_limit,
-        breakdown,
-    )
-
+    # We still fetch the token so any subgraph that needs it can use it.
     state["ebay_token"] = get_auth().get_token()
-    state["skip"] = False
+
     return state
-
-
-def should_continue_after_init(state: MainState) -> str:
-    if state.get("skip"):
-        return "skip"
-    return "run"
 
 
 # ---------------------------------------------------------------------------
 # Subgraph adapter
 # ---------------------------------------------------------------------------
 
-def run_subgraph(name: str, build_graph_fn):
+def run_subgraph(name: str, build_graph_fn, uses_api: bool = True):
+    """
+    Wrap a subgraph so we can:
+
+    - Share MainState through it.
+    - Optionally skip it entirely when API usage for API_USAGE_SERVICE is blocked.
+    """
     def _node(state: MainState) -> MainState:
+        if uses_api and state.get("api_blocked"):
+            logger.info(
+                "[main] -> %s skipped (API daily limit reached for service %r)",
+                name,
+                API_USAGE_SERVICE,
+            )
+            state[f"{name}_out"] = {
+                "status": "skipped_due_to_api_limit",
+                "reason": "api_daily_limit_reached",
+                "service": API_USAGE_SERVICE,
+            }
+            return state
+
         graph = build_graph_fn()
-        logger.info(f"[main] -> {name} begin")
+        logger.info("[main] -> %s begin", name)
         out = graph.invoke(dict(state), config={"recursion_limit": 500})
         state[f"{name}_out"] = out
-        logger.info(f"[main] -> {name} end")
+        logger.info("[main] -> %s end", name)
         return state
 
     return _node
@@ -263,30 +296,25 @@ def build_graph():
     # Nodes
     g.add_node("init", init)
 
-    g.add_node("ended", run_subgraph("ended", build_ended))
-    g.add_node("retrieve", run_subgraph("retrieve", build_retrieve))
-    g.add_node("pph", run_subgraph("pph", build_pph))
-    g.add_node("comps", run_subgraph("comps", build_comps))
-    g.add_node("attributes", run_subgraph("attributes", build_attributes))
-    g.add_node("hot", run_subgraph("hot", build_hot))
-    g.add_node("roi", run_subgraph("roi", build_roi))
-    g.add_node("new", run_subgraph("new", build_new))
+    # Mark which subgraphs actually hit the eBay API.
+    # Adjust uses_api=True/False as needed if any of these assumptions change.
+    g.add_node("ended",     run_subgraph("ended",     build_ended,     uses_api=False))
+    g.add_node("retrieve",  run_subgraph("retrieve",  build_retrieve,  uses_api=True))
+    g.add_node("pph",       run_subgraph("pph",       build_pph,       uses_api=False))
+    g.add_node("comps",     run_subgraph("comps",     build_comps,     uses_api=True))
+    g.add_node("attributes",run_subgraph("attributes",build_attributes,uses_api=True))
+    g.add_node("hot",       run_subgraph("hot",       build_hot,       uses_api=False))
+    g.add_node("roi",       run_subgraph("roi",       build_roi,       uses_api=False))
+    g.add_node("new",       run_subgraph("new",       build_new,       uses_api=False))
 
-    # assess trigger node
+    # assess trigger node (no eBay calls; it has its own limits/window)
     g.add_node("assess_trigger", assess_trigger)
 
     g.set_entry_point("init")
 
-    g.add_conditional_edges(
-        "init",
-        should_continue_after_init,
-        {
-            "skip": END,
-            "run": "ended",
-        },
-    )
-
-    # Straight chain with PPH slotted after retrieve
+    # Straight chain: init always runs once per heartbeat.
+    # API-using nodes may be skipped internally based on api_blocked flag.
+    g.add_edge("init", "ended")
     g.add_edge("ended", "retrieve")
     g.add_edge("retrieve", "pph")
     g.add_edge("pph", "comps")
@@ -318,10 +346,12 @@ def run() -> MainState:
     logger.info("[main] heartbeat run begin")
     out: MainState = graph.invoke({}, config={"recursion_limit": 800})
 
-    if out.get("skip"):
-        info = out.get("limit_info") or {}
+    info = out.get("limit_info") or {}
+    if out.get("api_blocked"):
         logger.info(
-            "[main] heartbeat SKIPPED due to daily API limit: used=%s / limit=%s",
+            "[main] heartbeat completed with API limit reached for %r: "
+            "used=%s / limit=%s. API-using subgraphs were skipped.",
+            info.get("service"),
             info.get("used_today"),
             info.get("daily_limit"),
         )
