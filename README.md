@@ -89,3 +89,15 @@ Safely retrieve listings from multiple sources.
 This restraint is intentional.
 
 ---
+
+## Hybrid Architecture
+
+This repository now also contains a Laravel app in [laravel](/Volumes/Bob/www/ghostfrog-langgraph-ebay/laravel).
+
+Current direction:
+
+- Python remains the ingestion and analysis engine
+- Laravel becomes the user-facing SaaS/product layer
+- both systems currently target the same local PostgreSQL instance
+
+For local Laravel setup notes, see [laravel/README.md](/Volumes/Bob/www/ghostfrog-langgraph-ebay/laravel/README.md).
