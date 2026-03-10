@@ -5,7 +5,7 @@ import sys
 import subprocess
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
-from typing import TypedDict, Any, Dict
+from typing import TypedDict, Any, Dict, List
 
 from langgraph.graph import StateGraph, END
 
@@ -29,12 +29,58 @@ logger = get_logger(__name__)
 # API usage config
 # ---------------------------------------------------------------------------
 
-# Which service name from get_all_api_usage_today() this heartbeat cares about.
-# e.g. "ebay", "ebay_trading", etc.
-API_USAGE_SERVICE = os.getenv("EBAY_USAGE_SERVICE", "ebay")
-
-# This limit applies PER SERVICE (API_USAGE_SERVICE), not across all services.
+# Default limits if no env override is provided.
+# Based on what you said:
+# - trading: 5000/day
+# - browse:  5000/day
+# - auth:    1000/day
 DEFAULT_DAILY_LIMIT = 5000
+
+SERVICE_LIMIT_DEFAULTS: Dict[str, int] = {
+    # Trading API
+    "ebay_ended_v1": 5000,
+    "ebay_attributes_v1": 5000,
+    # Browse API
+    "ebay_base_fetch_items_by_id_v1": 5000,
+    "ebay_base_fetch_category_items_v1": 5000,
+    # Auth
+    "ebay_auth_v1": 1000,
+}
+
+
+def _limit_env_key(service: str) -> str:
+    """
+    Turn 'ebay_ended_v1' into 'EBAY_LIMIT_EBAY_ENDED_V1'
+    so you can override limits via env, e.g.:
+        EBAY_LIMIT_EBAY_BASE_FETCH_ITEMS_BY_ID_V1=4500
+    """
+    cleaned = "".join(ch if ch.isalnum() else "_" for ch in service.upper())
+    return f"EBAY_LIMIT_{cleaned}"
+
+
+def _get_limit_for_service(service: str) -> int:
+    env_key = _limit_env_key(service)
+    raw = os.getenv(env_key)
+    if raw:
+        try:
+            value = int(raw)
+            if value > 0:
+                return value
+            logger.warning(
+                "[main] Non-positive %s=%r; falling back to default for %s",
+                env_key,
+                raw,
+                service,
+            )
+        except ValueError:
+            logger.warning(
+                "[main] Invalid %s=%r; falling back to default for %s",
+                env_key,
+                raw,
+                service,
+            )
+    return SERVICE_LIMIT_DEFAULTS.get(service, DEFAULT_DAILY_LIMIT)
+
 
 # ---------------------------------------------------------------------------
 # LLM assess trigger config
@@ -56,9 +102,9 @@ class MainState(TypedDict, total=False):
     ebay_token: str
 
     # limit / skip info
-    skip: bool              # kept for backwards-compat logging ("api limit hit")
-    api_blocked: bool       # True if API_USAGE_SERVICE over its daily limit
+    skip: bool  # kept for backwards-compat logging only
     limit_info: Dict[str, Any]
+    blocked_services: List[str]
 
     # subgraph outputs (namespaced so nothing collides)
     ended_out: Dict[str, Any]
@@ -72,93 +118,92 @@ class MainState(TypedDict, total=False):
 
 
 # ---------------------------------------------------------------------------
-# Daily API usage limit
+# Daily API usage limit (per service)
 # ---------------------------------------------------------------------------
-
-def _get_daily_limit() -> int:
-    raw = os.getenv("EBAY_DAILY_LIMIT")
-    if raw is None:
-        return DEFAULT_DAILY_LIMIT
-
-    try:
-        value = int(raw)
-    except ValueError:
-        logger.warning(
-            "[main] Invalid EBAY_DAILY_LIMIT=%r; falling back to default %d",
-            raw,
-            DEFAULT_DAILY_LIMIT,
-        )
-        return DEFAULT_DAILY_LIMIT
-
-    if value <= 0:
-        logger.warning(
-            "[main] Non-positive EBAY_DAILY_LIMIT=%d; falling back to default %d",
-            value,
-            DEFAULT_DAILY_LIMIT,
-        )
-        return DEFAULT_DAILY_LIMIT
-
-    return value
-
 
 def init(state: MainState) -> MainState:
     """
     Initialise shared state:
 
-    - Fetch per-service API usage for today.
-    - Decide whether API calls for API_USAGE_SERVICE are allowed (api_blocked).
-    - Always fetch ebay_token so subgraphs that need it still have it.
+    - Fetch per-service API usage for today from usage tracker.
+    - Compare against per-service limits.
+    - Record which services are blocked (over their individual limit).
+    - Always fetch ebay_token (the auth API has its own cap).
     """
-    daily_limit = _get_daily_limit()
     raw_usage = get_all_api_usage_today()
 
     breakdown: Dict[str, int] = {}
-    used_today = 0
+    limit_info_services: Dict[str, Dict[str, Any]] = {}
+    blocked_services: List[str] = []
 
-    # New behaviour: dict of {service: count}
     if isinstance(raw_usage, dict):
+        # Normal case: dict of {service: count}
         breakdown = {str(k): int(v or 0) for k, v in raw_usage.items()}
-        used_today = breakdown.get(API_USAGE_SERVICE, 0)
+        for service, default_limit in SERVICE_LIMIT_DEFAULTS.items():
+            used = breakdown.get(service, 0)
+            limit = _get_limit_for_service(service)
+            blocked = used >= limit
+            if blocked:
+                blocked_services.append(service)
+            limit_info_services[service] = {
+                "used": used,
+                "limit": limit,
+                "blocked": blocked,
+            }
+
+        logger.info(
+            "[main] API usage today: %s",
+            ", ".join(
+                f"{svc}={info['used']}/{info['limit']}"
+                for svc, info in limit_info_services.items()
+            ),
+        )
     else:
-        # Backwards-compatible: plain int
+        # Backwards-compat: if usage tracker returns a single int, treat it as
+        # one generic counter and block ALL known services when over a generic limit.
         try:
-            used_today = int(raw_usage or 0)
+            used_total = int(raw_usage or 0)
         except Exception:
             logger.warning(
                 "[main] Unexpected usage type from get_all_api_usage_today(): %r",
                 type(raw_usage),
             )
-            used_today = 0
+            used_total = 0
 
-    api_blocked = used_today >= daily_limit
+        generic_limit = DEFAULT_DAILY_LIMIT
+        blocked = used_total >= generic_limit
+        if blocked:
+            blocked_services = list(SERVICE_LIMIT_DEFAULTS.keys())
 
-    state["limit_info"] = {
-        "used_today": used_today,
-        "daily_limit": daily_limit,
-        "service": API_USAGE_SERVICE,
-        "breakdown": breakdown,
-    }
-    # 'skip' kept for backwards-compat; now means "API calls are blocked"
-    state["skip"] = api_blocked
-    state["api_blocked"] = api_blocked
+        for service, default_limit in SERVICE_LIMIT_DEFAULTS.items():
+            limit_info_services[service] = {
+                "used": used_total,
+                "limit": generic_limit,
+                "blocked": blocked,
+            }
 
-    if api_blocked:
         logger.warning(
-            "[main] DAILY API LIMIT REACHED for service %r: used=%d / limit=%d. "
-            "API-using subgraphs will be skipped, DB-only work will still run. Breakdown=%r",
-            API_USAGE_SERVICE,
-            used_today,
-            daily_limit,
-            breakdown,
+            "[main] usage tracker returned non-dict; using generic limit %d with "
+            "used_total=%d. All services share this cap.",
+            generic_limit,
+            used_total,
+        )
+
+    state["blocked_services"] = blocked_services
+    state["skip"] = bool(blocked_services)  # legacy semantics: "some API is blocked"
+    state["limit_info"] = {
+        "mode": "per_service" if isinstance(raw_usage, dict) else "generic",
+        "services": limit_info_services,
+        "raw_breakdown": breakdown,
+    }
+
+    if blocked_services:
+        logger.warning(
+            "[main] services blocked due to daily API limits: %s",
+            ", ".join(sorted(blocked_services)),
         )
     else:
-        logger.info(
-            "[main] Daily API usage for %r: used=%d / limit=%d – API-using subgraphs allowed. Breakdown=%r",
-            API_USAGE_SERVICE,
-            used_today,
-            daily_limit,
-            breakdown,
-        )
+        logger.info("[main] no services blocked by daily API limits")
 
     # We still fetch the token so any subgraph that needs it can use it.
     state["ebay_token"] = get_auth().get_token()
@@ -167,27 +212,32 @@ def init(state: MainState) -> MainState:
 
 
 # ---------------------------------------------------------------------------
-# Subgraph adapter
+# Subgraph adapter with per-service gating
 # ---------------------------------------------------------------------------
 
-def run_subgraph(name: str, build_graph_fn, uses_api: bool = True):
+def run_subgraph(name: str, build_graph_fn, services: List[str] | None = None):
     """
     Wrap a subgraph so we can:
 
     - Share MainState through it.
-    - Optionally skip it entirely when API usage for API_USAGE_SERVICE is blocked.
+    - Optionally skip it when any of its services are blocked.
     """
+    services = services or []
+
     def _node(state: MainState) -> MainState:
-        if uses_api and state.get("api_blocked"):
+        blocked_services = set(state.get("blocked_services") or [])
+        affected = blocked_services.intersection(services)
+
+        if affected:
             logger.info(
-                "[main] -> %s skipped (API daily limit reached for service %r)",
+                "[main] -> %s skipped (blocked services: %s)",
                 name,
-                API_USAGE_SERVICE,
+                ", ".join(sorted(affected)),
             )
             state[f"{name}_out"] = {
                 "status": "skipped_due_to_api_limit",
                 "reason": "api_daily_limit_reached",
-                "service": API_USAGE_SERVICE,
+                "blocked_services": sorted(affected),
             }
             return state
 
@@ -296,24 +346,85 @@ def build_graph():
     # Nodes
     g.add_node("init", init)
 
-    # Mark which subgraphs actually hit the eBay API.
-    # Adjust uses_api=True/False as needed if any of these assumptions change.
-    g.add_node("ended",     run_subgraph("ended",     build_ended,     uses_api=False))
-    g.add_node("retrieve",  run_subgraph("retrieve",  build_retrieve,  uses_api=True))
-    g.add_node("pph",       run_subgraph("pph",       build_pph,       uses_api=False))
-    g.add_node("comps",     run_subgraph("comps",     build_comps,     uses_api=True))
-    g.add_node("attributes",run_subgraph("attributes",build_attributes,uses_api=True))
-    g.add_node("hot",       run_subgraph("hot",       build_hot,       uses_api=False))
-    g.add_node("roi",       run_subgraph("roi",       build_roi,       uses_api=False))
-    g.add_node("new",       run_subgraph("new",       build_new,       uses_api=False))
+    # Map each subgraph to the services it uses.
+    # Adjust these lists if you change which APIs each pipeline hits.
+    g.add_node(
+        "ended",
+        run_subgraph(
+            "ended",
+            build_ended,
+            services=["ebay_ended_v1"],
+        ),
+    )
+    g.add_node(
+        "retrieve",
+        run_subgraph(
+            "retrieve",
+            build_retrieve,
+            services=[
+                "ebay_base_fetch_items_by_id_v1",
+                "ebay_base_fetch_category_items_v1",
+            ],
+        ),
+    )
+    g.add_node(
+        "pph",
+        run_subgraph(
+            "pph",
+            build_pph,
+            services=[],
+        ),
+    )
+    g.add_node(
+        "comps",
+        run_subgraph(
+            "comps",
+            build_comps,
+            services=["ebay_base_fetch_items_by_id_v1"],
+        ),
+    )
+    g.add_node(
+        "attributes",
+        run_subgraph(
+            "attributes",
+            build_attributes,
+            services=[
+                "ebay_attributes_v1",
+                "ebay_base_fetch_items_by_id_v1",
+            ],
+        ),
+    )
+    g.add_node(
+        "hot",
+        run_subgraph(
+            "hot",
+            build_hot,
+            services=[],
+        ),
+    )
+    g.add_node(
+        "roi",
+        run_subgraph(
+            "roi",
+            build_roi,
+            services=[],
+        ),
+    )
+    g.add_node(
+        "new",
+        run_subgraph(
+            "new",
+            build_new,
+            services=[],
+        ),
+    )
 
-    # assess trigger node (no eBay calls; it has its own limits/window)
+    # assess trigger node
     g.add_node("assess_trigger", assess_trigger)
 
     g.set_entry_point("init")
 
-    # Straight chain: init always runs once per heartbeat.
-    # API-using nodes may be skipped internally based on api_blocked flag.
+    # Straight chain; API-using nodes may skip internally.
     g.add_edge("init", "ended")
     g.add_edge("ended", "retrieve")
     g.add_edge("retrieve", "pph")
@@ -346,14 +457,11 @@ def run() -> MainState:
     logger.info("[main] heartbeat run begin")
     out: MainState = graph.invoke({}, config={"recursion_limit": 800})
 
-    info = out.get("limit_info") or {}
-    if out.get("api_blocked"):
+    blocked = out.get("blocked_services") or []
+    if blocked:
         logger.info(
-            "[main] heartbeat completed with API limit reached for %r: "
-            "used=%s / limit=%s. API-using subgraphs were skipped.",
-            info.get("service"),
-            info.get("used_today"),
-            info.get("daily_limit"),
+            "[main] heartbeat completed with some services blocked by API limits: %s",
+            ", ".join(sorted(blocked)),
         )
     else:
         logger.info("[main] heartbeat run end")

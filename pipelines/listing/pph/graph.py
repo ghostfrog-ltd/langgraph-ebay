@@ -15,6 +15,8 @@ from typing import Dict, List
 
 PPH_MAX_ENDING_HOURS = int(os.getenv("GF_PPH_MAX_ENDING_HOURS", "24"))
 
+PPH_ENABLED = os.getenv("GF_PPH_ENABLED", "false").lower() == "true"
+
 # Import the same adapters used by retrieve, but directly from the adapters package
 from pipelines.listing.retrieve.adapters.motomine import Adapter as MotoMineAdapter
 from pipelines.listing.retrieve.adapters.apple import Adapter as AppleAdapter
@@ -166,6 +168,17 @@ def _load_targets(max_rows: int = 500) -> Dict[str, List[str]]:
 # -----------------------------
 def init_state(state: PphState) -> PphState:
     state.setdefault("results", [])
+
+    # --- DISABLE SWITCH ---
+    if not PPH_ENABLED:
+        logger.info("[pph] DISABLED via GF_PPH_ENABLED – no targets loaded")
+        state["items_by_domain"] = {}
+        state["domains"] = []
+        state["idx"] = 0
+        state["current_domain"] = None
+        return state
+    # --- /DISABLE SWITCH ---
+
     state["items_by_domain"] = _load_targets()
     state["domains"] = list(state["items_by_domain"].keys())
     state["idx"] = 0
