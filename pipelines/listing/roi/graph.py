@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List, Tuple, TypedDict
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timezone, timedelta
 
 from psycopg2.extras import RealDictCursor
+import requests
 
 from langgraph.graph import StateGraph, END
 
@@ -63,6 +66,13 @@ ALERT_NAME: str = "roi_listings_digest"  # used in alert_state to track last-sen
 TO_EMAIL: str = "info@ghostfrog.co.uk"
 MAX_EMAIL_ITEMS: int = 20  # cap items in a single email
 EMAIL_COOLDOWN = timedelta(minutes=30)  # don't email more often than this
+
+# --------------------------------
+# Laravel sync behaviour
+# --------------------------------
+LARAVEL_INGEST_URL: str = os.getenv("GF_LARAVEL_INGEST_URL", "").strip()
+LARAVEL_PIPELINE_TOKEN: str = os.getenv("GF_LARAVEL_PIPELINE_TOKEN", "").strip()
+LARAVEL_SYNC_TIMEOUT_SECONDS: int = int(os.getenv("GF_LARAVEL_SYNC_TIMEOUT_SECONDS", "15"))
 
 # --------------------------------
 # Grade weightings (relative value)
@@ -306,6 +316,259 @@ def _comps_lookup() -> Dict[str, Dict[str, Any]]:
     except Exception as e:
         logger.warning("[listing.roi] latest_comps_map() failed: %s", e)
         return {}
+
+
+def _laravel_sync_enabled() -> bool:
+    return bool(LARAVEL_INGEST_URL and LARAVEL_PIPELINE_TOKEN)
+
+
+def _ensure_laravel_sync_columns() -> None:
+    conn = schema.get_connection()
+    try:
+        with conn.cursor() as cur:
+            schema.ensure_utc_session(cur)
+            cur.execute(
+                """
+                ALTER TABLE auction_listings
+                ADD COLUMN IF NOT EXISTS laravel_sync_state TEXT
+                """
+            )
+            cur.execute(
+                """
+                ALTER TABLE auction_listings
+                ADD COLUMN IF NOT EXISTS laravel_synced_at TIMESTAMPTZ
+                """
+            )
+            cur.execute(
+                """
+                ALTER TABLE auction_listings
+                ADD COLUMN IF NOT EXISTS laravel_sync_error TEXT
+                """
+            )
+            cur.execute(
+                """
+                ALTER TABLE auction_listings
+                ADD COLUMN IF NOT EXISTS laravel_sync_payload JSONB
+                """
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def _fetch_latest_assessment_map(external_ids: List[str]) -> Dict[str, Optional[str]]:
+    if not external_ids:
+        return {}
+
+    conn = schema.get_connection()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        schema.ensure_utc_session(cur)
+        cur.execute(
+            """
+            SELECT
+                l.external_id,
+                latest_assessment.assessment::text AS llm_analysis
+            FROM auction_listings AS l
+            LEFT JOIN LATERAL (
+                SELECT a.assessment
+                FROM listing_assessments AS a
+                WHERE a.listing_id = l.id
+                ORDER BY a.created_at DESC
+                LIMIT 1
+            ) AS latest_assessment ON TRUE
+            WHERE l.external_id = ANY(%s)
+            """,
+            (external_ids,),
+        )
+        rows = cur.fetchall()
+
+    return {
+        str(row["external_id"]): row.get("llm_analysis")
+        for row in rows
+        if row.get("external_id")
+    }
+
+
+def _build_laravel_payloads(opps: List[Opportunity]) -> List[Dict[str, Any]]:
+    if not opps:
+        return []
+
+    external_ids = [op.external_id for op in opps if op.external_id]
+    assessment_by_external_id = _fetch_latest_assessment_map(external_ids)
+
+    payloads: Dict[str, Dict[str, Any]] = {}
+    for op in opps:
+        if not op.external_id:
+            continue
+
+        payloads[op.external_id] = {
+            "ebay_id": op.external_id,
+            "title": op.title,
+            "current_price": _money(op.purchase_cost),
+            "estimated_market_value": _money(op.comps_median),
+            "image_url": None,
+            "item_url": op.url,
+            "llm_analysis": assessment_by_external_id.get(op.external_id),
+            "pipeline_state": "opportunity",
+        }
+
+    return list(payloads.values())
+
+
+def _load_pending_laravel_sync_payloads(limit: int = 250) -> List[Dict[str, Any]]:
+    conn = schema.get_connection()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        schema.ensure_utc_session(cur)
+        cur.execute(
+            """
+            SELECT external_id, laravel_sync_payload
+            FROM auction_listings
+            WHERE laravel_sync_state = 'pending_sync'
+              AND laravel_sync_payload IS NOT NULL
+            ORDER BY COALESCE(laravel_synced_at, first_seen) ASC NULLS FIRST
+            LIMIT %s
+            """,
+            (limit,),
+        )
+        rows = cur.fetchall()
+
+    payloads: List[Dict[str, Any]] = []
+    for row in rows:
+        payload = row.get("laravel_sync_payload")
+        if isinstance(payload, dict) and payload.get("ebay_id"):
+            payloads.append(payload)
+    return payloads
+
+
+def _cache_laravel_sync_payload(external_id: str, payload: Dict[str, Any]) -> None:
+    conn = schema.get_connection()
+    try:
+        with conn.cursor() as cur:
+            schema.ensure_utc_session(cur)
+            cur.execute(
+                """
+                UPDATE auction_listings
+                SET laravel_sync_payload = %s::jsonb
+                WHERE external_id = %s
+                """,
+                (json.dumps(payload), external_id),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def _mark_laravel_sync_success(external_id: str) -> None:
+    conn = schema.get_connection()
+    try:
+        with conn.cursor() as cur:
+            schema.ensure_utc_session(cur)
+            cur.execute(
+                """
+                UPDATE auction_listings
+                SET laravel_sync_state = 'synced',
+                    laravel_synced_at = (now() AT TIME ZONE 'utc'),
+                    laravel_sync_error = NULL,
+                    laravel_sync_payload = NULL
+                WHERE external_id = %s
+                """,
+                (external_id,),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def _mark_laravel_sync_pending(external_id: str, error: str) -> None:
+    conn = schema.get_connection()
+    try:
+        with conn.cursor() as cur:
+            schema.ensure_utc_session(cur)
+            cur.execute(
+                """
+                UPDATE auction_listings
+                SET laravel_sync_state = 'pending_sync',
+                    laravel_sync_error = %s
+                WHERE external_id = %s
+                """,
+                (error[:1000], external_id),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+
+
+def _post_payload_to_laravel(payload: Dict[str, Any]) -> None:
+    response = requests.post(
+        LARAVEL_INGEST_URL,
+        json=payload,
+        headers={
+            "X-Pipeline-Token": LARAVEL_PIPELINE_TOKEN,
+            "Accept": "application/json",
+        },
+        timeout=LARAVEL_SYNC_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+
+
+def _sync_opportunities_to_laravel(opps: List[Opportunity]) -> None:
+    if not _laravel_sync_enabled():
+        logger.info("[listing.roi] laravel sync disabled; missing GF_LARAVEL_INGEST_URL or GF_LARAVEL_PIPELINE_TOKEN")
+        return
+
+    try:
+        _ensure_laravel_sync_columns()
+    except Exception as e:
+        logger.warning("[listing.roi] unable to ensure laravel sync columns: %s", e)
+        return
+
+    fresh_payloads = _build_laravel_payloads(opps)
+    pending_payloads = _load_pending_laravel_sync_payloads()
+
+    payloads_by_id: Dict[str, Dict[str, Any]] = {
+        payload["ebay_id"]: payload
+        for payload in pending_payloads
+        if payload.get("ebay_id")
+    }
+
+    for payload in fresh_payloads:
+        ebay_id = str(payload["ebay_id"])
+        try:
+            _cache_laravel_sync_payload(ebay_id, payload)
+        except Exception as e:
+            logger.warning("[listing.roi] failed to cache laravel payload for %s: %s", ebay_id, e)
+        payloads_by_id[ebay_id] = payload
+
+    if not payloads_by_id:
+        return
+
+    synced = 0
+    pending = 0
+
+    for ebay_id, payload in payloads_by_id.items():
+        try:
+            _post_payload_to_laravel(payload)
+            _mark_laravel_sync_success(ebay_id)
+            synced += 1
+        except Exception as e:
+            pending += 1
+            logger.warning("[listing.roi] laravel sync failed for %s: %s", ebay_id, e)
+            try:
+                _cache_laravel_sync_payload(ebay_id, payload)
+                _mark_laravel_sync_pending(ebay_id, str(e))
+            except Exception as inner:
+                logger.warning("[listing.roi] failed to persist pending_sync state for %s: %s", ebay_id, inner)
+
+    logger.info(
+        "[listing.roi] laravel sync complete: synced=%d pending=%d total=%d",
+        synced,
+        pending,
+        len(payloads_by_id),
+    )
 
 
 def record_alert(external_id: str, score: float, max_bid: float) -> tuple[bool, int | None]:
@@ -965,6 +1228,7 @@ def _node_log_top(state: ROIState) -> ROIState:
 def _node_record_alerts_and_email(state: ROIState) -> ROIState:
     opps = state.get("opps") or []
     if not opps:
+        _sync_opportunities_to_laravel([])
         return {"newly_created": []}
 
     newly_created: List[Opportunity] = []
@@ -999,6 +1263,8 @@ def _node_record_alerts_and_email(state: ROIState) -> ROIState:
                             "[listing.roi] skipping email (cooldown %.0f min not reached)",
                             EMAIL_COOLDOWN.total_seconds() / 60.0,
                         )
+
+    _sync_opportunities_to_laravel(opps)
 
     return {"newly_created": newly_created}
 

@@ -4,16 +4,36 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Billable;
+use Laravel\Cashier\Subscription;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use Billable, HasFactory, Notifiable, TwoFactorAuthenticatable;
+
+    public const ROLE_PERMISSIONS = [
+        'admin' => [
+            'dashboard.view',
+            'auctions.view',
+            'auctions.manage',
+            'pipeline.monitor',
+            'users.view',
+            'users.manage',
+            'billing.view',
+            'billing.manage',
+        ],
+        'member' => [
+            'dashboard.view',
+            'auctions.view',
+        ],
+    ];
 
     /**
      * The attributes that are mass assignable.
@@ -24,6 +44,10 @@ class User extends Authenticatable
         'name',
         'email',
         'role',
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
+        'trial_ends_at',
         'password',
     ];
 
@@ -49,6 +73,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'trial_ends_at' => 'datetime',
         ];
     }
 
@@ -67,5 +92,23 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function latestSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->latestOfMany();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function permissionLabels(): array
+    {
+        return self::ROLE_PERMISSIONS[$this->role] ?? [];
+    }
+
+    public function hasBillingProfile(): bool
+    {
+        return filled($this->stripe_id);
     }
 }

@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'pipeline' => [
+        'ingest_token' => env('PIPELINE_INGEST_TOKEN'),
+    ],
+
 ];
