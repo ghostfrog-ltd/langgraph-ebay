@@ -13,6 +13,7 @@ from utils.logger import get_logger
 from utils.auth import get_auth
 from utils.usage_tracker import get_all_api_usage_today
 from utils.db_schema import connection
+from utils.pipeline_control import is_heartbeat_paused
 
 from pipelines.listing.ended.graph import build_graph as build_ended
 from pipelines.listing.retrieve.graph import build_graph as build_retrieve
@@ -105,6 +106,8 @@ class MainState(TypedDict, total=False):
     skip: bool  # kept for backwards-compat logging only
     limit_info: Dict[str, Any]
     blocked_services: List[str]
+    maintenance_skip: bool
+    maintenance_info: Dict[str, Any]
 
     # subgraph outputs (namespaced so nothing collides)
     ended_out: Dict[str, Any]
@@ -130,6 +133,23 @@ def init(state: MainState) -> MainState:
     - Record which services are blocked (over their individual limit).
     - Always fetch ebay_token (the auth API has its own cap).
     """
+    paused, pause_info = is_heartbeat_paused()
+    if paused:
+        state["maintenance_skip"] = True
+        state["maintenance_info"] = pause_info or {}
+        state["blocked_services"] = []
+        state["skip"] = True
+        state["limit_info"] = {
+            "mode": "maintenance_pause",
+            "services": {},
+            "raw_breakdown": {},
+        }
+        logger.warning(
+            "[main] heartbeat skipped because maintenance pause is active: %s",
+            (pause_info or {}).get("payload", {}).get("reason", "unspecified"),
+        )
+        return state
+
     raw_usage = get_all_api_usage_today()
 
     breakdown: Dict[str, int] = {}
@@ -225,6 +245,15 @@ def run_subgraph(name: str, build_graph_fn, services: List[str] | None = None):
     services = services or []
 
     def _node(state: MainState) -> MainState:
+        if state.get("maintenance_skip"):
+            logger.info("[main] -> %s skipped (maintenance pause active)", name)
+            state[f"{name}_out"] = {
+                "status": "skipped_due_to_maintenance",
+                "reason": "maintenance_pause_active",
+                "maintenance_info": state.get("maintenance_info") or {},
+            }
+            return state
+
         blocked_services = set(state.get("blocked_services") or [])
         affected = blocked_services.intersection(services)
 
@@ -321,6 +350,10 @@ def assess_trigger(state: MainState) -> MainState:
     - Spawns a separate process and then returns immediately.
     """
     if not ASSESS_ENABLED:
+        return state
+
+    if state.get("maintenance_skip"):
+        logger.info("[main] assess: skipped due to maintenance pause")
         return state
 
     now = datetime.now(timezone.utc)
@@ -456,6 +489,10 @@ def run() -> MainState:
     graph = build_graph()
     logger.info("[main] heartbeat run begin")
     out: MainState = graph.invoke({}, config={"recursion_limit": 800})
+
+    if out.get("maintenance_skip"):
+        logger.info("[main] heartbeat run skipped due to maintenance pause")
+        return out
 
     blocked = out.get("blocked_services") or []
     if blocked:

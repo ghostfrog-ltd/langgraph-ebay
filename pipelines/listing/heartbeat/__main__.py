@@ -33,7 +33,10 @@ def run_once() -> Dict[str, Any]:
     try:
         out = run_main()
         finished = datetime.now(timezone.utc).isoformat()
-        logger.info(f"[heartbeat] tick end {finished}")
+        if out.get("maintenance_skip"):
+            logger.info(f"[heartbeat] tick skipped {finished} (maintenance pause active)")
+        else:
+            logger.info(f"[heartbeat] tick end {finished}")
         return {"ok": True, "started": started, "finished": finished, "out": out}
     except Exception as e:
         finished = datetime.now(timezone.utc).isoformat()

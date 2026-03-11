@@ -5,6 +5,7 @@ from datetime import timedelta
 
 from utils.db_schema import get_connection
 from utils.logger import get_logger
+from utils.pipeline_control import pause_heartbeat, resume_heartbeat
 
 from pipelines.listing.attributes.rebuild_model_keys import rebuild_model_keys as model_keys
 from pipelines.listing.roi.graph import run as roi
@@ -36,9 +37,16 @@ def reset_db_and_get_count() -> int:
             (auction_listings_before,) = cur.fetchone()
             logger.info("[reset] auction_listings_before = %s", auction_listings_before)
 
-            # 2) Reset model_key on all listings
-            logger.info("[reset] Nulling auction_listings.model_key ...")
-            cur.execute("UPDATE auction_listings SET model_key = NULL;")
+            # 2) Reset model_key and stale ROI fields on all listings
+            logger.info("[reset] Nulling auction_listings.model_key, roi_estimate, and max_bid ...")
+            cur.execute(
+                """
+                UPDATE auction_listings
+                SET model_key = NULL,
+                    roi_estimate = NULL,
+                    max_bid = NULL
+                """
+            )
 
             # 3) Drop & recreate comps so absolutely nothing survives
             logger.info("[reset] Dropping comps table ...")
@@ -179,19 +187,30 @@ def recompute_comps_from_auction_listings(window_days: int = COMPS_WINDOW_DAYS) 
 
 
 def main() -> None:
-    count = reset_db_and_get_count()
-    logger.info("[reset] Calling rebuild_model_keys(%s) ...", count)
+    pause_heartbeat(
+        "reset_model_roi_alert",
+        {
+            "window_days": COMPS_WINDOW_DAYS,
+        },
+    )
 
-    # Rebuild model_key for all listings (should include sold/ended too)
-    model_keys(count)
+    try:
+        count = reset_db_and_get_count()
+        logger.info("[reset] Calling rebuild_model_keys(%s) ...", count)
 
-    # Directly recompute comps from auction_listings
-    recompute_comps_from_auction_listings(COMPS_WINDOW_DAYS)
+        # Rebuild model_key for all listings (should include sold/ended too)
+        model_keys(count)
 
-    logger.info("[reset] Running roi() ...")
-    roi()
+        # Directly recompute comps from auction_listings
+        recompute_comps_from_auction_listings(COMPS_WINDOW_DAYS)
 
-    logger.info("[reset] All done.")
+        logger.info("[reset] Running roi() ...")
+        roi()
+
+        logger.info("[reset] All done.")
+    finally:
+        resume_heartbeat()
+        logger.info("[reset] Heartbeat pause released.")
 
 
 if __name__ == "__main__":

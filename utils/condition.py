@@ -10,6 +10,119 @@ def _as_text(val: Any) -> str:
         return ""
     return str(val).strip().lower()
 
+
+GENERIC_PART_ONLY_TERMS = (
+    "for parts",
+    "parts only",
+    "for spares",
+    "spares or repairs",
+    "spares & repairs",
+    "repair only",
+    "needs repair",
+    "box only",
+    "empty box",
+    "manual only",
+    "instructions only",
+    "charger only",
+    "battery only",
+    "case only",
+    "housing only",
+    "shell only",
+    "cover only",
+    "cable only",
+    "adapter only",
+    "dock only",
+    "stand only",
+    "mount only",
+    "replacement part",
+)
+
+WATCH_PART_TERMS = (
+    "dial",
+    "movement only",
+    "watch movement",
+    "bezel",
+    "crystal",
+    "caseback",
+    "case back",
+    "crown only",
+    "watch hands",
+    "strap",
+    "bracelet",
+    "buckle",
+    "clasp",
+    "links",
+    "papers only",
+)
+
+LEGO_PART_TERMS = (
+    "minifigure only",
+    "minifig only",
+    "no minifigure",
+    "part only",
+    "spare parts",
+    "bulk bricks",
+    "job lot bricks",
+    "joblot bricks",
+    "instruction book only",
+)
+
+DEVICE_ACCESSORY_TERMS = (
+    "screen protector",
+    "phone case",
+    "tablet case",
+    "keyboard case",
+    "ear pads",
+    "headband",
+    "controller only",
+    "remote only",
+)
+
+
+def looks_like_partial_or_accessory_listing(
+    title: str,
+    attrs: Optional[Mapping[str, Any]] = None,
+    *,
+    source: Optional[str] = None,
+    model_key: Optional[str] = None,
+) -> bool:
+    """
+    Conservative guard for listings that should not be valued as complete items.
+
+    This is intentionally stricter for watches/LEGO because those categories
+    create extremely misleading comps when a part-only listing inherits the
+    whole-product model key.
+    """
+    title_text = _as_text(title)
+    source_text = _as_text(source)
+    model_key_text = _as_text(model_key)
+
+    all_attr_parts = []
+    for _, value in (attrs or {}).items():
+        if isinstance(value, (list, tuple, set)):
+            all_attr_parts.extend(_as_text(x) for x in value)
+        else:
+            all_attr_parts.append(_as_text(value))
+
+    attr_text = " ".join(part for part in all_attr_parts if part)
+    blob = f"{title_text} {attr_text} {model_key_text}".strip()
+
+    if any(term in blob for term in GENERIC_PART_ONLY_TERMS):
+        return True
+
+    is_watch = "watch" in source_text or "omega" in blob or "rolex" in blob or "seamaster" in blob
+    if is_watch and any(term in blob for term in WATCH_PART_TERMS):
+        return True
+
+    is_lego = "lego" in source_text or "lego" in blob
+    if is_lego and any(term in blob for term in LEGO_PART_TERMS):
+        return True
+
+    if any(term in blob for term in DEVICE_ACCESSORY_TERMS):
+        return True
+
+    return False
+
 def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
     """
     Map raw attributes + title into a coarse condition grade:

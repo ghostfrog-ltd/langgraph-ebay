@@ -23,6 +23,7 @@ import utils.db_schema as schema
 
 from utils.db_schema import get_connection
 from utils.logger import get_logger
+from utils.condition import looks_like_partial_or_accessory_listing
 from utils.emailer import send_email  # uses .env SMTP config
 
 
@@ -266,6 +267,7 @@ def _fetch_listings_ending_soon(hours: int) -> list[dict]:
             cur.execute(
                 """
                 SELECT external_id,
+                       source,
                        model_key,
                        price_current,
                        bids_count,
@@ -405,6 +407,7 @@ def _node_init(state: HotState) -> HotState:
         "emails_sent": 0,
         "skipped_no_model_key": 0,
         "skipped_not_investible": 0,
+        "skipped_partial_or_accessory": 0,
         "skipped_no_comp": 0,
         "skipped_low_samples": 0,
         "skipped_below_threshold": 0,
@@ -427,6 +430,14 @@ def _node_process(state: HotState) -> HotState:
     emails_sent = int(state.get("emails_sent") or 0)
 
     for r in rows:
+        if looks_like_partial_or_accessory_listing(
+            r.get("title") or "",
+            source=r.get("source"),
+            model_key=r.get("model_key"),
+        ):
+            state["stats"]["skipped_partial_or_accessory"] += 1
+            continue
+
         mk = r.get("model_key")
         if not mk:
             state["stats"]["skipped_no_model_key"] += 1

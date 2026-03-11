@@ -14,6 +14,7 @@ from langgraph.graph import StateGraph, END
 
 from utils.logger import get_logger
 import utils.db_schema as schema
+from utils.condition import looks_like_partial_or_accessory_listing
 from utils.emailer import send_email
 
 logger = get_logger(__name__)
@@ -1029,6 +1030,13 @@ def _build_all_opps_for_roi(
         end_time = li.get("end_time")
         time_left_s = li.get("time_left_s")
 
+        if looks_like_partial_or_accessory_listing(
+            title,
+            source=source,
+            model_key=model_key,
+        ):
+            continue
+
         if not _is_investible_model_key(model_key):
             continue
 
@@ -1079,6 +1087,7 @@ def _shortlist(
     out: List[Opportunity] = []
 
     total = 0
+    skipped_partial_or_accessory = 0
     investible = 0
     with_comps = 0
     with_enough_samples = 0
@@ -1095,6 +1104,14 @@ def _shortlist(
         ask_price = float(li.get("price_current") or 0.0)
         end_time = li.get("end_time")
         time_left_s = li.get("time_left_s")
+
+        if looks_like_partial_or_accessory_listing(
+            title,
+            source=source,
+            model_key=model_key,
+        ):
+            skipped_partial_or_accessory += 1
+            continue
 
         if not _is_investible_model_key(model_key):
             continue
@@ -1143,8 +1160,9 @@ def _shortlist(
     out.sort(key=lambda o: (o.profit, o.roi), reverse=True)
 
     logger.info(
-        "[listing.roi] shortlist filter counts: total=%d investible=%d with_comps=%d with_enough_samples=%d passed_thresholds=%d",
+        "[listing.roi] shortlist filter counts: total=%d skipped_partial_or_accessory=%d investible=%d with_comps=%d with_enough_samples=%d passed_thresholds=%d",
         total,
+        skipped_partial_or_accessory,
         investible,
         with_comps,
         with_enough_samples,

@@ -117,6 +117,10 @@ class SyncPythonOpportunityEnrichment
         $status = strtolower((string) ($row->status ?? ''));
         $roiEstimate = $row->roi_estimate !== null ? (float) $row->roi_estimate : null;
 
+        if ($this->looksLikePartialOrAccessoryListing($row)) {
+            return 'ingested';
+        }
+
         if ($status === 'dismissed') {
             return 'dismissed';
         }
@@ -130,6 +134,61 @@ class SyncPythonOpportunityEnrichment
         }
 
         return $listing->pipeline_state ?: 'ingested';
+    }
+
+    protected function looksLikePartialOrAccessoryListing(object $row): bool
+    {
+        $blob = strtolower(trim(implode(' ', array_filter([
+            (string) ($row->title ?? ''),
+            (string) ($row->source ?? ''),
+            (string) ($row->model_key ?? ''),
+        ]))));
+
+        $genericTerms = [
+            'for parts',
+            'parts only',
+            'for spares',
+            'spares or repairs',
+            'spares & repairs',
+            'repair only',
+            'needs repair',
+            'box only',
+            'empty box',
+            'empty packaging only',
+            'manual only',
+            'instructions only',
+            'charger only',
+            'battery only',
+            'case only',
+            'housing only',
+            'shell only',
+            'cover only',
+            'replacement part',
+        ];
+
+        foreach ($genericTerms as $term) {
+            if (str_contains($blob, $term)) {
+                return true;
+            }
+        }
+
+        if (str_contains($blob, 'ebay-watches')) {
+            foreach (['dial', 'bezel', 'movement only', 'watch movement', 'strap', 'bracelet', 'buckle', 'links', 'papers only'] as $term) {
+                if (str_contains($blob, $term)) {
+                    return true;
+                }
+            }
+        }
+
+        if (str_contains($blob, 'lego')) {
+            foreach (['minifigure only', 'minifig only', 'part only', 'bulk bricks', 'job lot bricks', 'joblot bricks', 'instruction book only'] as $term) {
+                if (str_contains($blob, $term)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     protected function mergeAttributes(mixed $existing, object $row): array
