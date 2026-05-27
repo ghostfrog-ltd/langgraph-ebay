@@ -1,6 +1,8 @@
 .env
 .idea/*
 __pycache__
+.venv/
+.venv-mac/
 
 # Laravel local/runtime files
 laravel/.env

@@ -57,6 +57,10 @@ class EbayListing extends Model
     public function scopeHotOpportunities(Builder $query): Builder
     {
         return $query->where('pipeline_state', 'opportunity')
+            ->where(function (Builder $query): void {
+                $query->whereNull('category_name')
+                    ->orWhereRaw('LOWER(category_name) <> ?', ['motomine']);
+            })
             ->where('current_price', '>', 0)
             ->whereRaw('((estimated_market_value - current_price) * 100.0) / current_price > ?', [15]);
     }

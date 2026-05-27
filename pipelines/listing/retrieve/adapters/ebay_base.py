@@ -6,6 +6,7 @@ from time import perf_counter
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Set, Tuple
 from collections import deque
+from urllib.parse import quote_plus
 from psycopg2.extras import execute_values
 import requests
 from utils.logger import get_logger
@@ -106,6 +107,7 @@ class EbayAdapterBase:
     SELLER_USERNAME: Optional[str] = None
     FETCH_MODE: str = "category"
     SALE_TYPE: str | List[str] = "bin"
+    SEARCH_QUERY: Optional[str] = None
     RETRO_KEYWORDS: List[str] = []
     MODERN_KEYWORDS: List[str] = []
 
@@ -294,6 +296,7 @@ class EbayAdapterBase:
             listing_filter = "AUCTION"
 
         qs = [
+            f"q={quote_plus(self.SEARCH_QUERY or DEFAULT_Q)}",
             f"category_ids={category_id}",
             f"limit={limit}",
             "sort=endingSoon",
@@ -375,7 +378,7 @@ class EbayAdapterBase:
 
             while True:
                 qs = [
-                    f"q={DEFAULT_Q}",
+                    f"q={quote_plus(self.SEARCH_QUERY or DEFAULT_Q)}",
                     f"filter={filter_param}",
                     f"limit={limit}",
                     f"offset={offset}",

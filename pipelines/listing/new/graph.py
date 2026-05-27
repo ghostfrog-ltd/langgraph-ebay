@@ -304,23 +304,24 @@ def _node_send_and_persist(state: NewListingsState) -> NewListingsState:
 
     try:
         # IMPORTANT: match your emailer signature
-        send_email(
-            subject=subject,
-            body=body_html,
-            to_addr=TO_EMAIL,
-            is_html=True,
-        )
+        # Temporarily muted legacy new-listings email.
+        # send_email(
+        #     subject=subject,
+        #     body=body_html,
+        #     to_addr=TO_EMAIL,
+        #     is_html=True,
+        # )
 
         _set_last_sent_at(cur, newest_seen)
         conn.commit()
 
         logger.info(
-            "[alert_new_listings] emailed %d items; watermark -> %s",
+            "[alert_new_listings] email muted; watermark advanced for %d items -> %s",
             len(rows),
             newest_seen.isoformat(),
         )
 
-        return {"emailed_count": len(rows)}
+        return {"emailed_count": 0}
 
     except Exception as e:
         conn.rollback()

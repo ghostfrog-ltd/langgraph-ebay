@@ -31,6 +31,8 @@ from pipelines.listing.retrieve.adapters.pokemon import Adapter as PokemonAdapte
 from pipelines.listing.retrieve.adapters.samsung import Adapter as SamsungAdapter
 from pipelines.listing.retrieve.adapters.headphones import Adapter as HeadphonesAdapter
 from pipelines.listing.retrieve.adapters.hondaNc750 import Adapter as Nc750Adapter
+from pipelines.listing.retrieve.adapters.honda_msx125 import Adapter as Msx125Adapter
+from pipelines.listing.retrieve.adapters.mini_cooper import Adapter as MiniCooperAdapter
 
 logger = get_logger(__name__)
 
@@ -49,6 +51,8 @@ DOMAIN_ADAPTERS: Dict[str, Any] = {
     SamsungAdapter.DOMAIN: SamsungAdapter,
     HeadphonesAdapter.DOMAIN: HeadphonesAdapter,
     Nc750Adapter.DOMAIN: Nc750Adapter,
+    Msx125Adapter.DOMAIN: Msx125Adapter,
+    MiniCooperAdapter.DOMAIN: MiniCooperAdapter,
 }
 
 

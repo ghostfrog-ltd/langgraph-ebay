@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from typing import TypedDict, Any, Dict, List
 
@@ -14,6 +14,7 @@ from utils.auth import get_auth
 from utils.usage_tracker import get_all_api_usage_today
 from utils.db_schema import connection
 from utils.pipeline_control import is_heartbeat_paused
+from utils.emailer import send_email
 
 from pipelines.listing.ended.graph import build_graph as build_ended
 from pipelines.listing.retrieve.graph import build_graph as build_retrieve
@@ -23,6 +24,8 @@ from pipelines.listing.attributes.graph import build_graph as build_attributes
 from pipelines.listing.hot.graph import build_graph as build_hot
 from pipelines.listing.roi.graph import build_graph as build_roi
 from pipelines.listing.new.graph import build_graph as build_new
+from pipelines.listing.project_mini.graph import build_graph as build_project_mini
+from pipelines.listing.project_msx125.graph import build_graph as build_project_msx125
 
 logger = get_logger(__name__)
 
@@ -86,8 +89,10 @@ def _get_limit_for_service(service: str) -> int:
 # ---------------------------------------------------------------------------
 # LLM assess trigger config
 # ---------------------------------------------------------------------------
-
-ASSESS_ENABLED = os.getenv("GF_ASSESS_ENABLED", "1") == "1"
+#
+# Gemini assessment is intentionally disabled by default for now.
+# To re-enable later, set GF_ASSESS_ENABLED=1 in the environment.
+ASSESS_ENABLED = os.getenv("GF_ASSESS_ENABLED", "0") == "1"
 ASSESS_TZ = ZoneInfo(os.getenv("GF_ASSESS_TZ", "Europe/London"))
 
 # Night-time window for LLM assess. Default: 23:00–07:00 local time.
@@ -96,6 +101,17 @@ ASSESS_END_HOUR = int(os.getenv("GF_ASSESS_END_HOUR", "7"))  # wraps past midnig
 
 # Max number of listings for each assess run (passed via env to the CLI)
 ASSESS_LIMIT_DEFAULT = int(os.getenv("GF_ASSESS_LIMIT_DEFAULT", "3"))
+
+HEARTBEAT_EMAIL_NAME = "listing_system_hourly_heartbeat"
+HEARTBEAT_EMAIL_INTERVAL = timedelta(hours=int(os.getenv("GF_HEARTBEAT_EMAIL_HOURS", "1")))
+HEARTBEAT_EMAIL_RECIPIENTS = [
+    email.strip()
+    for email in os.getenv(
+        "GF_HEARTBEAT_EMAIL_RECIPIENTS",
+        "garyconstable80@gmail.com,info@ghostfrog.co.uk",
+    ).split(",")
+    if email.strip()
+]
 
 
 class MainState(TypedDict, total=False):
@@ -118,6 +134,9 @@ class MainState(TypedDict, total=False):
     hot_out: Dict[str, Any]
     roi_out: Dict[str, Any]
     new_out: Dict[str, Any]
+    project_mini_out: Dict[str, Any]
+    project_msx125_out: Dict[str, Any]
+    heartbeat_email_out: Dict[str, Any]
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +388,110 @@ def assess_trigger(state: MainState) -> MainState:
     return state
 
 
+def _get_last_heartbeat_email_sent() -> datetime | None:
+    with connection.cursor() as cur:
+        cur.execute(
+            "SELECT last_sent_at FROM alert_state WHERE name = %s LIMIT 1",
+            (HEARTBEAT_EMAIL_NAME,),
+        )
+        row = cur.fetchone()
+    connection.commit()
+    return row[0] if row else None
+
+
+def _set_last_heartbeat_email_sent(when: datetime) -> None:
+    with connection.cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO alert_state (name, last_sent_at)
+            VALUES (%s, %s)
+            ON CONFLICT (name) DO UPDATE
+            SET last_sent_at = EXCLUDED.last_sent_at
+            """,
+            (HEARTBEAT_EMAIL_NAME, when),
+        )
+    connection.commit()
+
+
+def _summarise_node(state: MainState, key: str) -> str:
+    out = state.get(key)
+    if not isinstance(out, dict):
+        return "not run"
+
+    status = out.get("status")
+    if status:
+        return str(status)
+    if out.get("results") is not None:
+        try:
+            return f"ok ({len(out.get('results') or [])} results)"
+        except Exception:
+            return "ok"
+    if out.get("emails_sent") is not None:
+        return f"ok ({out.get('emails_sent')} emails)"
+    return "ok"
+
+
+def hourly_status_email(state: MainState) -> MainState:
+    if state.get("maintenance_skip"):
+        state["heartbeat_email_out"] = {
+            "status": "skipped_due_to_maintenance",
+            "reason": "maintenance_pause_active",
+        }
+        return state
+
+    now = datetime.now(timezone.utc)
+    last_sent = _get_last_heartbeat_email_sent()
+    if last_sent is not None:
+        last_sent_aware = last_sent if last_sent.tzinfo else last_sent.replace(tzinfo=timezone.utc)
+        if (now - last_sent_aware) < HEARTBEAT_EMAIL_INTERVAL:
+            state["heartbeat_email_out"] = {
+                "status": "skipped_recently_sent",
+                "last_sent_at": last_sent_aware.isoformat(),
+            }
+            return state
+
+    subject = f"[GhostFrog] Listing pipeline heartbeat OK — {now.strftime('%Y-%m-%d %H:%M UTC')}"
+    body = (
+        "GhostFrog listing pipeline heartbeat\n\n"
+        f"Time: {now.isoformat()}\n"
+        f"Blocked services: {', '.join(state.get('blocked_services') or []) or 'none'}\n\n"
+        "Pipeline summary\n"
+        f"- ended: {_summarise_node(state, 'ended_out')}\n"
+        f"- retrieve: {_summarise_node(state, 'retrieve_out')}\n"
+        f"- pph: {_summarise_node(state, 'pph_out')}\n"
+        f"- comps: {_summarise_node(state, 'comps_out')}\n"
+        f"- attributes: {_summarise_node(state, 'attributes_out')}\n"
+        f"- hot: {_summarise_node(state, 'hot_out')}\n"
+        f"- roi: {_summarise_node(state, 'roi_out')}\n"
+        f"- new: {_summarise_node(state, 'new_out')}\n"
+        f"- project_mini: {_summarise_node(state, 'project_mini_out')}\n"
+        f"- project_msx125: {_summarise_node(state, 'project_msx125_out')}\n"
+    )
+
+    sent_to: list[str] = []
+    try:
+        for recipient in HEARTBEAT_EMAIL_RECIPIENTS:
+            send_email(subject=subject, body=body, to_addr=recipient, is_html=False)
+            sent_to.append(recipient)
+
+        _set_last_heartbeat_email_sent(now)
+        state["heartbeat_email_out"] = {
+            "status": "sent",
+            "sent_to": sent_to,
+            "sent_at": now.isoformat(),
+        }
+        logger.info("[main] hourly heartbeat email sent to %s", ", ".join(sent_to))
+    except Exception as exc:
+        state["heartbeat_email_out"] = {
+            "status": "failed",
+            "error": str(exc),
+            "sent_to": sent_to,
+        }
+        logger.warning("[main] hourly heartbeat email failed: %s", exc)
+
+    return state
+
+
 # ---------------------------------------------------------------------------
 # Build graph
 # ---------------------------------------------------------------------------
@@ -451,9 +574,26 @@ def build_graph():
             services=[],
         ),
     )
+    g.add_node(
+        "project_mini",
+        run_subgraph(
+            "project_mini",
+            build_project_mini,
+            services=[],
+        ),
+    )
+    g.add_node(
+        "project_msx125",
+        run_subgraph(
+            "project_msx125",
+            build_project_msx125,
+            services=[],
+        ),
+    )
 
     # assess trigger node
     g.add_node("assess_trigger", assess_trigger)
+    g.add_node("heartbeat_email", hourly_status_email)
 
     g.set_entry_point("init")
 
@@ -466,10 +606,13 @@ def build_graph():
     g.add_edge("attributes", "hot")
     g.add_edge("hot", "roi")
     g.add_edge("roi", "new")
+    g.add_edge("new", "project_mini")
+    g.add_edge("project_mini", "project_msx125")
 
     # After all main work is done, optionally spawn assess job, then finish
-    g.add_edge("new", "assess_trigger")
-    g.add_edge("assess_trigger", END)
+    g.add_edge("project_msx125", "assess_trigger")
+    g.add_edge("assess_trigger", "heartbeat_email")
+    g.add_edge("heartbeat_email", END)
 
     return g.compile()
 

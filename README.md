@@ -28,6 +28,23 @@ Instead of adding more logic to V1, the system is being rebuilt around:
 
 ---
 
+## Reliability Stack
+
+This repository now includes an agentic reliability stack adapted from `ghostfrog-ltd/agentic-blueprint`.
+
+These files are part of the project contract:
+
+- [AGENTS.md](AGENTS.md): roles, operating protocol, and agent permissions.
+- [CONSTRAINTS.md](CONSTRAINTS.md): hard guardrails for buy, bid, listing, messaging, persistence, and cost tracking.
+- [DECISION_LOG.md](DECISION_LOG.md): architectural memory and explicit project decisions.
+- [SKILL.md](SKILL.md): verified workflows for opportunity assessment, paper trading, and buy-check-ship lifecycle tracking.
+- [SCHEMA.md](SCHEMA.md): persistence contracts for audit logs, model costs, candidates, and lifecycle events.
+- [PROGRESS.txt](PROGRESS.txt): lightweight state marker for significant automated work.
+
+The key rule is simple: AI can recommend, rank, explain, and draft. It must not bid, buy, relist, message, refund, or otherwise mutate external marketplace state without a deterministic safety gate and explicit human approval.
+
+---
+
 ## What This Repo Is (and Is Not)
 
 ### This **is**:
@@ -92,7 +109,7 @@ This restraint is intentional.
 
 ## Hybrid Architecture
 
-This repository now also contains a Laravel app in [laravel](/Volumes/Bob/www/ghostfrog-langgraph-ebay/laravel).
+This repository now also contains a Laravel app in [laravel](laravel).
 
 Current direction:
 
@@ -100,4 +117,4 @@ Current direction:
 - Laravel becomes the user-facing SaaS/product layer
 - both systems currently target the same local PostgreSQL instance
 
-For local Laravel setup notes, see [laravel/README.md](/Volumes/Bob/www/ghostfrog-langgraph-ebay/laravel/README.md).
+For local Laravel setup notes, see [laravel/README.md](laravel/README.md).

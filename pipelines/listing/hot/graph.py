@@ -405,6 +405,7 @@ def _node_init(state: HotState) -> HotState:
         "alerts_created": 0,
         "alerts_updated": 0,
         "emails_sent": 0,
+        "emails_muted": 0,
         "skipped_no_model_key": 0,
         "skipped_not_investible": 0,
         "skipped_partial_or_accessory": 0,
@@ -531,14 +532,14 @@ def _node_process(state: HotState) -> HotState:
             )
 
             try:
-                send_email(subject, body)
+                # Temporarily muted legacy hot-listings email.
+                # send_email(subject, body)
                 mark_alert_emailed(alert_id)
-                emails_sent += 1
-                state["stats"]["emails_sent"] += 1
+                state["stats"]["emails_muted"] += 1
                 logger.info(
-                    "[hot_listings][email] sent for %s (sent this tick: %d)",
+                    "[hot_listings][email] muted for %s (muted this tick: %d)",
                     listing.external_id,
-                    emails_sent,
+                    state["stats"]["emails_muted"],
                 )
             except Exception as e:
                 state["stats"]["email_failures"] += 1

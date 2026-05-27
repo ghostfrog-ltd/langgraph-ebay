@@ -56,3 +56,18 @@ test('auction index opens a selected listing for quick look', function () {
         ->assertSet('selectedListingId', $listing->id)
         ->assertSee($listing->title);
 });
+
+test('auction index shows pipeline status filter options', function () {
+    EbayListing::factory()->create([
+        'pipeline_state' => 'ingested',
+    ]);
+
+    EbayListing::factory()->create([
+        'pipeline_state' => 'opportunity',
+    ]);
+
+    Livewire::test(AuctionIndex::class)
+        ->assertSee('All statuses')
+        ->assertSee('Ingested')
+        ->assertSee('Opportunity');
+});

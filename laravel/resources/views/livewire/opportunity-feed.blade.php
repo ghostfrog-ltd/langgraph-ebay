@@ -8,14 +8,14 @@
 
         <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
             <p class="text-xs uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Pipeline</p>
-            <p class="mt-3 text-3xl font-semibold text-zinc-950 dark:text-white">{{ $opportunities->count() }}</p>
+            <p class="mt-3 text-3xl font-semibold text-zinc-950 dark:text-white">{{ $opportunityCount }}</p>
             <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">Hot opportunities ready for review.</p>
         </div>
 
         <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
             <p class="text-xs uppercase tracking-[0.24em] text-zinc-500 dark:text-zinc-400">Best ROI</p>
             <p class="mt-3 text-3xl font-semibold text-zinc-950 dark:text-white">
-                {{ number_format((float) ($opportunities->max('roi_percentage') ?? 0), 2) }}%
+                {{ number_format((float) ($bestRoi ?? 0), 2) }}%
             </p>
             <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">Highest upside currently in the feed.</p>
         </div>
@@ -44,5 +44,25 @@
                 </div>
             @endforelse
         </div>
+
+        @if ($hasMoreOpportunities)
+            <div class="mb-5 flex justify-center px-5 pb-6">
+                <button
+                    type="button"
+                    wire:click="loadMore"
+                    wire:loading.attr="disabled"
+                    wire:target="loadMore"
+                    class="inline-flex items-center gap-3 rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-zinc-600 dark:hover:text-white"
+                >
+                    <svg wire:loading wire:target="loadMore" class="h-4 w-4 animate-spin text-current" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+                    </svg>
+
+                    <span wire:loading.remove wire:target="loadMore">Load more</span>
+                    <span wire:loading wire:target="loadMore">Loading more</span>
+                </button>
+            </div>
+        @endif
     </section>
 </div>

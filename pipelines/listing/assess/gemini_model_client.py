@@ -2,10 +2,10 @@ from __future__ import annotations
 import os
 import json
 import time
-import google.generativeai as genai
 from typing import Any, Dict
 from dotenv import load_dotenv
-from google.api_core import retry
+from google import genai
+from google.genai import types
 
 # 1. Load Environment Variables
 load_dotenv()
@@ -14,7 +14,7 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
     raise ValueError("GEMINI_API_KEY not found. Please check your .env file.")
 
-genai.configure(api_key=API_KEY)
+CLIENT = genai.Client(api_key=API_KEY)
 
 # 2. Updated Schema with Price Intelligence
 ASSESSMENT_SCHEMA: Dict[str, Any] = {
@@ -70,16 +70,6 @@ MARKET DATA RULES:
 def post_to_gemini(listing_row: dict) -> dict:
     model_name = "gemini-2.0-flash-lite"
 
-    model = genai.GenerativeModel(
-        model_name=model_name,
-        system_instruction=SYSTEM_PROMPT,
-        generation_config={
-            "response_mime_type": "application/json",
-            "response_schema": ASSESSMENT_SCHEMA,
-            "temperature": 0.1,
-        }
-    )
-
     # 4. Explicitly highlight the new features in the prompt
     user_input = f"""
     ITEM TITLE: {listing_row.get('title')}
@@ -94,12 +84,31 @@ def post_to_gemini(listing_row: dict) -> dict:
     {json.dumps(listing_row.get('raw_attrs'))}
     """
 
-    try:
-        response = model.generate_content(
-            user_input,
-            request_options={"retry": retry.Retry(initial=2.0, multiplier=2.0, maximum=60.0)}
-        )
-        return json.loads(response.text)
-    except Exception as e:
-        print(f"Failed to process listing: {e}")
-        return {}
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        response_mime_type="application/json",
+        response_json_schema=ASSESSMENT_SCHEMA,
+        temperature=0.1,
+    )
+
+    for attempt in range(3):
+        try:
+            response = CLIENT.models.generate_content(
+                model=model_name,
+                contents=user_input,
+                config=config,
+            )
+
+            if getattr(response, "parsed", None) is not None:
+                return response.parsed
+
+            if getattr(response, "text", None):
+                return json.loads(response.text)
+
+            raise ValueError("Gemini returned no parsed payload or text response")
+        except Exception as e:
+            if attempt == 2:
+                print(f"Failed to process listing: {e}")
+                return {}
+
+            time.sleep(2 ** attempt)

@@ -17,6 +17,7 @@ user = os.getenv("DB_USER")
 password = os.getenv("DB_PASS")
 host = os.getenv("DB_HOST")
 port = os.getenv("DB_PORT")
+connect_timeout = int(os.getenv("DB_CONNECT_TIMEOUT", "10"))
 
 # ------------------------------
 # Core connection constructors
@@ -34,6 +35,7 @@ def create_connection() -> PGConnection:
         password=password,
         host=host,
         port=port,
+        connect_timeout=connect_timeout,
     )
 
 

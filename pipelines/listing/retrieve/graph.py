@@ -25,6 +25,8 @@ from .adapters.pokemon import Adapter as PokemonAdapter
 from .adapters.samsung import Adapter as SamsungAdapter
 from .adapters.headphones import Adapter as HeadphonesAdapter
 from .adapters.hondaNc750 import Adapter as Nc750Adapter
+from .adapters.honda_msx125 import Adapter as Msx125Adapter
+from .adapters.mini_cooper import Adapter as MiniCooperAdapter
 
 logger = get_logger(__name__)
 
@@ -112,6 +114,8 @@ ADAPTERS: Dict[str, Any] = {
     "samsung": SamsungAdapter,
     "headphones": HeadphonesAdapter,
     "nc750": Nc750Adapter,
+    "msx125": Msx125Adapter,
+    "mini_cooper": MiniCooperAdapter,
 }
 
 DEFAULT_ADAPTER_ORDER: List[str] = [
@@ -128,6 +132,8 @@ DEFAULT_ADAPTER_ORDER: List[str] = [
     "samsung",
     "headphones",
     "nc750",
+    "msx125",
+    "mini_cooper",
 ]
 
 

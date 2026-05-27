@@ -14,17 +14,20 @@
         maxPrice: '',
         source: '',
         category: '',
+        pipelineStateFilter: 'opportunity',
         selectedIds: @entangle('selectedIds'),
         matches(row) {
             const keyword = this.keyword.trim().toLowerCase();
             const title = (row.dataset.title || '').toLowerCase();
             const source = row.dataset.source || '';
             const category = row.dataset.category || '';
+            const pipelineState = row.dataset.pipelineState || '';
             const price = parseFloat(row.dataset.price || '0');
 
             if (keyword && !title.includes(keyword)) return false;
             if (this.source && source !== this.source) return false;
             if (this.category && category !== this.category) return false;
+            if (this.pipelineStateFilter && pipelineState !== this.pipelineStateFilter) return false;
             if (this.minPrice !== '' && price < parseFloat(this.minPrice)) return false;
             if (this.maxPrice !== '' && price > parseFloat(this.maxPrice)) return false;
 
@@ -82,7 +85,7 @@
             </label>
         </div>
 
-        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
             <div class="xl:col-span-2">
                 <label class="mb-1 block text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Keyword</label>
                 <input x-model="keyword" type="text" placeholder="Search title..." class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white">
@@ -104,6 +107,16 @@
                     <option value="">All categories</option>
                     @foreach ($categoryNames as $categoryName)
                         <option value="{{ $categoryName }}">{{ $categoryName }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label class="mb-1 block text-xs font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">Status</label>
+                <select x-model="pipelineStateFilter" class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none transition focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white">
+                    <option value="">All statuses</option>
+                    @foreach ($pipelineStates as $pipelineState)
+                        <option value="{{ $pipelineState }}">{{ ucfirst($pipelineState) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -144,6 +157,7 @@
                             data-title="{{ strtolower($listing->title) }}"
                             data-source="{{ $listing->source_platform }}"
                             data-category="{{ $listing->category_name }}"
+                            data-pipeline-state="{{ $listing->pipeline_state }}"
                             data-price="{{ $listing->current_price }}"
                             wire:key="auction-row-{{ $listing->id }}"
                             wire:click="openListing({{ $listing->id }})"

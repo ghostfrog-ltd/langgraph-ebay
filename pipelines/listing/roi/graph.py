@@ -62,6 +62,7 @@ SIREN_COOLDOWN: timedelta = timedelta(minutes=5)
 # --------------------------------
 RECORD_ALERTS: bool = True
 SEND_EMAIL_DIGEST: bool = True
+QUIET_EMAILS: bool = os.getenv("GF_QUIET_EMAILS", "0") == "1"
 
 ALERT_NAME: str = "roi_listings_digest"  # used in alert_state to track last-sent
 TO_EMAIL: str = "info@ghostfrog.co.uk"
@@ -705,10 +706,19 @@ def _send_email_digest(new_ops: List[Opportunity]) -> None:
         + "</div>"
     )
 
-    try:
-        send_email(subject=subject, body=body_html, to_addr=TO_EMAIL, is_html=True)
+    if QUIET_EMAILS:
         set_alert_last_sent(ALERT_NAME)
-        logger.info("[listing.roi] email sent to %s with %d items", TO_EMAIL, len(new_ops))
+        logger.info(
+            "[listing.roi] quiet-email mode active; digest marked sent without sending (%d items)",
+            len(new_ops),
+        )
+        return
+
+    try:
+        # Temporarily muted legacy ROI digest email.
+        # send_email(subject=subject, body=body_html, to_addr=TO_EMAIL, is_html=True)
+        set_alert_last_sent(ALERT_NAME)
+        logger.info("[listing.roi] digest email muted; marked sent with %d items", len(new_ops))
     except Exception as e:
         logger.error("[listing.roi] email send failed: %s", e)
 
@@ -825,9 +835,14 @@ def _send_new_high_email(op: Opportunity, time_left_str: str) -> None:
         f"Comps samples: {op.comps_samples}\n"
     )
 
+    if QUIET_EMAILS:
+        logger.info("[listing.roi][new_high] quiet-email mode; marked without sending for %s", op.external_id)
+        return
+
     try:
-        send_email(subject=subject, body=body, to_addr=TO_EMAIL, is_html=False)
-        logger.info("[listing.roi][new_high] emailed for %s (%s)", op.external_id, subject)
+        # Temporarily muted legacy ROI new-high email.
+        # send_email(subject=subject, body=body, to_addr=TO_EMAIL, is_html=False)
+        logger.info("[listing.roi][new_high] email muted for %s (%s)", op.external_id, subject)
     except Exception as e:
         logger.warning("[listing.roi][new_high] email failed: %s", e)
 
@@ -855,9 +870,14 @@ def _send_bucket_email(op: Opportunity, bucket: int, time_left_str: str) -> None
         f"Comps samples: {op.comps_samples}\n"
     )
 
+    if QUIET_EMAILS:
+        logger.info("[listing.roi][bucket] quiet-email mode; marked bucket_%d for %s without sending", bucket, op.external_id)
+        return
+
     try:
-        send_email(subject=subject, body=body, to_addr=TO_EMAIL, is_html=False)
-        logger.info("[listing.roi][bucket] emailed bucket_%d for %s", bucket, op.external_id)
+        # Temporarily muted legacy ROI bucket email.
+        # send_email(subject=subject, body=body, to_addr=TO_EMAIL, is_html=False)
+        logger.info("[listing.roi][bucket] email muted bucket_%d for %s", bucket, op.external_id)
     except Exception as e:
         logger.warning("[listing.roi][bucket] email failed: %s", e)
 
@@ -883,9 +903,14 @@ def _send_siren_email(op: Opportunity, time_left_str: str) -> None:
         f"Comps samples: {op.comps_samples}\n"
     )
 
+    if QUIET_EMAILS:
+        logger.info("[listing.roi][siren] quiet-email mode; marked without sending for %s", op.external_id)
+        return
+
     try:
-        send_email(subject=subject, body=body, to_addr=TO_EMAIL, is_html=False)
-        logger.info("[listing.roi][siren] emailed for %s (%s)", op.external_id, subject)
+        # Temporarily muted legacy ROI siren email.
+        # send_email(subject=subject, body=body, to_addr=TO_EMAIL, is_html=False)
+        logger.info("[listing.roi][siren] email muted for %s (%s)", op.external_id, subject)
     except Exception as e:
         logger.warning("[listing.roi][siren] email failed: %s", e)
 

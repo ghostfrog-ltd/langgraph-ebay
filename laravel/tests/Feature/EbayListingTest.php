@@ -44,3 +44,24 @@ test('hot opportunities scope returns only opportunity listings with roi above f
     expect($results)->toHaveCount(1);
     expect($results->first()->is($hotListing))->toBeTrue();
 });
+
+test('hot opportunities scope excludes motomine listings', function () {
+    $validListing = EbayListing::factory()->create([
+        'pipeline_state' => 'opportunity',
+        'category_name' => 'ebay-lego',
+        'current_price' => 100.00,
+        'estimated_market_value' => 160.00,
+    ]);
+
+    EbayListing::factory()->create([
+        'pipeline_state' => 'opportunity',
+        'category_name' => 'motomine',
+        'current_price' => 100.00,
+        'estimated_market_value' => 400.00,
+    ]);
+
+    $results = EbayListing::hotOpportunities()->get();
+
+    expect($results)->toHaveCount(1);
+    expect($results->first()->is($validListing))->toBeTrue();
+});

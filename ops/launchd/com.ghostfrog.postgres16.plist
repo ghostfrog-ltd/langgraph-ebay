@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ghostfrog.postgres16</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>-lc</string>
+        <string>if [ -d "/Volumes/Bob/postgres/data" ]; then exec /opt/homebrew/opt/postgresql@16/bin/postgres -D "/Volumes/Bob/postgres/data"; else echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ') Postgres data directory unavailable; external volume may not be mounted: /Volumes/Bob/postgres/data" &gt;&amp;2; exit 0; fi</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartInterval</key>
+    <integer>60</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/garyconstable/Library/Logs/ghostfrog-langgraph-ebay/postgres.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/garyconstable/Library/Logs/ghostfrog-langgraph-ebay/postgres.err.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

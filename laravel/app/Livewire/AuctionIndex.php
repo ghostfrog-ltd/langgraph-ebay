@@ -74,6 +74,11 @@ class AuctionIndex extends Component
             'listings' => EbayListing::query()
                 ->latest()
                 ->paginate($this->perPage),
+            'pipelineStates' => EbayListing::query()
+                ->whereNotNull('pipeline_state')
+                ->distinct()
+                ->orderBy('pipeline_state')
+                ->pluck('pipeline_state'),
             'selectedListing' => $this->selectedListing,
             'sourcePlatforms' => EbayListing::query()
                 ->whereNotNull('source_platform')

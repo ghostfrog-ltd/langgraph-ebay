@@ -10,15 +10,19 @@ class SyncPythonOpportunityEnrichment
     public function run(): int
     {
         $count = 0;
+        $refreshedEbayIds = [];
 
         $this->baseQuery()
             ->orderBy('l.id')
-            ->chunkById(250, function ($rows) use (&$count): void {
+            ->chunkById(250, function ($rows) use (&$count, &$refreshedEbayIds): void {
                 foreach ($rows as $row) {
                     $this->upsertListing($row);
+                    $refreshedEbayIds[] = (string) $row->external_id;
                     $count++;
                 }
             }, 'l.id', 'id');
+
+        $this->cleanupStaleEnrichment($refreshedEbayIds);
 
         return $count;
     }
@@ -98,6 +102,25 @@ class SyncPythonOpportunityEnrichment
         }
 
         $listing->save();
+    }
+
+    protected function cleanupStaleEnrichment(array $refreshedEbayIds): void
+    {
+        $query = EbayListing::query()
+            ->whereIn('pipeline_state', ['opportunity', 'analyzing']);
+
+        if ($refreshedEbayIds !== []) {
+            $query->whereNotIn('ebay_id', array_values(array_unique($refreshedEbayIds)));
+        }
+
+        $query->each(function (EbayListing $listing): void {
+            $listing->pipeline_state = 'ingested';
+            $listing->estimated_market_value = (float) $listing->current_price;
+            $listing->llm_analysis = null;
+            $listing->attributes_json = $this->pruneStaleEnrichment($listing->attributes_json);
+            $listing->last_synced_at = now();
+            $listing->save();
+        });
     }
 
     protected function resolveSourcePlatform(object $row): string
@@ -211,6 +234,23 @@ class SyncPythonOpportunityEnrichment
             'llm_recommended_max_bid' => $row->llm_recommended_max_bid ?? ($existing['llm_recommended_max_bid'] ?? null),
             'assessment_created_at' => $row->assessment_created_at ?? ($existing['assessment_created_at'] ?? null),
         ], fn ($value) => $value !== null && $value !== '');
+    }
+
+    protected function pruneStaleEnrichment(mixed $existing): array
+    {
+        $existing = is_array($existing) ? $existing : [];
+
+        unset(
+            $existing['roi_estimate'],
+            $existing['max_bid'],
+            $existing['comp_samples'],
+            $existing['llm_verdict'],
+            $existing['llm_confidence'],
+            $existing['llm_recommended_max_bid'],
+            $existing['assessment_created_at']
+        );
+
+        return $existing;
     }
 
     protected function asMoney(mixed $value): float

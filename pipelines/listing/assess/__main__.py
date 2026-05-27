@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 
 from utils.logger import get_logger
 from utils.db_schema import connection
-from pipelines.listing.assess.graph import run
 
 logger = get_logger(__name__)
 
@@ -29,11 +28,17 @@ def _release_lock() -> None:
 
 
 def main() -> None:
+    if os.getenv("GF_ASSESS_ENABLED", "0") != "1":
+        logger.info("[assess] Gemini assess is disabled; exiting")
+        return
+
     if not _try_acquire_lock():
         logger.info("[assess] another assess job appears to be running; exiting")
         return
 
     try:
+        from pipelines.listing.assess.graph import run
+
         limit = int(os.getenv("GF_ASSESS_LIMIT", "3"))
 
         started = datetime.now(timezone.utc).isoformat()

@@ -35,6 +35,27 @@ test('opportunity feed orders hot opportunities by highest roi first', function 
         ->assertDontSee('Dismissed Listing');
 });
 
+test('opportunity feed shows three cards initially and loads five more on demand', function () {
+    foreach (range(1, 9) as $index) {
+        EbayListing::factory()->create([
+            'title' => "Opportunity {$index}",
+            'pipeline_state' => 'opportunity',
+            'current_price' => 100.00,
+            'estimated_market_value' => 200.00 - $index,
+        ]);
+    }
+
+    Livewire::test(OpportunityFeed::class)
+        ->assertSee('Opportunity 1')
+        ->assertSee('Opportunity 2')
+        ->assertSee('Opportunity 3')
+        ->assertDontSee('Opportunity 4')
+        ->assertSee('Load more')
+        ->call('loadMore')
+        ->assertSee('Opportunity 8')
+        ->assertDontSee('Opportunity 9');
+});
+
 test('dismissing an opportunity card updates the listing state', function () {
     $listing = EbayListing::factory()->create([
         'pipeline_state' => 'opportunity',

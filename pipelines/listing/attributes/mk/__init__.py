@@ -14,6 +14,8 @@ from .pokemon import pokemon_model_key
 from .samsung import samsung_model_key
 from .headphones import headphones_model_key
 from .nc750 import honda_nc750_model_key
+from .msx125 import honda_msx125_model_key
+from .mini_cooper import mini_cooper_model_key
 
 
 def _canonicalise_key(key: Optional[str]) -> Optional[str]:
@@ -119,6 +121,16 @@ def normalise_model(
     if source == "ebay-honda-nc750":
         return _canonicalise_key(
             honda_nc750_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-honda-msx125":
+        return _canonicalise_key(
+            honda_msx125_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-mini-cooper":
+        return _canonicalise_key(
+            mini_cooper_model_key(attrs=safe_attrs, title=title)
         )
 
     # Unknown source → no classification

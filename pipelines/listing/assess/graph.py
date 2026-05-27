@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import traceback
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TypedDict
@@ -10,11 +11,14 @@ from langgraph.graph import StateGraph, END
 from utils.logger import get_logger
 from utils.db_schema import connection
 
-# Adjust this import to match where you put the helper you pasted
-#from pipelines.listing.assess.model_client import post_to_model
+ASSESS_ENABLED = os.getenv("GF_ASSESS_ENABLED", "0") == "1"
 
-# TRY GOOGLE GEMINI
-from pipelines.listing.assess.gemini_model_client import post_to_gemini as post_to_model
+# Keep the Gemini wiring in place for later, but only import it when assess is enabled.
+# This avoids touching the API path while the feature is paused.
+if ASSESS_ENABLED:
+    from pipelines.listing.assess.gemini_model_client import post_to_gemini as post_to_model
+else:
+    post_to_model = None
 
 logger = get_logger(__name__)
 
@@ -171,6 +175,15 @@ def _save_assessment(listing_id: int, assessment: Dict[str, Any]) -> None:
 # -----------------------------
 def init_state(state: AssessState) -> AssessState:
     limit = int(state.get("limit", 20))
+
+    if not ASSESS_ENABLED:
+        logger.info("[assess] Gemini assess is disabled; returning no candidates")
+        state["limit"] = limit
+        state["candidates"] = []
+        state["idx"] = 0
+        state.setdefault("results", [])
+        return state
+
     candidates = _load_candidates(limit)
 
     state["limit"] = limit
