@@ -13,7 +13,7 @@ Each skill must include:
 - **Deterministic Logic**: Step-by-step flow.
 - **Safety Checks**: Relevant rules from `CONSTRAINTS.md`.
 - **Audit/Logging**: Structured records persisted to PostgreSQL.
-- **Verification**: Tests, SQL checks, or UI checks that prove the workflow worked.
+- **Verification**: Python tests, SQL checks, pipeline dry-runs, or optional UI checks that prove the workflow worked.
 
 ## Verified Skill: Opportunity Assessment
 
@@ -38,7 +38,7 @@ Each skill must include:
    - `review` for incomplete evidence or low confidence.
    - `candidate` for listings that pass deterministic gates.
 7. Persist the structured decision summary and rule flags.
-8. Show candidates in Laravel for human review.
+8. Expose candidates through the Python workflow output first; optional UI projections may consume the same PostgreSQL records later.
 
 **Safety Checks**:
 
@@ -55,7 +55,8 @@ Each skill must include:
 
 - Unit tests for ROI, max bid, and exclusion rules.
 - SQL spot checks for top candidates to ensure accessories are not valued against whole-product comps.
-- Laravel UI check that candidates expose enough evidence for human approval.
+- SQL or CLI check that candidates expose enough evidence for human approval.
+- Optional UI check only if a UI projection is actively being used.
 
 ## Verified Skill: Paper Trading Loop
 
@@ -118,4 +119,3 @@ Each skill must include:
 **Verification**:
 
 - Reconcile predicted vs actual profit per niche and per model key.
-

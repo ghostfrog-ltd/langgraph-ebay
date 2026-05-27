@@ -19,6 +19,18 @@ This file records significant project decisions so the system does not depend on
 
 ## Baseline Decisions
 
+### Keep Python/LangGraph as the Primary System
+**Date**: 2026-05-27
+
+**Decision**:
+- Treat the Python/LangGraph app and PostgreSQL operational schema as the primary system.
+- Treat Laravel as a side project/operator UI idea that may consume or project pipeline state, but must not define the core pipeline architecture.
+
+**Why**:
+- The original project goal is data collection, assessment, and buy-check-ship decision support.
+- The working operational data model already lives around Python pipeline tables such as `auction_listings`, `latest_comps`, and `listing_assessments`.
+- Keeping Laravel optional prevents UI/product experiments from steering the core automation design.
+
 ### Adopt a Reliability Stack for Agent Steering
 **Date**: 2026-05-27
 
@@ -67,4 +79,3 @@ This file records significant project decisions so the system does not depend on
 - Collected listings only create value when converted into decisions and feedback.
 - The system needs actual outcome data to improve future scoring.
 - Paper trading should precede real capital deployment for newly tuned niches.
-

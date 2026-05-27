@@ -107,14 +107,15 @@ This restraint is intentional.
 
 ---
 
-## Hybrid Architecture
+## Architecture Direction
 
-This repository now also contains a Laravel app in [laravel](laravel).
+This repository now also contains a Laravel experiment in [laravel](laravel), but the Python/LangGraph system remains the primary app.
 
 Current direction:
 
 - Python remains the ingestion and analysis engine
-- Laravel becomes the user-facing SaaS/product layer
-- both systems currently target the same local PostgreSQL instance
+- PostgreSQL remains the operational source of truth
+- Laravel is optional UI/product exploration and should consume pipeline state rather than define it
+- core decisions, scoring, assessment, and buy-check-ship workflow belong in the Python pipeline first
 
 For local Laravel setup notes, see [laravel/README.md](laravel/README.md).

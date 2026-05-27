@@ -2,7 +2,9 @@
 
 ## Persistence Contracts
 
-PostgreSQL is the live source of truth for operational data. SQLite is only for local Laravel bootstrap and automated tests.
+PostgreSQL is the live source of truth for operational data. The primary operational schema belongs to the Python/LangGraph pipeline database.
+
+Laravel exists in this repository only as a side project/operator UI idea. Its local SQLite/bootstrap database and framework tables are not the source of truth for pipeline decisions.
 
 ## Existing Operational Tables and Views
 
@@ -13,10 +15,10 @@ The current Python database uses these core objects:
 - `listing_assessments`: structured AI or rule assessment history.
 - `sources`: source configuration and niche metadata.
 
-The Laravel application database uses:
+An optional Laravel UI may mirror or summarize pipeline state through:
 
 - `ebay_listings`: operator-facing synchronized listing records.
-- `users`, `sessions`, `jobs`, and framework tables for the Laravel app.
+- `users`, `sessions`, `jobs`, and framework tables for the optional Laravel app.
 
 ## Required Decision Fields
 
@@ -47,7 +49,7 @@ Any buy-desk or assessment persistence should be queryable by:
 
 ## Proposed Tables
 
-These tables document the intended contracts. Add migrations before depending on them in live code.
+These tables document the intended Python/PostgreSQL contracts. Add a real migration or SQL install step before depending on them in live code.
 
 ```sql
 CREATE TABLE IF NOT EXISTS agent_decision_audit (
@@ -112,5 +114,6 @@ CREATE TABLE IF NOT EXISTS purchase_lifecycle_events (
 
 ## Migration Rule
 
-`SCHEMA.md` is a contract, not an applied migration. Before code writes to a proposed table, add the matching Laravel migration, Python migration, or SQL migration and verify it against PostgreSQL.
+`SCHEMA.md` is a contract, not an applied migration. Before code writes to a proposed table, add the matching Python migration or SQL migration and verify it against PostgreSQL.
 
+If a Laravel or other UI screen needs the same data, it should read from PostgreSQL directly or consume a synchronized projection after the Python/PostgreSQL contract exists.

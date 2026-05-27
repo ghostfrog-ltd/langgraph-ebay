@@ -32,8 +32,8 @@ Load only the project files needed for the immediate task after that. Keep unrel
 ## Execution Protocols
 
 - Use pipeline-first design. Each pipeline should run once, mutate explicit state, record its outcome, and exit cleanly.
-- Persist live operational state in PostgreSQL. SQLite is acceptable for tests and local Laravel bootstrap only.
-- Treat the Laravel app as the operator console and the Python/LangGraph side as ingestion, enrichment, assessment, and orchestration.
+- Persist live operational state in PostgreSQL. SQLite is acceptable only for tests or experimental sidecar UI bootstrap.
+- Treat the Python/LangGraph app as the primary system. The Laravel app is a side project/operator UI idea and must not drive pipeline architecture or persistence contracts.
 - Any external state-changing call must pass a deterministic safety gate and require explicit human approval unless a prior documented decision permits it.
 - Update `PROGRESS.txt` when a significant automated workflow starts or completes.
 
@@ -42,4 +42,3 @@ Load only the project files needed for the immediate task after that. Keep unrel
 - Lead with risks, blockers, and decision points.
 - Summarize what changed, how it was verified, and which reliability-stack constraints apply.
 - Do not expose credentials, tokens, private keys, or secrets in summaries, logs, docs, or commits.
-
