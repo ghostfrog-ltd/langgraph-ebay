@@ -13,9 +13,6 @@ Read first: [PURPOSE.md](PURPOSE.md).
 - Python pipeline engine
 - PostgreSQL operational database
 - LangGraph orchestration where useful
-- FastAPI only for future operator/API surfaces
-
-Laravel/Herd was an experiment and is not part of the active system.
 
 ## Current Priority
 

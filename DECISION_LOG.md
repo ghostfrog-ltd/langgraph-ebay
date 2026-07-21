@@ -9,7 +9,7 @@ Decision:
 - Number 1 Command: buy cheap from eBay to resell on eBay for profit.
 - The project exists to build a side-hustle evidence engine, not analytics for
   its own sake.
-- Final-price recovery and product identity quality come before Buy Desk UI or
+- Final-price recovery and product identity quality come before Buy Desk
   automation.
 - Candidate validation replaces the vague "paper trading" framing.
 
@@ -27,8 +27,6 @@ Decision:
 
 - Python + PostgreSQL remain the active data engine.
 - LangGraph is used for orchestration where it helps.
-- FastAPI is the preferred future operator/API surface.
-- Laravel/Herd is deprecated.
 
 Why:
 

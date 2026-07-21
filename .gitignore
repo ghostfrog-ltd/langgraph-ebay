@@ -1,29 +1,15 @@
 .env
-.idea/*
+.idea/
 __pycache__
+__pycache__/
+*.pyc
+.DS_Store
 .venv/
 .venv-mac/
 backups/
 *.dump
 *.dump.in_progress
 
-# Laravel local/runtime files
-laravel/.env
-laravel/.env.backup
-laravel/.env.production
-laravel/.phpunit.cache
-laravel/.phpunit.result.cache
-laravel/auth.json
-laravel/Homestead.json
-laravel/Homestead.yaml
-laravel/node_modules/
-laravel/vendor/
-laravel/public/build/
-laravel/public/hot
-laravel/public/storage
-laravel/storage/*.key
-laravel/npm-debug.log
-laravel/yarn-error.log
-laravel/.fleet/
-laravel/.idea/
-laravel/.vscode/
+# Generated pipeline diagrams
+pipelines/listing/**/*.mmd
+pipelines/listing/**/*.png
