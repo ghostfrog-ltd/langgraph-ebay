@@ -18,7 +18,11 @@ Current known issues:
   execution, live refresh query uses `idx_auction_live_refresh_end_seen` with
   ~73 ms execution, migration dry-run reports no pending migrations, and the
   full unit suite passes.
-- Some ROI rows still pass parts/accessory false positives.
+- Device part/accessory guardrails now block common board, screen assembly,
+  housing, cable, SIM tray, lock, and IMEI-risk listings before ROI scoring.
+  The known iPad motherboard false positive is covered by a regression test.
+  Remaining risk: new seller wording will keep appearing, so shortlist rejects
+  should feed this filter.
 - Candidate validation has too few confirmed outcomes to justify Buy Desk labels.
 - Historical data is valuable but incomplete; final-price recovery is the next
   value unlock.

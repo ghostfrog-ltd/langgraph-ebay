@@ -102,14 +102,63 @@ DEVICE_ACCESSORY_TERMS = (
     "official brick",
 )
 
+DEVICE_PART_TERMS = (
+    "motherboard",
+    "logic board",
+    "logicboard",
+    "main board",
+    "mainboard",
+    "circuit board",
+    "pcb board",
+    "daughterboard",
+    "screen assembly",
+    "display assembly",
+    "lcd assembly",
+    "digitizer",
+    "touch screen digitizer",
+    "touchscreen digitizer",
+    "replacement screen",
+    "screen replacement",
+    "front glass",
+    "rear glass",
+    "back glass",
+    "rear housing",
+    "back housing",
+    "housing frame",
+    "chassis frame",
+    "mid frame",
+    "camera module",
+    "speaker module",
+    "earpiece speaker",
+    "charging port",
+    "dock connector",
+    "flex cable",
+    "ribbon cable",
+    "sim tray",
+    "taptic engine",
+)
+
 DEVICE_REPAIR_REVIEW_TERMS = (
     "activation locked",
+    "activation lock",
     "icloud locked",
+    "icloud lock",
     "i cloud locked",
+    "i cloud lock",
     "locked apple iphone",
     "locked apple ipad",
     "locked iphone",
     "locked ipad",
+    "mdm locked",
+    "remote management locked",
+    "blacklisted",
+    "blocked imei",
+    "bad imei",
+    "no face id",
+    "face id not working",
+    "touch id not working",
+    "truedepth issue",
+    "true depth issue",
     "passcode locked",
     "password locked",
     "needs new battery",
@@ -235,6 +284,9 @@ def looks_like_partial_or_accessory_listing(
         return True
 
     if any(term in blob for term in DEVICE_ACCESSORY_TERMS):
+        return True
+
+    if any(term in blob for term in DEVICE_PART_TERMS):
         return True
 
     if any(term in blob for term in DEVICE_REPAIR_REVIEW_TERMS):

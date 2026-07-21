@@ -112,6 +112,69 @@ class ConditionGuardrailTests(unittest.TestCase):
             )
         )
 
+    def test_ipad_motherboard_is_device_part(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Apple iPad 10th Gen A2757 10.9 inch 64GB, Wi-Fi+Cellular, Motherboard (112)",
+                source="ebay-apple",
+                model_key="apple-ipad-10th-gen-64gb_b",
+            )
+        )
+
+    def test_iphone_logic_board_is_device_part(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Apple iPhone 13 Pro 128GB Logic Board Only",
+                source="ebay-apple",
+                model_key="apple-iphone-13-pro-128gb_b",
+            )
+        )
+
+    def test_ipad_screen_assembly_is_device_part(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Apple iPad Pro 11 inch LCD Screen Assembly Replacement",
+                source="ebay-apple",
+                model_key="apple-ipad-pro-11in_b",
+            )
+        )
+
+    def test_iphone_back_housing_is_device_part(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Apple iPhone 12 Blue Back Housing Chassis Frame",
+                source="ebay-apple",
+                model_key="apple-iphone-12-64gb_b",
+            )
+        )
+
+    def test_macbook_display_assembly_is_device_part(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "MacBook Pro 13 inch A2338 Display Assembly Space Grey",
+                source="ebay-apple",
+                model_key="apple-macbook-pro-13in-m1-8gb-256gb_b",
+            )
+        )
+
+    def test_mdm_locked_iphone_is_review_only(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Apple iPhone 12 64GB Black MDM Locked Remote Management",
+                source="ebay-apple",
+                model_key="apple-iphone-12-64gb_b",
+            )
+        )
+
+    def test_good_iphone_is_not_accessory(self):
+        self.assertFalse(
+            looks_like_partial_or_accessory_listing(
+                "Apple iPhone XR 64GB Unlocked Black Good Condition",
+                source="ebay-apple",
+                model_key="apple-iphone-xr-64gb_b",
+            )
+        )
+
     def test_ps5_game_is_not_console_hardware(self):
         self.assertTrue(
             looks_like_partial_or_accessory_listing(
