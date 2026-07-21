@@ -12,7 +12,7 @@ from langgraph.graph import StateGraph, END
 
 from utils.logger import get_logger
 import utils.db_schema as schema
-from utils.condition import looks_like_partial_or_accessory_listing
+from utils.condition import has_investible_product_identity
 from utils.emailer import send_email
 
 logger = get_logger(__name__)
@@ -228,7 +228,13 @@ def _is_investible_model_key(model_key: Optional[str]) -> bool:
     mk = str(model_key).strip()
     if not mk:
         return False
-    if mk.lower() == "unknown":
+    mk_lower = mk.lower()
+    if (
+        mk_lower == "unknown"
+        or mk_lower.startswith("unknown")
+        or "generic" in mk_lower
+        or "gen-unk" in mk_lower
+    ):
         return False
     return True
 
@@ -862,7 +868,7 @@ def _build_all_opps_for_roi(
         if _requires_vehicle_roi_review(source=source, title=title, model_key=model_key):
             continue
 
-        if looks_like_partial_or_accessory_listing(
+        if not has_investible_product_identity(
             title,
             source=source,
             model_key=model_key,
@@ -942,7 +948,7 @@ def _shortlist(
             skipped_vehicle_review += 1
             continue
 
-        if looks_like_partial_or_accessory_listing(
+        if not has_investible_product_identity(
             title,
             source=source,
             model_key=model_key,

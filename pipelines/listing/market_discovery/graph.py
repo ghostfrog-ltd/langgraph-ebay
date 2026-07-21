@@ -1,10 +1,11 @@
 """
 Rank candidate eBay market lanes from local PostgreSQL evidence.
 
-This workflow is research-only. It does not call eBay, create sources, bid,
-buy, message sellers, relist items, or mutate marketplace state. It exists to
-decide where discovery and paper-trading effort should go next by comparing
-confirmed comp depth, active supply, post-cost spread, and identity risk.
+This workflow is signal-only. It does not call eBay, create sources, bid, buy,
+message sellers, relist items, or mutate marketplace state. It exists to decide
+which eBay lanes have enough evidence to become reviewable buy leads by
+comparing confirmed comp depth, active supply, post-cost spread, and identity
+risk.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from typing import Any
 from psycopg2.extras import RealDictCursor
 
 import utils.db_schema as schema
-from utils.condition import looks_like_partial_or_accessory_listing
+from utils.condition import has_investible_product_identity
 
 FEE_RATE = 0.13
 OUTBOUND_SHIP_GBP = 7.0
@@ -31,8 +32,8 @@ VEHICLE_LIKE_SOURCES = {
     "motomine",
 }
 STATUS_PRIORITY = {
-    "paper_trade": 4,
-    "research": 3,
+    "buy_candidate": 4,
+    "data_gap": 3,
     "parked": 2,
     "rejected": 1,
 }
@@ -82,10 +83,10 @@ def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
 
 def score_lane(lane: MarketLane) -> MarketDiscoveryScore:
     """
-    Convert aggregated lane evidence into a conservative research score.
+    Convert aggregated lane evidence into a conservative buy-signal score.
 
-    The score is not a buy signal. It answers a narrower question: is this lane
-    worth more research or a small paper-trading lane before any Buy Desk work?
+    The score is not permission to buy. It answers whether this lane has enough
+    clean spread, comps, and supply to review as a possible eBay flip.
     """
     risk_flags: list[str] = []
     if not lane.model_key or lane.model_key.lower() == "unknown":
@@ -126,21 +127,21 @@ def score_lane(lane: MarketLane) -> MarketDiscoveryScore:
     capital_score = (1.0 - _clamp((lane.active_median_price - 50.0) / 350.0)) * 10.0
     score = _money(comp_depth_score + supply_score + spread_score + identity_score + capital_score)
 
-    if "unknown_model_key" in risk_flags or "thin_confirmed_comps" in risk_flags:
-        status = "rejected"
-        recommendation = "Fix model-key or confirmed-comp evidence before researching this lane."
-    elif "vehicle_logistics_not_modelled" in risk_flags:
+    if "vehicle_logistics_not_modelled" in risk_flags:
         status = "parked"
         recommendation = "Keep parked until transport, inspection, repair, storage, and paperwork reserves exist."
+    elif "unknown_model_key" in risk_flags or "thin_confirmed_comps" in risk_flags:
+        status = "data_gap"
+        recommendation = "Data gap: clean model key or confirmed final-price coverage is too weak."
     elif "high_false_positive_risk" in risk_flags:
         status = "parked"
-        recommendation = "Tighten identity/accessory guardrails before spending discovery calls."
+        recommendation = "Keep parked: identity/accessory risk is too high."
     elif estimated_net_spread >= 50 and lane.comp_samples >= 10 and lane.active_count >= 2:
-        status = "paper_trade"
-        recommendation = "Eligible for a small review-only paper-trading lane."
+        status = "buy_candidate"
+        recommendation = "Review as a possible buy candidate; human approval still required."
     elif estimated_net_spread >= 20:
-        status = "research"
-        recommendation = "Worth lightweight research; gather more comps or active supply first."
+        status = "data_gap"
+        recommendation = "Data gap: spread is possible, but supply or final-price depth is incomplete."
     else:
         status = "parked"
         recommendation = "Spread is too thin after costs for current assumptions."
@@ -167,11 +168,8 @@ def _load_active_rows(cur) -> list[dict[str, Any]]:
     """
     Load active listing evidence through the normalized read-only view surface.
 
-    Market Discovery is intentionally report-only, so it should be one of the
-    first consumers to move away from the wide `auction_listings` table. The
-    views keep the current write path untouched while making this read contract
-    explicit: identity supplies title/source, attributes supply model key,
-    observations supply current price, and outcome supplies live-like status.
+    This signal report is intentionally read-only, so it should be one of the
+    first consumers to move away from the wide `auction_listings` table.
     """
     cur.execute(
         """
@@ -231,16 +229,19 @@ def build_lanes(active_rows: list[dict[str, Any]], comp_map: dict[str, dict[str,
             key,
             {
                 "prices": [],
+                "active_count": 0,
                 "guardrail_blocked_count": 0,
             },
         )
-        bucket["prices"].append(price)
-        if looks_like_partial_or_accessory_listing(
+        if not has_investible_product_identity(
             str(row.get("title") or ""),
             source=source,
             model_key=model_key,
         ):
             bucket["guardrail_blocked_count"] += 1
+        else:
+            bucket["prices"].append(price)
+        bucket["active_count"] += 1
 
     lanes: list[MarketLane] = []
     for (source, model_key), data in grouped.items():
@@ -252,7 +253,7 @@ def build_lanes(active_rows: list[dict[str, Any]], comp_map: dict[str, dict[str,
             MarketLane(
                 source=source,
                 model_key=model_key,
-                active_count=len(prices),
+                active_count=int(data["active_count"]),
                 active_median_price=float(median(prices)),
                 active_min_price=float(min(prices)),
                 comp_samples=int(comp.get("samples") or 0),
@@ -265,10 +266,9 @@ def build_lanes(active_rows: list[dict[str, Any]], comp_map: dict[str, dict[str,
 
 def run(*, limit: int = 20, min_score: float = 0.0) -> dict[str, Any]:
     """
-    Build a ranked market discovery report from local database evidence only.
+    Build a ranked buy-signal report from local database evidence only.
 
-    The report is intended for operator review and planning. It does not persist
-    results because the current discovery contract is still report-first.
+    The report is intended for operator review and does not persist results.
     """
     conn = schema.get_fresh_connection()
     try:
@@ -290,7 +290,7 @@ def run(*, limit: int = 20, min_score: float = 0.0) -> dict[str, Any]:
         status_counts[score.status] = status_counts.get(score.status, 0) + 1
 
     return {
-        "workflow": "market_discovery",
+        "workflow": "buy_signal_lanes",
         "mode": "read_only_local_evidence",
         "lanes_scored": len(scores),
         "status_counts": status_counts,

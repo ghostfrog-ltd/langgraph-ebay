@@ -98,6 +98,7 @@ class TradingSnapshot:
     sold_flag: bool
     final_price: Optional[float]
     bid_count: int
+    quantity_sold: int
     ebay_end_time: Optional[str]
 
 
@@ -105,7 +106,8 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
     """
     Parse Trading GetItem XML.
     Returns:
-      - {"code": "<errcode>"} for "not found" style errors (1505/21920397)
+      - {"code": "<errcode>"} for inaccessible/not-found style errors
+        (17/1505/21920397)
       - None for other failures
       - dict with snapshot fields for success
     """
@@ -130,8 +132,9 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
             long_msg,
         )
 
-        # Handle Item Not Found explicitly (keep old behaviour)
-        if code in ("1505", "21920397"):
+        # Handle inaccessible/not-found items explicitly so callers can
+        # finalize them instead of retrying an unrecoverable response.
+        if code in ("17", "1505", "21920397"):
             return {"code": code}
 
         return None
@@ -155,6 +158,12 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
     except Exception:
         bid_count = 0
 
+    quantity_sold_txt = _xml_text(item_node, "./ns:SellingStatus/ns:QuantitySold", ns) or "0"
+    try:
+        quantity_sold = int(quantity_sold_txt)
+    except Exception:
+        quantity_sold = 0
+
     current_price_txt = _xml_text(item_node, "./ns:SellingStatus/ns:CurrentPrice", ns)
     final_price: Optional[float] = None
     if current_price_txt is not None:
@@ -163,8 +172,8 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
         except Exception:
             final_price = None
 
-    # If bid_count > 0 treat as sold_flag (keeps the “sold vs ended” split simple)
-    sold_flag = bid_count > 0
+    # Auctions signal sold via bids; fixed-price listings signal sold via quantity.
+    sold_flag = bid_count > 0 or quantity_sold > 0
 
     ebay_end_time = _xml_text(item_node, "./ns:ListingDetails/ns:EndTime", ns)
 
@@ -173,6 +182,7 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
         "sold_flag": sold_flag,
         "final_price": final_price,
         "bid_count": bid_count,
+        "quantity_sold": quantity_sold,
         "ebay_end_time": ebay_end_time,
     }
 

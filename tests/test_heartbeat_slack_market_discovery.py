@@ -7,7 +7,7 @@ from pipelines.listing.main import _build_heartbeat_slack_message, _heartbeat_sc
 
 
 class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
-    """Slack heartbeat should include safe market discovery guidance."""
+    """Slack heartbeat should include safe buy-signal lane guidance."""
 
     def _base_metrics(self):
         return {
@@ -26,16 +26,16 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
             "api_total": 123,
             "market_discovery": {
                 "status_counts": {
-                    "research": 5,
+                    "data_gap": 5,
                     "parked": 97,
                     "rejected": 45,
-                    "paper_trade": 0,
+                    "buy_candidate": 0,
                 },
                 "top_lanes": [
                     {
                         "source": "ebay-apple",
                         "model_key": "apple-macbook-pro-13in-intel-16gb-512gb_b",
-                        "status": "research",
+                        "status": "data_gap",
                         "score": 61.92,
                         "estimated_net_spread": 47.64,
                     }
@@ -53,10 +53,10 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
         )
         rendered = f"{text}\n{blocks}"
 
-        self.assertIn("Market discovery", rendered)
-        self.assertIn("5 research, 97 parked, 45 rejected, 0 paper-trade ready", rendered)
+        self.assertIn("Buy signals", rendered)
+        self.assertIn("0 buy candidates, 5 data gaps, 97 parked, 45 rejected", rendered)
         self.assertIn("apple-macbook-pro-13in-intel-16gb-512gb_b", rendered)
-        self.assertIn("wait for paper-trade outcomes", rendered)
+        self.assertIn("improve model keys and confirmed final-price coverage", rendered)
         self.assertNotIn("BUY", rendered)
         self.assertNotIn("BID", rendered)
         self.assertNotIn("ACTIONABLE", rendered)

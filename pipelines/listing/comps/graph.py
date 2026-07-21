@@ -14,6 +14,53 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 connection = db_connection.connection
 
+COMPS_BLOCKED_TITLE_PATTERNS: tuple[str, ...] = (
+    "%for parts%",
+    "%parts only%",
+    "%parts missing%",
+    "%for spares%",
+    "%spares only%",
+    "%spares or repair%",
+    "%spares or repairs%",
+    "%spares & repairs%",
+    "%spares repairs%",
+    "%spares / repair%",
+    "%spares/repair%",
+    "%repair only%",
+    "%for repair%",
+    "%needs repair%",
+    "%faulty%",
+    "%not working%",
+    "%not starting%",
+    "%dead%",
+    "%broken screen%",
+    "%cracked screen%",
+    "%broken lcd%",
+    "%broken display%",
+    "%untested%",
+    "%as is%",
+    "%as-is%",
+    "%read description%",
+    "%please read%",
+    "%grade d%",
+    "%box only%",
+    "%empty box%",
+    "%manual only%",
+    "%charger only%",
+    "%battery only%",
+    "%case only%",
+    "%housing only%",
+    "%shell only%",
+    "%cable only%",
+    "%adapter only%",
+    "%replacement part%",
+    "%job lot%",
+    "%joblot%",
+    "%unit only%",
+    "%no accessories%",
+    "%macbook neo%",
+)
+
 # ---------------------------------
 # Tunable knobs
 # ---------------------------------
@@ -123,12 +170,31 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
           AND end_time >= (now() AT TIME ZONE 'utc' - (%s || ' days')::interval)
           AND model_key IS NOT NULL
           AND LOWER(model_key) <> 'unknown'
+          AND LOWER(model_key) NOT LIKE 'unknown%%'
+          AND LOWER(model_key) NOT LIKE '%%generic%%'
+          AND LOWER(model_key) NOT LIKE '%%gen-unk%%'
+          AND NOT (
+              LOWER(model_key) LIKE 'apple-iphone-%%'
+              AND LOWER(model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+)(-|_)'
+          )
+          AND NOT (
+              LOWER(model_key) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'
+              AND LOWER(model_key) !~ '-(m[1-9](pro|max|ultra)?|intel)(-|_)'
+          )
+          AND NOT (
+              LOWER(COALESCE(title, '')) LIKE ANY(%s)
+              OR (
+                  source = 'ebay-apple'
+                  AND LOWER(COALESCE(title, '')) LIKE '%%macbook%%'
+                  AND LOWER(COALESCE(title, '')) ~ '\\ma[0-9]{1,2}\\s*(pro|max|ultra)?\\M'
+              )
+          )
         GROUP BY model_key
     """
 
     with connection, connection.cursor() as cur:
         _ensure_utc_session(cur)
-        cur.execute(sql, (str(days),))
+        cur.execute(sql, (str(days), list(COMPS_BLOCKED_TITLE_PATTERNS)))
 
     # Debug: how many comps did we just insert?
     with connection.cursor() as cur:

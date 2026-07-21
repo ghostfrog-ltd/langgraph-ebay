@@ -16,7 +16,7 @@ from typing import Any
 from psycopg2.extras import RealDictCursor
 
 from utils.db_schema import get_fresh_connection
-from utils.condition import looks_like_partial_or_accessory_listing
+from utils.condition import has_investible_product_identity
 
 DEFAULT_EXCLUDED_BACKFILL_SOURCES = (
     "ebay-honda-msx125",
@@ -225,7 +225,7 @@ def stale_backfill_candidates(
     limit: int,
     excluded_sources: tuple[str, ...],
 ) -> list[dict[str, Any]]:
-    raw_limit = max(limit * 5, limit)
+    raw_limit = max(limit * 20, limit)
     rows = _fetch_all(
         cur,
         """
@@ -249,36 +249,82 @@ def stale_backfill_candidates(
             FROM live_keys lk
             LEFT JOIN latest_comps c ON c.model_key = lk.model_key
             WHERE COALESCE(c.samples, 0) < 3
+        ),
+        eligible AS (
+            SELECT
+                l.id,
+                l.external_id,
+                l.source,
+                l.model_key,
+                COALESCE(nk.live_count, 0)::int AS live_count,
+                COALESCE(nk.comp_samples, c.samples, 0)::int AS comp_samples,
+                l.title,
+                l.price_current,
+                l.bids_count,
+                l.price_bid_current,
+                l.sale_type,
+                l.end_time,
+                l.last_seen_at,
+                l.backfill_checked_at,
+                l.backfill_check_count,
+                l.backfill_last_reason,
+                CASE
+                    WHEN COALESCE(l.bids_count, 0) > 0 THEN 'bid_observed'
+                    WHEN nk.model_key IS NOT NULL THEN 'live_comp_gap'
+                    WHEN l.sale_type = 'bin' THEN 'fixed_price_learning'
+                    WHEN l.sale_type = 'auction' THEN 'auction_learning'
+                    ELSE 'source_learning'
+                END AS selection_reason,
+                CASE
+                    WHEN COALESCE(l.bids_count, 0) > 0 THEN 0
+                    WHEN nk.model_key IS NOT NULL THEN 1
+                    WHEN l.sale_type = 'bin' THEN 2
+                    WHEN l.sale_type = 'auction' THEN 3
+                    ELSE 4
+                END AS tier_rank
+            FROM auction_listings l
+            LEFT JOIN needed_keys nk
+              ON nk.source = l.source
+             AND nk.model_key = l.model_key
+            LEFT JOIN latest_comps c
+              ON c.model_key = l.model_key
+            WHERE l.status = 'stale'
+              AND COALESCE(l.finalized, FALSE) = FALSE
+              AND l.end_time <= (now() AT TIME ZONE 'utc') - interval '1 day'
+              AND l.external_id LIKE 'v1|%%|%%'
+              AND l.model_key IS NOT NULL
+              AND l.model_key <> ''
+              AND LOWER(l.model_key) <> 'unknown'
+              AND LOWER(l.model_key) NOT LIKE 'unknown%%'
+              AND LOWER(l.model_key) NOT LIKE '%%generic%%'
+              AND (
+                  l.backfill_checked_at IS NULL
+                  OR l.backfill_checked_at <= now() - (%s)::interval
+              )
+              AND NOT (l.source = ANY(%s))
         )
         SELECT
-            l.id,
-            l.external_id,
-            l.source,
-            l.model_key,
-            nk.live_count,
-            nk.comp_samples,
-            l.title,
-            l.price_current,
-            l.end_time,
-            l.last_seen_at,
-            l.backfill_checked_at,
-            l.backfill_check_count,
-            l.backfill_last_reason
-        FROM auction_listings l
-        JOIN needed_keys nk
-          ON nk.source = l.source
-         AND nk.model_key = l.model_key
-        WHERE l.status = 'stale'
-          AND COALESCE(l.finalized, FALSE) = FALSE
-          AND l.end_time <= (now() AT TIME ZONE 'utc') - interval '1 day'
-          AND l.external_id LIKE 'v1|%%|%%'
-          AND (
-              l.backfill_checked_at IS NULL
-              OR l.backfill_checked_at <= now() - (%s)::interval
-          )
-          AND NOT (l.source = ANY(%s))
+            id,
+            external_id,
+            source,
+            model_key,
+            live_count,
+            comp_samples,
+            title,
+            price_current,
+            bids_count,
+            price_bid_current,
+            sale_type,
+            selection_reason,
+            end_time,
+            last_seen_at,
+            backfill_checked_at,
+            backfill_check_count,
+            backfill_last_reason
+        FROM eligible
         ORDER BY
-            CASE l.source
+            tier_rank,
+            CASE source
                 WHEN 'ebay-apple' THEN 0
                 WHEN 'ebay-samsung' THEN 1
                 WHEN 'ebay-watches' THEN 2
@@ -290,11 +336,11 @@ def stale_backfill_candidates(
                 WHEN 'ebay-consoles' THEN 8
                 ELSE 99
             END,
-            l.backfill_checked_at ASC NULLS FIRST,
-            l.last_seen_at DESC NULLS LAST,
-            l.end_time DESC NULLS LAST,
-            nk.comp_samples ASC,
-            nk.live_count DESC
+            backfill_checked_at ASC NULLS FIRST,
+            comp_samples ASC,
+            live_count DESC,
+            last_seen_at DESC NULLS LAST,
+            end_time DESC NULLS LAST
         LIMIT %s
         """,
         (BACKFILL_RECHECK_COOLDOWN, list(excluded_sources), raw_limit),
@@ -302,7 +348,7 @@ def stale_backfill_candidates(
 
     filtered = []
     for row in rows:
-        if looks_like_partial_or_accessory_listing(
+        if not has_investible_product_identity(
             str(row.get("title") or ""),
             source=str(row.get("source") or ""),
             model_key=str(row.get("model_key") or ""),
@@ -356,7 +402,7 @@ def build_plan(
                     "Do not backfill unknown model_key rows with API calls until model-key extraction is fixed.",
                     "Prioritise Apple final-price evidence first, then Samsung, because those lanes have the strongest current buy-side learning value.",
                     "Exclude vehicle/parts-heavy sources by default until model keys separate complete vehicles from parts.",
-                    "Use spare calls first on newest stale rows whose model_key appears in current live listings with fewer than 3 comp samples.",
+                    "Use spare calls first on bid-observed stale rows, then live comp gaps, then fixed-price learning rows with known model keys.",
                     "Do not wait for the full historical stale backlog; backfill is an incremental enrichment loop for active opportunity decisions.",
                     "Start below the theoretical spare budget, then increase only after API usage and outcome quality are reviewed.",
                     "After each backfill batch, recompute comps and ROI before judging Buy Desk readiness.",

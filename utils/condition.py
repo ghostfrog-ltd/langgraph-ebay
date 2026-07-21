@@ -15,14 +15,34 @@ def _as_text(val: Any) -> str:
 GENERIC_PART_ONLY_TERMS = (
     "for parts",
     "parts only",
+    "parts missing",
     "for spares",
+    "spares only",
     "spares or repairs",
+    "spares or repair",
     "spares & repairs",
+    "spares repairs",
     "spares / repair",
     "spares/repair",
     "spares repair",
+    "spare repair",
     "repair only",
+    "for repair",
     "needs repair",
+    "faulty",
+    "not working",
+    "not starting",
+    "dead",
+    "broken screen",
+    "cracked screen",
+    "broken lcd",
+    "broken display",
+    "untested",
+    "as is",
+    "as-is",
+    "read description",
+    "please read",
+    "grade d",
     "box only",
     "empty box",
     "manual only",
@@ -39,6 +59,15 @@ GENERIC_PART_ONLY_TERMS = (
     "stand only",
     "mount only",
     "replacement part",
+    "job lot",
+    "joblot",
+    "bundle job lot",
+    "unit only",
+    "no accessories",
+)
+
+SUSPICIOUS_PRODUCT_IDENTITY_TERMS = (
+    "macbook neo",
 )
 
 WATCH_PART_TERMS = (
@@ -252,11 +281,13 @@ def looks_like_partial_or_accessory_listing(
     model_key: Optional[str] = None,
 ) -> bool:
     """
-    Conservative guard for listings that should not be valued as complete items.
+    Conservative guard for listings that should not be valued as clean complete
+    items.
 
     This is intentionally stricter for watches/LEGO because those categories
     create extremely misleading comps when a part-only listing inherits the
-    whole-product model key.
+    whole-product model key. It also catches obvious product-identity pollution
+    such as fabricated Apple family/chip combinations.
     """
     title_text = _as_text(title)
     source_text = _as_text(source)
@@ -273,6 +304,14 @@ def looks_like_partial_or_accessory_listing(
     blob = f"{title_text} {attr_text} {model_key_text}".strip()
 
     if any(term in blob for term in GENERIC_PART_ONLY_TERMS):
+        return True
+
+    if any(term in blob for term in SUSPICIOUS_PRODUCT_IDENTITY_TERMS):
+        return True
+
+    is_apple = "ebay-apple" in source_text or "apple-" in model_key_text or " apple " in f" {blob} "
+    is_macbook = "macbook" in blob or "apple-macbook" in model_key_text
+    if is_apple and is_macbook and re.search(r"\ba\d{1,2}\s*(pro|max|ultra)?\b", blob):
         return True
 
     is_watch = "watch" in source_text or "omega" in blob or "rolex" in blob or "seamaster" in blob
@@ -349,6 +388,51 @@ def looks_like_partial_or_accessory_listing(
         return True
 
     return False
+
+
+def has_investible_product_identity(
+    title: str,
+    attrs: Optional[Mapping[str, Any]] = None,
+    *,
+    source: Optional[str] = None,
+    model_key: Optional[str] = None,
+) -> bool:
+    """
+    True only when a listing is clean enough to compare against whole-product comps.
+
+    Raw collection can keep broad or suspicious rows, but buy/resale math needs
+    like-for-like identity. This keeps broad Apple buckets such as unknown iPad
+    generation or iPhone-with-storage-only out of comps, ROI, and research lanes
+    until model-key extraction repairs them.
+    """
+    if looks_like_partial_or_accessory_listing(
+        title,
+        attrs,
+        source=source,
+        model_key=model_key,
+    ):
+        return False
+
+    mk = _as_text(model_key)
+    if not mk or mk == "unknown" or mk.startswith("unknown") or "generic" in mk:
+        return False
+
+    source_text = _as_text(source)
+    is_apple = source_text == "ebay-apple" or mk.startswith("apple-")
+    if not is_apple:
+        return True
+
+    if "gen-unk" in mk:
+        return False
+
+    if mk.startswith("apple-iphone-") and not re.match(r"^apple-iphone-(se|x|xr|xs|\d+)\b", mk):
+        return False
+
+    if mk.startswith(("apple-macbook", "apple-imac", "apple-mac-mini", "apple-mac-studio")):
+        if not re.search(r"-(m[1-9](pro|max|ultra)?|intel)(-|_)", mk):
+            return False
+
+    return True
 
 def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
     """

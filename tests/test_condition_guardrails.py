@@ -1,6 +1,6 @@
 import unittest
 
-from utils.condition import looks_like_partial_or_accessory_listing
+from utils.condition import has_investible_product_identity, looks_like_partial_or_accessory_listing
 
 
 class ConditionGuardrailTests(unittest.TestCase):
@@ -157,6 +157,78 @@ class ConditionGuardrailTests(unittest.TestCase):
             )
         )
 
+    def test_macbook_parts_missing_is_review_only(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Apple Intel Macbook A1181 White Laptop - Parts Missing",
+                source="ebay-apple",
+                model_key="apple-macbook-intel_b",
+            )
+        )
+
+    def test_macbook_broken_screen_is_review_only(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Apple MacBook Pro A2442 M1 Pro Working, Broken LCD Screen",
+                source="ebay-apple",
+                model_key="apple-macbook-pro-m1pro-16gb-1024gb_b",
+            )
+        )
+
+    def test_dead_macbook_is_review_only(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Apple MacBook Air A1466 DEAD, specs unknown",
+                source="ebay-apple",
+                model_key="apple-macbook-air-133in-intel-256gb_b",
+            )
+        )
+
+    def test_macbook_neo_is_identity_pollution(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                'NEW SEALED Apple MacBook Neo 13" A18 Pro 8GB 512GB SSD Touch ID',
+                source="ebay-apple",
+                model_key="apple-macbook-pro-13in-8gb-512gb_a",
+            )
+        )
+
+    def test_macbook_with_a_series_phone_chip_is_identity_pollution(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                'Apple MacBook 13-inch Laptop with A18 Pro chip',
+                source="ebay-apple",
+                model_key="apple-macbook-13in-8gb-256gb_b",
+            )
+        )
+
+    def test_real_macbook_a_model_number_is_not_identity_pollution(self):
+        self.assertFalse(
+            looks_like_partial_or_accessory_listing(
+                'Apple MacBook A1534 12-inch 2017 Intel Core M3 256GB SSD 8GB RAM',
+                source="ebay-apple",
+                model_key="apple-macbook-12in-m3-8gb-256gb_b",
+            )
+        )
+
+    def test_apple_joblot_is_not_single_device_comp(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "JOBLOT Apple iPhone SE Working",
+                source="ebay-apple",
+                model_key="apple-iphone-32gb_b",
+            )
+        )
+
+    def test_unit_only_macbook_is_review_only(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "APPLE MACBOOK AIR M2, 2022 1TB LAPTOP IN SPACE GREY: MODEL NO A2681 (UNIT ONLY).",
+                source="ebay-apple",
+                model_key="apple-macbook-air-m2-1024gb_b",
+            )
+        )
+
     def test_mdm_locked_iphone_is_review_only(self):
         self.assertTrue(
             looks_like_partial_or_accessory_listing(
@@ -172,6 +244,33 @@ class ConditionGuardrailTests(unittest.TestCase):
                 "Apple iPhone XR 64GB Unlocked Black Good Condition",
                 source="ebay-apple",
                 model_key="apple-iphone-xr-64gb_b",
+            )
+        )
+
+    def test_broad_iphone_storage_key_is_not_investible_identity(self):
+        self.assertFalse(
+            has_investible_product_identity(
+                "Apple iPhone 128GB Unlocked",
+                source="ebay-apple",
+                model_key="apple-iphone-128gb_b",
+            )
+        )
+
+    def test_unknown_ipad_generation_key_is_not_investible_identity(self):
+        self.assertFalse(
+            has_investible_product_identity(
+                "Apple iPad 11-inch Wi-Fi 128GB",
+                source="ebay-apple",
+                model_key="apple-ipad-11in-gen-unk-128gb_b",
+            )
+        )
+
+    def test_clean_m_series_macbook_key_is_investible_identity(self):
+        self.assertTrue(
+            has_investible_product_identity(
+                "Apple MacBook Air M1 13 inch 8GB 256GB Good Condition",
+                source="ebay-apple",
+                model_key="apple-macbook-air-13in-m1-8gb-256gb_b",
             )
         )
 

@@ -26,6 +26,45 @@ Current known issues:
 - Candidate validation has too few confirmed outcomes to justify Buy Desk labels.
 - Historical data is valuable but incomplete; final-price recovery is the next
   value unlock.
+- Backfill audit shows the worker has run, but output quality is weak: 6,372
+  rows checked since 2026-05-27 and only 54 sold final prices confirmed from
+  those checks. Point Zero now handles Trading error code 17 as an ended/no-sale
+  finalization instead of leaving it as an unparseable retry.
+- A controlled Point Zero apply on 2026-07-21 checked 37 current-priority
+  candidates, finalized 16 as ended/no-sale, confirmed 0 sold final prices,
+  and exposed that the shared Trading parser was dropping error code 17 before
+  Point Zero could classify it. The parser now preserves code 17; follow-up
+  apply found no remaining eligible candidates under the current selector.
+- Backfill selector has been widened from only live comp-gap rows to a tiered
+  queue: bid-observed rows, live comp gaps, fixed-price learning rows, auction
+  learning rows. Trading parser now treats fixed-price `QuantitySold > 0` as a
+  sold final-price signal. A 50-row controlled apply then recovered 19 sold
+  final prices, finalized 5 ended/no-sale/inaccessible rows, and skipped 26
+  rows that Trading still says are active. Remaining risk: candidate titles and
+  model keys still need cleanup before comps can drive buy decisions.
+- A larger capped Point Zero apply on 2026-07-21 checked 200 candidates,
+  recovered 86 sold final prices, finalized 25 ended/no-sale/inaccessible rows,
+  and skipped 89 rows that Trading still says are active. Comps were rebuilt
+  immediately afterwards to 3,433 confirmed-final-price comp rows. Read-only
+  lane scoring found 115 lanes with 3 incomplete-data leads, but no lane was
+  ready for buying until product identity/model-key pollution was tightened.
+- Product identity cleanup now blocks obvious Apple identity pollution
+  (`MacBook Neo`, MacBook titles with A-series phone chips), job lots,
+  unit-only/incomplete rows, `unknown*`/generic keys, Apple `gen-unk` iPad
+  buckets, broad iPhone storage-only keys, and broad Mac keys without chip
+  identity from comps, ROI, hot alerts, discovery, and backfill candidate
+  selection. Rebuilt comps fell from 3,433 to 2,361 rows, latest blocked/broad
+  comp keys are 0, market discovery fell from 115 to 79 scored lanes, and ROI
+  recompute cleared 114 stale ROI/max-bid rows. Current buy-threshold shortlist:
+  0 rows at the existing £50 profit / 25% ROI gate.
+- Operator-facing lane language now uses buy-side terms only:
+  `buy_candidate`, `data_gap`, `parked`, and `rejected`. The point of the
+  report is model-key quality, confirmed final-price completeness, and safe
+  buy-candidate readiness.
+- Current buy-signal lane report after the wording/priority cleanup:
+  80 scored lanes, 0 buy candidates, 27 data gaps, and 53 parked. The useful
+  next work is closing data gaps: repair model keys where they are broad, and
+  recover enough confirmed final prices for clean model keys.
 
 Boundary: no autonomous bids, buys, messages, relists, refunds, shipping marks,
 or other marketplace writes.

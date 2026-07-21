@@ -140,7 +140,7 @@ def _classify_trading_snapshot(
             reason="unparseable_trading_response",
         )
 
-    if parsed.get("code") in {"1505", "21920397"}:
+    if parsed.get("code") in {"17", "1505", "21920397"}:
         return BackfillOutcome(
             listing_id=listing_id,
             external_id=external_id,
@@ -169,11 +169,18 @@ def _classify_trading_snapshot(
         )
 
     bid_count = int(parsed.get("bid_count") or 0)
+    quantity_sold = int(parsed.get("quantity_sold") or 0)
     sold_flag = bool(parsed.get("sold_flag"))
     raw_final_price = parsed.get("final_price")
     final_price = float(raw_final_price) if sold_flag and raw_final_price is not None else None
 
     if final_price is not None:
+        if bid_count > 0:
+            reason = "ended_with_bids"
+        elif quantity_sold > 0:
+            reason = "fixed_price_quantity_sold"
+        else:
+            reason = "ended_with_confirmed_sale"
         return BackfillOutcome(
             listing_id=listing_id,
             external_id=external_id,
@@ -184,7 +191,7 @@ def _classify_trading_snapshot(
             new_status="sold",
             final_price=final_price,
             bid_count=bid_count,
-            reason="ended_with_bids",
+            reason=reason,
         )
 
     return BackfillOutcome(

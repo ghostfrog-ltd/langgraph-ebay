@@ -1,5 +1,6 @@
 import unittest
 
+from pipelines.listing.ended.graph import _parse_trading_get_item
 from pipelines.listing.point_zero.backfill_apply import _classify_trading_snapshot
 
 
@@ -31,6 +32,23 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
         self.assertEqual(outcome.final_price, 121.5)
         self.assertEqual(outcome.bid_count, 7)
 
+    def test_fixed_price_quantity_sold_becomes_sold_with_clear_reason(self):
+        outcome = self._classify(
+            {
+                "ended": True,
+                "sold_flag": True,
+                "final_price": 149.99,
+                "bid_count": 0,
+                "quantity_sold": 1,
+            }
+        )
+
+        self.assertEqual(outcome.action, "finalize")
+        self.assertEqual(outcome.new_status, "sold")
+        self.assertEqual(outcome.final_price, 149.99)
+        self.assertEqual(outcome.bid_count, 0)
+        self.assertEqual(outcome.reason, "fixed_price_quantity_sold")
+
     def test_ended_without_confirmed_sale_becomes_ended(self):
         outcome = self._classify(
             {
@@ -51,6 +69,55 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
         self.assertEqual(outcome.action, "finalize")
         self.assertEqual(outcome.new_status, "ended")
         self.assertIsNone(outcome.final_price)
+
+    def test_inaccessible_deleted_item_is_finalized_as_ended_not_retried(self):
+        outcome = self._classify({"code": "17"})
+
+        self.assertEqual(outcome.action, "finalize")
+        self.assertEqual(outcome.new_status, "ended")
+        self.assertIsNone(outcome.final_price)
+
+    def test_trading_parser_preserves_inaccessible_error_code(self):
+        parsed = _parse_trading_get_item(
+            """<?xml version="1.0" encoding="UTF-8"?>
+            <GetItemResponse xmlns="urn:ebay:apis:eBLBaseComponents">
+              <Ack>Failure</Ack>
+              <Errors>
+                <ShortMessage>Item can't be accessed.</ShortMessage>
+                <LongMessage>This item cannot be accessed because the listing has been deleted or you are not the seller.</LongMessage>
+                <ErrorCode>17</ErrorCode>
+              </Errors>
+            </GetItemResponse>
+            """
+        )
+
+        self.assertEqual(parsed, {"code": "17"})
+
+    def test_trading_parser_treats_quantity_sold_as_fixed_price_sale(self):
+        parsed = _parse_trading_get_item(
+            """<?xml version="1.0" encoding="UTF-8"?>
+            <GetItemResponse xmlns="urn:ebay:apis:eBLBaseComponents">
+              <Ack>Success</Ack>
+              <Item>
+                <SellingStatus>
+                  <ListingStatus>Completed</ListingStatus>
+                  <BidCount>0</BidCount>
+                  <QuantitySold>1</QuantitySold>
+                  <CurrentPrice currencyID="GBP">149.99</CurrentPrice>
+                </SellingStatus>
+                <ListingDetails>
+                  <EndTime>2026-07-20T12:00:00.000Z</EndTime>
+                </ListingDetails>
+              </Item>
+            </GetItemResponse>
+            """
+        )
+
+        self.assertTrue(parsed["ended"])
+        self.assertTrue(parsed["sold_flag"])
+        self.assertEqual(parsed["final_price"], 149.99)
+        self.assertEqual(parsed["bid_count"], 0)
+        self.assertEqual(parsed["quantity_sold"], 1)
 
     def test_live_trading_response_is_left_unchanged(self):
         outcome = self._classify(

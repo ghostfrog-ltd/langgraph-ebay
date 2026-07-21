@@ -8,9 +8,9 @@ from pipelines.listing.market_discovery.graph import (
 
 
 class MarketDiscoveryTests(unittest.TestCase):
-    """Pure tests for read-only market discovery lane scoring."""
+    """Pure tests for read-only buy-signal lane scoring."""
 
-    def test_strong_lane_is_paper_trade_candidate(self):
+    def test_strong_lane_is_buy_candidate(self):
         score = score_lane(
             MarketLane(
                 source="ebay-apple",
@@ -24,7 +24,7 @@ class MarketDiscoveryTests(unittest.TestCase):
             )
         )
 
-        self.assertEqual(score.status, "paper_trade")
+        self.assertEqual(score.status, "buy_candidate")
         self.assertGreater(score.estimated_net_spread, 100)
         self.assertEqual(score.risk_flags, [])
 
@@ -42,7 +42,7 @@ class MarketDiscoveryTests(unittest.TestCase):
             )
         )
 
-        self.assertEqual(score.status, "rejected")
+        self.assertEqual(score.status, "data_gap")
         self.assertIn("thin_confirmed_comps", score.risk_flags)
 
     def test_high_guardrail_share_parks_lane(self):
@@ -101,6 +101,51 @@ class MarketDiscoveryTests(unittest.TestCase):
         self.assertEqual(len(lanes), 1)
         self.assertEqual(lanes[0].active_count, 2)
         self.assertEqual(lanes[0].guardrail_blocked_count, 1)
+        self.assertEqual(lanes[0].active_median_price, 80.0)
+
+    def test_build_lanes_does_not_price_lane_from_identity_pollution(self):
+        lanes = build_lanes(
+            [
+                {
+                    "source": "ebay-apple",
+                    "model_key": "apple-macbook-pro-13in-m1-8gb-512gb_a",
+                    "title": "NEW SEALED Apple MacBook Neo 13 A18 Pro 8GB 512GB SSD",
+                    "price_current": 599.0,
+                },
+                {
+                    "source": "ebay-apple",
+                    "model_key": "apple-macbook-pro-13in-m1-8gb-512gb_a",
+                    "title": "Apple MacBook Pro 13 M1 8GB 512GB clean working order",
+                    "price_current": 410.0,
+                },
+            ],
+            {
+                "apple-macbook-pro-13in-m1-8gb-512gb_a": {
+                    "samples": 12,
+                    "median_final_price": 650.0,
+                }
+            },
+        )
+
+        self.assertEqual(len(lanes), 1)
+        self.assertEqual(lanes[0].active_count, 2)
+        self.assertEqual(lanes[0].guardrail_blocked_count, 1)
+        self.assertEqual(lanes[0].active_median_price, 410.0)
+
+    def test_build_lanes_drops_lane_with_only_broad_identity_rows(self):
+        lanes = build_lanes(
+            [
+                {
+                    "source": "ebay-apple",
+                    "model_key": "apple-iphone-128gb_b",
+                    "title": "Apple iPhone 128GB Unlocked",
+                    "price_current": 79.0,
+                },
+            ],
+            {"apple-iphone-128gb_b": {"samples": 3, "median_final_price": 215.0}},
+        )
+
+        self.assertEqual(lanes, [])
 
 
 if __name__ == "__main__":

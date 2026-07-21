@@ -1100,38 +1100,48 @@ def _slack_field(label: str, value: str) -> dict[str, str]:
 
 def _market_discovery_slack_summary(market: dict[str, Any]) -> tuple[str, str]:
     """
-    Build a safe Slack summary for read-only market discovery output.
+    Build a safe Slack summary for read-only buy-signal lane output.
 
-    The wording is advisory and review-only: it reports lane status and a next
-    review step, but never emits buy/bid/action labels.
+    The wording focuses on model-key quality, final-price coverage, and whether
+    any lane is reviewable. It never emits buy/bid/action labels.
     """
 
     if market.get("error"):
-        return "Report failed", "Check local logs before using discovery output."
+        return "Report failed", "Check local logs before using lane output."
 
     counts = market.get("status_counts") or {}
     top_lanes = market.get("top_lanes") or []
-    top_research = next(
-        (lane for lane in top_lanes if lane.get("status") == "research"),
+    top_candidate = next(
+        (lane for lane in top_lanes if lane.get("status") == "buy_candidate"),
+        None,
+    )
+    top_gap = next(
+        (lane for lane in top_lanes if lane.get("status") == "data_gap"),
         None,
     )
     counts_text = (
-        f"{_fmt_int(counts.get('research'))} research, "
+        f"{_fmt_int(counts.get('buy_candidate'))} buy candidates, "
+        f"{_fmt_int(counts.get('data_gap'))} data gaps, "
         f"{_fmt_int(counts.get('parked'))} parked, "
-        f"{_fmt_int(counts.get('rejected'))} rejected, "
-        f"{_fmt_int(counts.get('paper_trade'))} paper-trade ready"
+        f"{_fmt_int(counts.get('rejected'))} rejected"
     )
 
-    if top_research:
+    if top_candidate:
         top_text = (
-            f"{top_research.get('source')} / {top_research.get('model_key')} "
-            f"(score {_fmt_num(top_research.get('score'))}, "
-            f"spread £{_fmt_num(top_research.get('estimated_net_spread'))})"
+            f"Top buy candidate: {top_candidate.get('source')} / {top_candidate.get('model_key')} "
+            f"(score {_fmt_num(top_candidate.get('score'))}, "
+            f"spread £{_fmt_num(top_candidate.get('estimated_net_spread'))})"
+        )
+    elif top_gap:
+        top_text = (
+            f"Top data gap: {top_gap.get('source')} / {top_gap.get('model_key')} "
+            f"(score {_fmt_num(top_gap.get('score'))}, "
+            f"spread £{_fmt_num(top_gap.get('estimated_net_spread'))})"
         )
     else:
-        top_text = "No research lane above threshold yet."
+        top_text = "No buy candidate above threshold."
 
-    next_step = "Review the top lane and wait for paper-trade outcomes before loosening gates."
+    next_step = "Next: improve model keys and confirmed final-price coverage before loosening gates."
     return counts_text, f"{top_text}\n{next_step}"
 
 
@@ -1140,7 +1150,7 @@ def _pipeline_slack_summary(state: MainState) -> str:
     Summarise the current LangGraph pipeline run for Slack.
 
     The summary is intentionally operational, not commercial: it exposes stage
-    health and paper-trading learning state without producing buy instructions.
+    health and candidate-check state without producing buy instructions.
     """
 
     keys = [
@@ -1197,7 +1207,7 @@ def _build_heartbeat_slack_message(
         f"GhostFrog listing heartbeat: {status}. "
         f"Scheduler {scheduler_status.lower()}: {scheduler_message}. "
         f"{_fmt_int(counts.get('live'))} live listings, "
-        f"{_fmt_int(paper.get('watching'))} paper trades watching, "
+        f"{_fmt_int(paper.get('watching'))} candidate checks watching, "
         f"{_fmt_int(api_total)} API calls today."
     )
     market_counts_text, market_next_text = _market_discovery_slack_summary(market)
@@ -1237,8 +1247,8 @@ def _build_heartbeat_slack_message(
         {
             "type": "section",
             "fields": [
-                _slack_field("Market discovery", market_counts_text),
-                _slack_field("Review next", market_next_text),
+                _slack_field("Buy signals", market_counts_text),
+                _slack_field("Data next", market_next_text),
             ],
         },
         {
@@ -1437,8 +1447,8 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
         paper_lesson_rows = [[
             "n/a",
             "waiting",
-            escape("No paper-trade lessons yet"),
-            escape("The loop needs closed predictions before it can produce miss evidence."),
+            escape("No candidate-check lessons yet"),
+            escape("The loop needs closed checks before it can produce miss evidence."),
         ]]
     paper_lesson_count_rows = [
         [escape(str(category)), escape(_fmt_int(count))]
@@ -1526,11 +1536,11 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
           <li><strong>Comps:</strong> now based only on confirmed <code>final_price</code>; {_fmt_int(comps.get("comp_keys_3plus"))} model keys have 3+ samples; latest recompute {_fmt_dt(comps.get("computed_at"))}.</li>
           <li><strong>Model-key repair:</strong> {_fmt_int(coverage.get("live_unknown_model_key"))} live listings still have unknown model keys.</li>
           <li><strong>ROI caution:</strong> stored ROI still has {_fmt_int(roi.get("live_roi_gt_1000"))} live rows above 1000%; treat ROI as provisional until recompute and guardrails.</li>
-          <li><strong>Learning loop:</strong> {_fmt_int(paper.get("total_predictions"))} paper-trade predictions are now persisted; {_fmt_int(paper.get("watching"))} are still watching for an observed outcome.</li>
+          <li><strong>Candidate checks:</strong> {_fmt_int(paper.get("total_predictions"))} review snapshots are now persisted; {_fmt_int(paper.get("watching"))} are still watching for an observed outcome.</li>
         </ul>
       ''')}
 
-      {_section("Paper Trading Loop", f'''
+      {_section("Candidate Check Loop", f'''
         <p style="margin:0 0 12px;color:#334155;font-size:14px;line-height:1.55;">
           These are review-only snapshots of what the system would have considered. No bids or purchases are made.
           Closed predictions compare the observed final price against the predicted resale estimate.

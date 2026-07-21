@@ -23,7 +23,7 @@ import utils.db_schema as schema
 
 from utils.db_schema import get_connection
 from utils.logger import get_logger
-from utils.condition import looks_like_partial_or_accessory_listing
+from utils.condition import has_investible_product_identity
 from utils.emailer import send_email  # uses .env SMTP config
 
 
@@ -138,7 +138,13 @@ def _is_investible_model_key(model_key: Optional[str]) -> bool:
     mk = str(model_key).strip()
     if not mk:
         return False
-    if mk.lower() == "unknown":
+    mk_lower = mk.lower()
+    if (
+        mk_lower == "unknown"
+        or mk_lower.startswith("unknown")
+        or "generic" in mk_lower
+        or "gen-unk" in mk_lower
+    ):
         return False
     return True
 
@@ -431,7 +437,7 @@ def _node_process(state: HotState) -> HotState:
     emails_sent = int(state.get("emails_sent") or 0)
 
     for r in rows:
-        if looks_like_partial_or_accessory_listing(
+        if not has_investible_product_identity(
             r.get("title") or "",
             source=r.get("source"),
             model_key=r.get("model_key"),
