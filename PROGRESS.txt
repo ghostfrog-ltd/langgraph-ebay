@@ -10,7 +10,14 @@ Active priority:
 5. Produce a tiny human-review shortlist.
 
 Current known issues:
-- Heartbeat can stall on slow `auction_listings` queries.
+- Heartbeat could stall on slow `auction_listings` queries; migration
+  `20260721_001_add_heartbeat_performance_indexes.sql` adds targeted indexes
+  for the worst heartbeat reads. Verification after apply: missing-attributes
+  query uses `idx_auction_raw_attrs_null_id_desc` with ~0.05 ms execution,
+  ended-listing query uses `idx_auction_unfinalized_live_end_time` with ~0.23 ms
+  execution, live refresh query uses `idx_auction_live_refresh_end_seen` with
+  ~73 ms execution, migration dry-run reports no pending migrations, and the
+  full unit suite passes.
 - Some ROI rows still pass parts/accessory false positives.
 - Candidate validation has too few confirmed outcomes to justify Buy Desk labels.
 - Historical data is valuable but incomplete; final-price recovery is the next
