@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import traceback
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict
@@ -15,6 +16,7 @@ from reminders.treds_payment import send_if_due as send_treds_payment_reminder_i
 from utils.db_connection import create_connection
 from utils.emailer import send_email
 from utils.logger import get_logger
+from utils.slack_notifier import send_slack_message, slack_notifications_enabled
 
 # Main orchestrator graph (sub graphs inside)
 from pipelines.listing.main import run as run_main
@@ -87,6 +89,52 @@ def _send_alert_email(subject: str, body: str) -> list[str]:
     return sent_to
 
 
+def _send_alert_slack(*, headline: str, body: str) -> dict[str, Any]:
+    """
+    Send a short heartbeat alert to Slack when Slack is configured.
+
+    Slack alerts are observer-only and deliberately exclude long tracebacks so
+    the channel stays readable. Full traceback detail remains in local logs and
+    the throttled failure email.
+    """
+
+    if not slack_notifications_enabled():
+        return {
+            "status": "skipped",
+            "reason": "disabled",
+        }
+
+    result = send_slack_message(
+        text=f"GhostFrog heartbeat alert: {headline}",
+        blocks=[
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*GhostFrog heartbeat alert*\n{headline}",
+                },
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": body[:2500],
+                },
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": "Observer only: Slack does not trigger bids, buys, messages, relists, or marketplace writes.",
+                    }
+                ],
+            },
+        ],
+    )
+    return asdict(result)
+
+
 def _maybe_send_failure_alert(
     *,
     category: str,
@@ -133,6 +181,15 @@ def _maybe_send_failure_alert(
     )
 
     sent_to = _send_alert_email(subject=subject, body=body)
+    slack = _send_alert_slack(
+        headline=headline,
+        body=(
+            f"*Category:* {category}\n"
+            f"*Started:* {started}\n"
+            f"*Detected:* {finished}\n"
+            "Full error detail is in the local heartbeat log and failure email."
+        ),
+    )
     state["active_failure"]["last_alert_sent_at"] = now.isoformat()
     _save_failure_state(state)
     logger.warning("[heartbeat] failure alert email sent to %s", ", ".join(sent_to))
@@ -140,6 +197,7 @@ def _maybe_send_failure_alert(
         "status": "sent",
         "category": category,
         "sent_to": sent_to,
+        "slack": slack,
         "sent_at": now.isoformat(),
     }
 
@@ -161,6 +219,14 @@ def _maybe_send_recovery_alert(finished: str) -> dict[str, Any] | None:
     )
 
     sent_to = _send_alert_email(subject=subject, body=body)
+    slack = _send_alert_slack(
+        headline="Heartbeat completed successfully again",
+        body=(
+            f"*Failure category:* {active.get('category', 'unknown')}\n"
+            f"*Failure started:* {active.get('started_at', 'unknown')}\n"
+            f"*Recovered at:* {finished}"
+        ),
+    )
     state["last_recovery_at"] = now.isoformat()
     state.pop("active_failure", None)
     _save_failure_state(state)
@@ -168,6 +234,7 @@ def _maybe_send_recovery_alert(finished: str) -> dict[str, Any] | None:
     return {
         "status": "sent",
         "sent_to": sent_to,
+        "slack": slack,
         "sent_at": now.isoformat(),
     }
 

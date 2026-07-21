@@ -242,21 +242,37 @@ def _ensure_table() -> None:
 
 
 def _fetch_live_rows() -> list[dict[str, Any]]:
+    """Load live MSX125/Grom rows through normalized listing read contracts.
+
+    Keeping this advisory detector on the view layer reduces direct dependency
+    on the wide `auction_listings` table while preserving the row shape used by
+    the candidate filters and alert persistence.
+    """
     with connection.cursor(cursor_factory=RealDictCursor) as cur:
         ensure_utc_session(cur)
         cur.execute(
             """
-            SELECT source, external_id, title, url, price_current, status, model_key, raw_attrs
-            FROM auction_listings
-            WHERE source = ANY(%s)
-              AND LOWER(status) = ANY(%s)
+            SELECT identity.source_label AS source,
+                   identity.external_id,
+                   identity.title,
+                   identity.url,
+                   observation.price_current,
+                   outcome.status,
+                   attributes.model_key,
+                   attributes.raw_attrs
+            FROM listing_identity_v AS identity
+            JOIN listing_observation_v AS observation USING (listing_id)
+            JOIN listing_outcome_v AS outcome USING (listing_id)
+            JOIN listing_attribute_v AS attributes USING (listing_id)
+            WHERE identity.source_label = ANY(%s)
+              AND LOWER(outcome.status) = ANY(%s)
               AND (
-                    LOWER(title) LIKE '%%msx125%%'
-                 OR LOWER(title) LIKE '%%msx 125%%'
-                 OR LOWER(title) LIKE '%%msx-125%%'
-                 OR LOWER(title) LIKE '%%grom%%'
+                    LOWER(identity.title) LIKE '%%msx125%%'
+                 OR LOWER(identity.title) LIKE '%%msx 125%%'
+                 OR LOWER(identity.title) LIKE '%%msx-125%%'
+                 OR LOWER(identity.title) LIKE '%%grom%%'
               )
-            ORDER BY price_current ASC, last_seen_at DESC NULLS LAST
+            ORDER BY observation.price_current ASC, observation.last_seen_at DESC NULLS LAST
             """,
             (list(SOURCES), list(LIVE_STATUSES)),
         )

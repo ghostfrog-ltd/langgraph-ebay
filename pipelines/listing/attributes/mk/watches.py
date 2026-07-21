@@ -25,8 +25,14 @@ def _extract_provenance(attrs: Mapping[str, Any], title: str) -> str:
     papers = _clean(attrs.get("With Papers")).lower()
     title_low = title.lower()
 
-    has_box = "yes" in box or "with box" in title_low
-    has_papers = "yes" in papers or "with papers" in title_low or "v5c" not in title_low  # Watch specific papers
+    has_box = "yes" in box or "with box" in title_low or "boxed" in title_low
+    has_papers = (
+        "yes" in papers
+        or "with papers" in title_low
+        or "paperwork" in title_low
+        or "certificate" in title_low
+        or "full set" in title_low
+    )
 
     if has_box and has_papers: return "fullset"
     if has_box: return "box"
@@ -42,6 +48,7 @@ def _extract_movement(attrs: Mapping[str, Any], title: str) -> str:
     m = _clean(attrs.get("Movement")).lower()
     search_text = f"{m} {title.lower()}"
 
+    if "kinetic" in search_text: return "kinetic"
     if "automatic" in search_text: return "auto"
     if "manual" in search_text or "hand-winding" in search_text: return "manual"
     if "quartz" in search_text or "solar" in search_text: return "quartz"
@@ -63,6 +70,16 @@ def _normalise_brand(raw: Any) -> str:
     return "".join(ch for ch in s if ch.isalnum())
 
 
+def _brand_from_title(title: str) -> str:
+    """Infer a known watch brand from title-only Browse rows."""
+
+    title_low = title.lower()
+    for brand in ("seiko", "omega", "rolex", "casio", "g-shock", "gshock"):
+        if re.search(rf"\b{re.escape(brand)}\b", title_low):
+            return "gshock" if brand in {"g-shock", "gshock"} else brand.replace("-", "")
+    return ""
+
+
 def _extract_reference(attrs: Mapping[str, Any]) -> str:
     """Extracts the high-confidence Reference Number."""
     ref = attrs.get("Reference Number") or attrs.get("ReferenceNumber")
@@ -76,6 +93,21 @@ def _extract_reference(attrs: Mapping[str, Any]) -> str:
     clean_ref = "".join(ch for ch in str(ref).lower() if ch.isalnum())
     if clean_ref in {"none", "na", "doesnotapply"}: return ""
     return clean_ref
+
+
+def _extract_reference_from_title(title: str) -> str:
+    """Extract common watch reference codes from title-only rows."""
+
+    title_low = title.lower()
+    patterns = [
+        r"\b([a-z]{2,4}\d{3,5}[a-z0-9]*)\b",        # SNA411, SKX007, GA2100
+        r"\b([0-9][a-z][0-9]{2}[-\s]?[0-9a-z]{3,5})\b",  # 5M45-6A50, 7T92-0CF0
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, title_low)
+        if match:
+            return "".join(ch for ch in match.group(1) if ch.isalnum())
+    return ""
 
 
 def _normalise_model_core(attrs: Mapping[str, Any], brand: str) -> str:
@@ -93,6 +125,22 @@ def _normalise_model_core(attrs: Mapping[str, Any], brand: str) -> str:
     return res
 
 
+def _model_from_title(title: str, brand: str) -> str:
+    """Extract a stable model family from title-only watch rows."""
+
+    title_low = title.lower()
+    family_terms = ("flightmaster", "seiko 5", "speedmaster", "seamaster", "submariner", "g-shock")
+    for term in family_terms:
+        if term in title_low:
+            return "".join(ch for ch in term if ch.isalnum())
+
+    if brand:
+        after_brand = re.search(rf"\b{re.escape(brand)}\b\s+([a-z0-9-]{{3,18}})", title_low)
+        if after_brand:
+            return "".join(ch for ch in after_brand.group(1) if ch.isalnum())
+    return ""
+
+
 def watch_model_key(
         attrs: Mapping[str, Any],
         title: str = "",
@@ -103,11 +151,11 @@ def watch_model_key(
     Example: Brand="Seiko", Ref="SKX007", Movement="Automatic", Provenance="Full Set"
              -> "seiko-skx007-auto-fullset_B".
     """
-    brand = _normalise_brand(attrs.get("Brand"))
+    brand = _normalise_brand(attrs.get("Brand")) or _brand_from_title(title)
 
     # Priority: Reference Number -> Model Core
-    ref = _extract_reference(attrs)
-    model = _normalise_model_core(attrs, brand)
+    ref = _extract_reference(attrs) or _extract_reference_from_title(title)
+    model = _normalise_model_core(attrs, brand) or _model_from_title(title, brand)
 
     identity = ref or model
     if not brand or not identity:

@@ -91,10 +91,11 @@ def _truncate_comps() -> None:
 
 def _compute_daily_comps(days: Optional[int] = None) -> None:
     """
-    Insert new per-model_key stats for the last N days of ended/sold listings.
+    Insert new per-model_key stats for the last N days of listings with
+    confirmed realized sale prices.
 
-    - Uses COALESCE(final_price, price_current) as the realized sale price.
-    - Includes both 'sold' and 'ended' statuses.
+    - Uses final_price only; price_current is not a realized sale price.
+    - Includes any terminal status only when final_price is present.
     - Only aggregates rows where model_key is non-null and not 'unknown'
       to avoid contaminating comps with garbage buckets.
     """
@@ -103,8 +104,7 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
 
     logger.info(
         "[process.comps] computing daily comps for last %s days "
-        "(statuses IN ('sold','ended'), model_key NOT NULL/unknown, "
-        "price = COALESCE(final_price, price_current))",
+        "(final_price IS NOT NULL, model_key NOT NULL/unknown)",
         days,
     )
 
@@ -113,14 +113,13 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
         SELECT
             model_key,
             PERCENTILE_CONT(0.5) WITHIN GROUP (
-                ORDER BY COALESCE(final_price, price_current)
+                ORDER BY final_price
             )::numeric AS median_final_price,
-            AVG(COALESCE(final_price, price_current))::numeric AS mean_final_price,
+            AVG(final_price)::numeric AS mean_final_price,
             COUNT(*)::int AS samples,
             (now() AT TIME ZONE 'utc') AS computed_at
         FROM auction_listings
-        WHERE status IN ('sold', 'ended')
-          AND COALESCE(final_price, price_current) IS NOT NULL
+        WHERE final_price IS NOT NULL
           AND end_time >= (now() AT TIME ZONE 'utc' - (%s || ' days')::interval)
           AND model_key IS NOT NULL
           AND LOWER(model_key) <> 'unknown'

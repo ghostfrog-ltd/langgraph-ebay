@@ -9,6 +9,14 @@ def _clean(v: Any) -> str:
     return str(v).strip().lower().replace(" ", "-").replace("\"", "").replace("'", "")
 
 
+def _text(v: Any) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, (list, tuple, set)):
+        return " ".join(_text(x) for x in v)
+    return str(v).strip().lower()
+
+
 def _num(v: Any) -> str:
     """Simple digit extractor (used for things like mm sizes)."""
     if not v:
@@ -66,18 +74,37 @@ def apple_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
         chip = "intel"
 
     # 3. Family Logic
-    family_blob = "-".join([_clean(attrs.get(k)) for k in ["Product Line", "Series", "Model"] if attrs.get(k)])
+    family_text = " ".join(
+        _text(attrs.get(k))
+        for k in ["Product Line", "Series", "Model", "Type"]
+        if attrs.get(k)
+    )
+    family_title = title.lower()
+    family_blob = _clean(f"{family_text} {family_title}")
 
     parts = ["apple"]
 
     # --- MACS ---
-    if any(x in family_blob for x in ("macbook", "imac", "mini", "studio")):
-        line = "macbook-air" if "air" in family_blob else "macbook-pro" if "pro" in family_blob else "imac"
+    if any(x in family_blob for x in ("macbook", "imac", "mac-mini", "mac-studio")):
+        if "macbook" in family_blob:
+            line = (
+                "macbook-air"
+                if "air" in family_blob
+                else "macbook-pro"
+                if "pro" in family_blob
+                else "macbook"
+            )
+        elif "mac-mini" in family_blob or "mini" in family_blob:
+            line = "mac-mini"
+        elif "studio" in family_blob:
+            line = "mac-studio"
+        else:
+            line = "imac"
         parts.extend([line, size, chip, ram, storage])
 
     # --- IPHONES ---
     elif "iphone" in family_blob:
-        num = re.search(r"iphone\s*(\d+)", family_blob + " " + title.lower())
+        num = re.search(r"iphone[-\s]*(\d+)", f"{family_blob} {title.lower()}")
         model_num = num.group(1) if num else ""
         tier = "pro-max" if "max" in family_blob else "pro" if "pro" in family_blob else "plus" if "plus" in family_blob else ""
         parts.extend(["iphone", model_num, tier, storage])

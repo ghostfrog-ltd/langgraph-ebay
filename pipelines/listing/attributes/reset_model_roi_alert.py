@@ -116,8 +116,7 @@ def recompute_comps_from_auction_listings(window_days: int = COMPS_WINDOW_DAYS) 
     """
     Rebuild comps directly from auction_listings, ignoring the old process.comps code.
 
-    - Uses status IN ('sold','ended')
-    - Uses COALESCE(final_price, price_current) as realized sale
+    - Uses final_price only; price_current is not a realized sale price
     - Requires model_key NOT NULL and != 'unknown'
     - Restricts to last `window_days` of history
     """
@@ -126,7 +125,7 @@ def recompute_comps_from_auction_listings(window_days: int = COMPS_WINDOW_DAYS) 
         with conn.cursor() as cur:
             logger.info(
                 "[reset] Recomputing comps from auction_listings for last %s days "
-                "(statuses IN ('sold','ended'), model_key NOT NULL/unknown)",
+                "(final_price IS NOT NULL, model_key NOT NULL/unknown)",
                 window_days,
             )
 
@@ -140,14 +139,13 @@ def recompute_comps_from_auction_listings(window_days: int = COMPS_WINDOW_DAYS) 
                 SELECT
                     model_key,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (
-                        ORDER BY COALESCE(final_price, price_current)
+                        ORDER BY final_price
                     )::numeric AS median_final_price,
-                    AVG(COALESCE(final_price, price_current))::numeric AS mean_final_price,
+                    AVG(final_price)::numeric AS mean_final_price,
                     COUNT(*)::int AS samples,
                     (now() AT TIME ZONE 'utc') AS computed_at
                 FROM auction_listings
-                WHERE status IN ('sold', 'ended')
-                  AND COALESCE(final_price, price_current) IS NOT NULL
+                WHERE final_price IS NOT NULL
                   AND end_time >= (now() AT TIME ZONE 'utc' - (%s || ' days')::interval)
                   AND model_key IS NOT NULL
                   AND LOWER(model_key) <> 'unknown'

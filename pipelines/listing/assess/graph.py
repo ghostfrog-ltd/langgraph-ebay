@@ -36,21 +36,65 @@ class AssessState(TypedDict, total=False):
 # DB access
 # -----------------------------
 def _load_candidates(limit: int) -> List[Dict[str, Any]]:
+    """
+    Load LLM assessment candidates through normalized listing projections.
+
+    The assessment feature is disabled by default, but when enabled it expects a
+    wide candidate payload. Keep the output shape stable while moving the read
+    contract away from direct `auction_listings` access.
+    """
     sql = """
         SELECT
-            l.*,
+            identity.listing_id AS id,
+            identity.external_id,
+            identity.source_label AS source,
+            identity.title,
+            identity.url,
+            identity.sale_type,
+            identity.first_seen,
+            identity.source_id,
+            observation.price_current,
+            observation.price_bid_current,
+            observation.bids_count,
+            observation.end_time,
+            observation.time_left_s,
+            observation.fetched_at,
+            observation.last_seen_at,
+            outcome.status,
+            outcome.finalized,
+            outcome.final_price,
+            attrs.model_key,
+            attrs.brand,
+            attrs.product_family,
+            attrs.model_name,
+            attrs.storage_gb,
+            attrs.colour,
+            attrs.epid,
+            attrs.raw_attrs,
+            score.roi_estimate,
+            score.max_bid,
+            score.bucket_key,
+            score.notes,
             c.median_final_price,
             c.mean_final_price,
             c.samples AS comp_samples
-        FROM auction_listings AS l
+        FROM listing_identity_v AS identity
+        JOIN listing_observation_v AS observation
+          ON observation.listing_id = identity.listing_id
+        JOIN listing_outcome_v AS outcome
+          ON outcome.listing_id = identity.listing_id
+        JOIN listing_attribute_v AS attrs
+          ON attrs.listing_id = identity.listing_id
+        JOIN listing_score_v AS score
+          ON score.listing_id = identity.listing_id
         LEFT JOIN latest_comps AS c
-          ON l.model_key = c.model_key
+          ON attrs.model_key = c.model_key
         LEFT JOIN listing_assessments AS a
-          ON a.listing_id = l.id
-        WHERE l.status = 'live'
-          AND COALESCE(l.finalized, FALSE) = FALSE
+          ON a.listing_id = identity.listing_id
+        WHERE outcome.status = 'live'
+          AND COALESCE(outcome.finalized, FALSE) = FALSE
           AND a.id IS NULL
-        ORDER BY l.end_time ASC NULLS LAST
+        ORDER BY observation.end_time ASC NULLS LAST, identity.listing_id ASC
         LIMIT %s
     """
 

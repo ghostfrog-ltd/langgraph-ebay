@@ -20,6 +20,8 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
 fi
 
 export GF_LOG_DIR="$LOCAL_LOG_DIR"
+export GF_HEARTBEAT_LAUNCHED_BY="launchd"
+export GF_HEARTBEAT_LAUNCHD_LABEL="com.ghostfrog.langgraph-ebay.python-heartbeat"
 
 cd "$PROJECT_ROOT"
 

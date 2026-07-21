@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Mapping, Any, Optional
 from typing import Dict, Set
 
@@ -17,6 +18,9 @@ GENERIC_PART_ONLY_TERMS = (
     "for spares",
     "spares or repairs",
     "spares & repairs",
+    "spares / repair",
+    "spares/repair",
+    "spares repair",
     "repair only",
     "needs repair",
     "box only",
@@ -59,6 +63,7 @@ LEGO_PART_TERMS = (
     "minifigure only",
     "minifig only",
     "no minifigure",
+    "no figures",
     "part only",
     "spare parts",
     "bulk bricks",
@@ -74,8 +79,119 @@ DEVICE_ACCESSORY_TERMS = (
     "keyboard case",
     "ear pads",
     "headband",
+    "wall mount",
+    "storage bracket",
+    "earphone holder",
     "controller only",
+    "controller cable",
+    "controller battery",
+    "thumb grip",
+    "thumb grips",
+    "thumbstick",
+    "thumb stick",
+    "kontrolfreek",
+    "fps freek",
+    "charging stand",
+    "cooling fan",
     "remote only",
+    "headset",
+    "headphones",
+    "microphone",
+    "power supply",
+    "psu",
+    "official brick",
+)
+
+DEVICE_REPAIR_REVIEW_TERMS = (
+    "activation locked",
+    "icloud locked",
+    "i cloud locked",
+    "locked apple iphone",
+    "locked apple ipad",
+    "locked iphone",
+    "locked ipad",
+    "passcode locked",
+    "password locked",
+    "needs new battery",
+    "needs a new battery",
+    "needs battery",
+    "battery service",
+    "battery replacement needed",
+    "works with issues",
+)
+
+CONSOLE_NON_HARDWARE_TERMS = (
+    "code in a box",
+    "code-in-a-box",
+    "download code",
+    "digital code",
+    "game code",
+    "games bundle",
+    "game bundle",
+    "software bundle",
+    "stickers",
+    "sticker",
+    "button led",
+    "guide button",
+    "home guide button",
+    "mod stickers",
+    "led mod",
+)
+
+CONSOLE_HARDWARE_TERMS = (
+    "console",
+    "system",
+    "handheld",
+    "disc edition",
+    "disk edition",
+    "digital edition",
+    "blu ray edition",
+    "blu-ray edition",
+    "with controller",
+    "console only",
+    "oled model",
+)
+
+VEHICLE_PART_TERMS = (
+    "aerial",
+    "antenna",
+    "badge",
+    "bearing",
+    "bolt",
+    "brake disc",
+    "brake master cylinder",
+    "bumper",
+    "clutch lever",
+    "cover",
+    "drain bolt",
+    "engine cover",
+    "fender eliminator",
+    "fork",
+    "front fork",
+    "front hanger",
+    "front master cylinder",
+    "grille",
+    "grab handle",
+    "handlebar",
+    "headlight",
+    "indicator",
+    "mirror",
+    "number plate",
+    "numberplate",
+    "oil spinner",
+    "parcel shelf",
+    "quick release",
+    "rear disc",
+    "seal",
+    "surround",
+    "switchgear",
+    "boot release",
+    "boot lid",
+    "tail tidy",
+    "tool kit",
+    "washer",
+    "wheel bearing",
+    "window regulator",
 )
 
 
@@ -121,6 +237,65 @@ def looks_like_partial_or_accessory_listing(
     if any(term in blob for term in DEVICE_ACCESSORY_TERMS):
         return True
 
+    if any(term in blob for term in DEVICE_REPAIR_REVIEW_TERMS):
+        return True
+
+    is_console = any(
+        marker in f"{source_text} {model_key_text} {blob}"
+        for marker in ("console", "ps4", "ps5", "xbox", "switch", "playstation", "nintendo")
+    )
+    if is_console and any(term in blob for term in CONSOLE_NON_HARDWARE_TERMS):
+        return True
+
+    complete_console_signal = any(term in blob for term in CONSOLE_HARDWARE_TERMS) or bool(
+        re.search(r"\b(128|256|500|512|825)\s?gb\b|\b(1|2)\s?tb\b", blob)
+    )
+    platform_only_signal = any(
+        term in blob
+        for term in (
+            "playstation 5",
+            "playstation 4",
+            "ps5",
+            "ps4",
+            "nintendo switch",
+            "xbox one",
+            "xbox series",
+        )
+    )
+    if is_console and platform_only_signal and not complete_console_signal:
+        return True
+
+    if is_console and not complete_console_signal and any(
+        term in blob
+        for term in (
+            "controller",
+            "gamepad",
+            "pad",
+            "stand",
+            "dock",
+            "charger",
+            "battery",
+            "cable",
+            "mount",
+            "bracket",
+            "holder",
+            "headset",
+            "headphones",
+            "microphone",
+            "power supply",
+            "psu",
+            "brick",
+        )
+    ):
+        return True
+
+    is_vehicle = any(
+        marker in f"{source_text} {model_key_text} {blob}"
+        for marker in ("mini", "cooper", "honda", "msx", "grom", "motor", "motors", "car")
+    )
+    if is_vehicle and any(term in blob for term in VEHICLE_PART_TERMS):
+        return True
+
     return False
 
 def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
@@ -163,6 +338,7 @@ def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
         "bad battery", "battery issue", "battery fault", "charging port issue",
         "charging fault", "screen flickers", "read description", "empty",
         "packaging only", "damaged", "broken screen", "spares and repairs",
+        "blue screen", "blue screened", "disc drive fault",
 
         # Spares/repairs flags
         "for spares", "for parts", "spares or repairs", "spares & repairs",

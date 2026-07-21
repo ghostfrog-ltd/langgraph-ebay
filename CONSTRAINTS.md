@@ -8,10 +8,23 @@ These constraints override any generated plan, model recommendation, or user "vi
 
 - **No autonomous buying**: No agent may place a bid, buy an item, send an offer, accept an offer, or otherwise commit capital without explicit human approval.
 - **No stealth external writes**: No agent may create, revise, delete, relist, message, mark shipped, refund, or change a third-party account state without a deterministic safety gate and human approval.
-- **No credential exposure**: Secrets must stay in environment variables or secure local configuration. Never hard-code, print, document, or transmit API keys, passwords, OAuth tokens, session cookies, or database credentials.
+- **No credential exposure**: Secrets must stay in environment variables or secure local configuration. Never hard-code, print, document, or transmit API keys, passwords, OAuth tokens, session cookies, Slack webhook URLs, or database credentials.
 - **No black-box execution**: Commercial decisions must map to documented rules, structured inputs, and auditable outputs. LLM text alone is not a valid execution reason.
 - **No recursive looping**: If a workflow repeats without progress, halt, record the condition in `PROGRESS.txt`, and require operator review.
 - **No live fallback to local files**: Live operations may not silently fall back to temp files, CSVs, or SQLite for state that should be in PostgreSQL.
+
+## Code Quality Bar
+
+- Core Python architecture should use Pydantic models for meaningful data contracts, FastAPI for service/API boundaries, LangGraph for workflow orchestration, and PostgreSQL for operational persistence.
+- New cross-module payloads, API request/response bodies, decision records, assessment payloads, paper-trade snapshots, and database-facing DTOs should be Pydantic models unless there is a documented reason not to.
+- Existing dict/dataclass-heavy code may be migrated incrementally, but do not add new high-risk untyped payload shapes where a Pydantic model would make the contract clearer.
+- FastAPI endpoint code must stay thin: validate inputs and outputs with Pydantic, delegate workflow execution to pipeline/LangGraph services, and avoid embedding scoring or marketplace logic in route handlers.
+- Code must be readable enough for a future operator to audit under pressure.
+- Public modules, pipeline nodes, non-trivial helpers, scripts, and safety gates must have docstrings or doc-blocks explaining purpose, inputs, outputs, side effects, and any important safety assumptions.
+- Add concise inline comments where logic is domain-specific, high-risk, non-obvious, or intentionally conservative.
+- Do not add noise comments that simply restate obvious syntax.
+- New deterministic scoring, filtering, backfill, and marketplace-adjacent logic must include focused tests or a documented verification command.
+- Prefer clear names and small functions over clever compression.
 
 ## Buy Desk Safety Gate
 
@@ -47,4 +60,3 @@ If a request conflicts with this file:
 2. Cite the specific constraint.
 3. Ask for an explicit Architect decision.
 4. Record approved overrides in `DECISION_LOG.md` before implementation.
-

@@ -156,13 +156,14 @@ def _normalise_model(raw: Any) -> str:
     if not tokens:
         return ""
 
-    model = "".join(tokens)
+    # Strip only a separate trailing year token. Do not trim digits from model
+    # names such as YZF R125, PCX 125, or Ninja 650.
+    if len(tokens) > 1 and tokens[-1].isdigit() and len(tokens[-1]) == 2:
+        yy = int(tokens[-1])
+        if 15 <= yy <= 25:
+            tokens = tokens[:-1]
 
-    # Strip suffix year tokens (15-25), but only if model remains meaningful
-    if len(model) > 3 and model[-2:].isdigit():
-        yy = int(model[-2:])
-        if 15 <= yy <= 25:  # bikes from 2015–2025
-            model = model[:-2]
+    model = "".join(tokens)
 
     if model == "0":
         return ""
@@ -221,7 +222,7 @@ def bike_model_key(attrs: Mapping[str, Any], title: str = "") -> str:
     """
     brand = _normalise_brand(attrs.get("Manufacturer"))
     model = _normalise_model(attrs.get("Model"))
-    capacity_cc = _parse_capacity_cc(attrs)
+    capacity_cc = _normalise_capacity(_parse_capacity_cc(attrs))
 
     if not brand or not model:
         return UNKNOWN_KEY
@@ -235,4 +236,3 @@ def bike_model_key(attrs: Mapping[str, Any], title: str = "") -> str:
 
     # Force grade B on all bikes
     return f"{base_key}_b"
-

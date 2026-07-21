@@ -907,7 +907,8 @@ def bulk_upsert_auction_listings(rows: list[dict]):
         INSERT INTO auction_listings ({", ".join(cols)})
         VALUES %s
         ON CONFLICT (external_id) DO UPDATE
-        SET title         = EXCLUDED.title,
+        SET source        = EXCLUDED.source,
+            title         = EXCLUDED.title,
             price_current = COALESCE(EXCLUDED.price_current, auction_listings.price_current),
             bids_count    = COALESCE(EXCLUDED.bids_count,    auction_listings.bids_count),
             end_time      = COALESCE(EXCLUDED.end_time,      auction_listings.end_time),

@@ -45,6 +45,67 @@ The key rule is simple: AI can recommend, rank, explain, and draft. It must not 
 
 ---
 
+## Current Handoff
+
+Latest operating state is captured in [PROGRESS.txt](PROGRESS.txt) and the Point Zero report at [POINT_ZERO_HEALTH_CHECK.md](POINT_ZERO_HEALTH_CHECK.md).
+
+As of 2026-05-28:
+
+- PostgreSQL is the source of truth; Laravel/Herd is deprecated and disposable.
+- Weekly PostgreSQL backups are configured.
+- Comps use confirmed `final_price` only.
+- Targeted backfill exists and is incremental; the full stale backlog is not a Buy Desk blocker.
+- Vehicle-like sources are review-only for ROI unless explicitly enabled.
+- Apple/device listings are the first paper-trading lane.
+- Paper trading persists review-only predictions in PostgreSQL and runs after ROI in the heartbeat.
+- Paper P&L is purchase-side: a watched auction's confirmed `final_price` is treated as the would-have-paid purchase price, not resale revenue.
+- Paper costs include fees, outbound postage, inbound postage reserve, packaging reserve, and selling/relist reserve.
+- Slack notifications are wired into the Python/LangGraph heartbeat as observer-only operational summaries, Market Discovery review guidance, and failure/recovery alerts.
+- No row may be labelled `BUY`, `BID`, or `ACTIONABLE` until closed paper outcomes produce enough evidence to tune rules.
+
+Next practical session:
+
+1. Let the current Apple/device paper predictions pass `end_time`.
+2. Run the capped paper resolver to close overdue predictions.
+3. Review lesson categories, especially `outbid_above_ceiling`, `paper_loss`, `thin_margin`, and `prediction_ok`.
+4. Tighten Apple/device condition, cost, and model-key rules from observed misses.
+5. Start designing the Market Discovery workstream: a way to find, measure, reject, and paper-trade new profitable eBay niches.
+6. Only then start Buy Desk persistence/UI work.
+
+Important strategic task: this system must learn how to explore new profitable markets on eBay, not only monitor the markets already configured. The planned Market Discovery workflow should rank candidate niches by sold-comp depth, active supply, post-cost spread, model-key feasibility, postage/return risk, capital required, and suitability for paper trading.
+
+Useful commands:
+
+```bash
+.venv-mac/bin/python -m pipelines.listing.paper_trading --limit 25
+.venv-mac/bin/python -m pipelines.listing.paper_trading --limit 25 --no-resolve
+.venv-mac/bin/python -m pipelines.listing.market_discovery --limit 12 --min-score 20
+.venv-mac/bin/python -m unittest discover tests
+```
+
+Slack notifications:
+
+The Python/LangGraph heartbeat can post a compact hourly status update to a Slack
+incoming webhook. Slack is observer-only: it cannot bid, buy, message, relist,
+or mutate eBay state. The local webhook has been tested successfully, and future
+heartbeat runs will post according to `GF_HEARTBEAT_SLACK_MINUTES`.
+
+Heartbeat Slack summaries include Market Discovery counts, the top research lane
+when one exists, and the next safe review step. They must remain advisory and
+must not label rows `BUY`, `BID`, or `ACTIONABLE`.
+
+```bash
+SLACK_NOTIFICATIONS_ENABLED=1
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+GF_HEARTBEAT_SLACK_MINUTES=60
+```
+
+The webhook URL is a secret and must stay in `.env` or another secure local
+environment source. If the webhook URL is ever pasted into chat, logs, or a
+shared document, rotate it in Slack and update the local `.env`.
+
+---
+
 ## What This Repo Is (and Is Not)
 
 ### This **is**:
@@ -109,13 +170,17 @@ This restraint is intentional.
 
 ## Architecture Direction
 
-This repository now also contains a Laravel experiment in [laravel](laravel), but the Python/LangGraph system remains the primary app.
+The Laravel/Herd experiment is deprecated. The Python/FastAPI/LangGraph system
+is the primary app, and PostgreSQL is the operational source of truth.
 
 Current direction:
 
 - Python remains the ingestion and analysis engine
 - PostgreSQL remains the operational source of truth
-- Laravel is optional UI/product exploration and should consume pipeline state rather than define it
+- FastAPI is the service/API surface for new operator workflows
+- Laravel/Herd should not be used for sync, notifications, ingestion endpoints,
+  schedulers, or operator communication
 - core decisions, scoring, assessment, and buy-check-ship workflow belong in the Python pipeline first
 
-For local Laravel setup notes, see [laravel/README.md](laravel/README.md).
+The old Laravel application files have been removed. Any future UI or operator
+API should be built in Python/FastAPI.

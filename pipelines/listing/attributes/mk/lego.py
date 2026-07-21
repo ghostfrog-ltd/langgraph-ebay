@@ -98,8 +98,9 @@ def _derive_variant_suffix(attrs: Mapping[str, Any], title: str) -> str:
     if any(sig in full_text for sig in ["polybag", "foil pack", "foilpack"]):
         variant_flags.append("polybag")
 
-    if any(sig in full_text for sig in ["retired", "discontinued"]):
-        variant_flags.append("retired")
+    # `retired` is a market-wide property of the set, not a different product
+    # identity for one listing. Keeping it in model_key split otherwise identical
+    # set-number comps into separate buckets.
 
     if not variant_flags:
         return ""
@@ -181,7 +182,7 @@ def _parse_id(raw: Any, is_minifig: bool = False, is_bulk: bool = False, title: 
 
     # Then prefer longer numeric candidates (4-7 digits) over short incidental
     # numbers like "911" in Speed Champions titles.
-    candidates = re.findall(r"\b(\d{3,7})\b", s)
+    candidates = re.findall(r"\b(\d{4,7})\b", s)
     if candidates:
         filtered = []
         for candidate in candidates:
@@ -196,11 +197,7 @@ def _parse_id(raw: Any, is_minifig: bool = False, is_bulk: bool = False, title: 
         if not filtered:
             return ""
 
-        preferred = [candidate for candidate in filtered if len(candidate) >= 4]
-        if preferred:
-            return max(preferred, key=len)
-
-        return filtered[-1]
+        return max(filtered, key=len)
     return ""
 
 
@@ -211,7 +208,7 @@ def lego_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
     brand = _normalise_brand(attrs.get("Brand"), is_minifig, is_bulk)
     theme = _derive_theme(attrs, title)
 
-    CANDIDATE_KEYS = ["MPN", "Manufacturer Part Number", "Model Number", "Model",
+    CANDIDATE_KEYS = ["LEGO Set Number", "MPN", "Manufacturer Part Number", "Model Number", "Model",
                       "Numéro de l'assortiment LEGO", "NumÃ©ro de l'assortiment LEGO", "Herstellernummer"]
 
     set_id = ""
@@ -226,9 +223,11 @@ def lego_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
     variant = _derive_variant_suffix(attrs, title)
 
     # Final key structure:
-    #   {brand}-{theme}-{id}-{variant}_{grade}-{completeness}
-    # Variant is optional and only used when it materially changes comps.
-    base_parts = [brand, theme, set_id]
+    #   {brand}-{id}-{variant}_{grade}-{completeness}
+    # Set number is the stable product identity. Theme is useful display context,
+    # but eBay often mislabels it, so including it fragments comps for the same
+    # set number (for example Ideas vs generic/category leakage).
+    base_parts = [brand, set_id]
     if variant:
         base_parts.append(variant)
 

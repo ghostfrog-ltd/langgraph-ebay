@@ -4,21 +4,78 @@
 
 PostgreSQL is the live source of truth for operational data. The primary operational schema belongs to the Python/LangGraph pipeline database.
 
-Laravel exists in this repository only as a side project/operator UI idea. Its local SQLite/bootstrap database and framework tables are not the source of truth for pipeline decisions.
+Laravel and Laravel Herd are deprecated/disposable experiments. Their local
+SQLite/bootstrap database, framework tables, schedulers, ingestion endpoints,
+and sync jobs are not operational contracts. Any useful UI/API/communication
+behavior should be rebuilt in Python/FastAPI against PostgreSQL.
 
 ## Existing Operational Tables and Views
 
 The current Python database uses these core objects:
 
 - `auction_listings`: raw and enriched listing records.
+- `auction_price_history`: active price/bid observations for known listings.
+- `auction_price_history_orphans`: archived price/bid observations whose
+  `external_id` no longer exists in `auction_listings`; rows are preserved here
+  before foreign-key cleanup.
+- `listing_statuses`: allowed listing status values and lifecycle semantics.
 - `latest_comps`: latest comp summary by `model_key`.
 - `listing_assessments`: structured AI or rule assessment history.
 - `sources`: source configuration and niche metadata.
+- `alert_state`: notification throttle state keyed by `name`, including heartbeat email and Slack rows such as `listing_system_hourly_heartbeat` and `listing_system_hourly_slack`.
 
-An optional Laravel UI may mirror or summarize pipeline state through:
+The following read-only views project the wide `auction_listings` table into
+narrower contracts without changing the current write path:
 
-- `ebay_listings`: operator-facing synchronized listing records.
-- `users`, `sessions`, `jobs`, and framework tables for the optional Laravel app.
+- `listing_identity_v`: stable listing identity and canonical source metadata.
+- `listing_observation_v`: current price, bid, end-time, and freshness fields.
+- `listing_outcome_v`: status, lifecycle stage, finalization, and final-price fields.
+- `listing_attribute_v`: extracted product identity and raw attribute fields.
+- `listing_score_v`: legacy ROI, max bid, bucket, and note fields.
+- `listing_backfill_audit_v`: targeted backfill audit fields.
+
+`auction_listings.source` remains a denormalized compatibility label because
+current pipeline code routes model-key extraction, ROI rules, scout digests, and
+vehicle review guards by source text. `auction_listings.source_id` is the
+canonical relational link and must agree with the `sources` row whose `name` or
+`domain` matches that label. Collector upserts must update `source` and
+`source_id` together so cross-source sightings do not leave stale labels beside
+new canonical source IDs.
+
+Point Zero backfill adds these local audit fields to `auction_listings`:
+
+- `backfill_checked_at`: last time a stale row was checked through the targeted backfill loop.
+- `backfill_check_count`: number of targeted backfill checks attempted for the row.
+- `backfill_last_reason`: latest deterministic outcome reason, such as `trading_says_not_ended`.
+
+Paper trading persists review-only learning data in `paper_trade_predictions`:
+
+- `external_id`, `source`, `title`, `url`, `model_key`: listing identity captured at prediction time.
+- `current_price`, `predicted_resale_price`, `predicted_fees`, `predicted_outbound_shipping`, `predicted_inbound_shipping`, `predicted_packaging`, `predicted_selling_reserve`, `predicted_profit`, `predicted_roi`, `recommended_max_bid`, `comp_samples`: the deterministic economic prediction snapshot.
+- `decision_status`, `observed_status`, `observed_final_price`, `observed_purchase_price`, `would_have_bid`, `would_have_won`, `observed_at`, `observed_price_error`, `observed_paper_profit`, `observed_paper_roi`, `outcome_reason`: later observed outcome fields.
+- `outcome_checked_at`, `outcome_check_count`, `outcome_last_reason`: audit fields for capped Trading API outcome checks on watched predictions past `end_time`.
+- `UNIQUE (external_id, prediction_date)`: prevents hourly duplicate snapshots while retaining a daily series.
+
+Paper-trade accounting treats a confirmed eBay final price as the hypothetical purchase price for the watched auction. Expected resale still comes from confirmed sold comps. A closed paper row is profitable only when the final auction price stayed within the stored max bid and expected resale clears predicted fees, inbound postage, outbound postage, packaging, selling/relist reserve, and the purchase price.
+
+Deprecated Laravel UI tables such as `ebay_listings`, `users`, `sessions`, and
+`jobs` are not part of the Python/PostgreSQL operational contract. Do not use
+them for new communication, notification, or decision flows.
+
+Migration `20260531_008_drop_deprecated_laravel_sync_fields.sql` removed the
+deprecated `listing_ui_sync_v` projection and the `auction_listings`
+`laravel_sync_state`, `laravel_synced_at`, `laravel_sync_error`, and
+`laravel_sync_payload` columns after a fresh PostgreSQL backup.
+
+## Applied Integrity Constraints
+
+The Python/PostgreSQL schema now enforces these core relationships:
+
+- `auction_listings.source_id` references `sources.id`.
+- `auction_listings.status` references `listing_statuses.status`.
+- `auction_listings.status` must not be null.
+- `auction_price_history.external_id` references `auction_listings.external_id`.
+- `listing_assessments.listing_id` references `auction_listings.id`.
 
 ## Required Decision Fields
 
@@ -114,6 +171,17 @@ CREATE TABLE IF NOT EXISTS purchase_lifecycle_events (
 
 ## Migration Rule
 
-`SCHEMA.md` is a contract, not an applied migration. Before code writes to a proposed table, add the matching Python migration or SQL migration and verify it against PostgreSQL.
+`SCHEMA.md` is a contract, not an applied migration. Before code writes to a proposed table, add the matching Python/PostgreSQL migration under `migrations/` and apply it with:
 
-If a Laravel or other UI screen needs the same data, it should read from PostgreSQL directly or consume a synchronized projection after the Python/PostgreSQL contract exists.
+```bash
+.venv-mac/bin/python scripts/run_migrations.py
+```
+
+Applied migrations are recorded in `schema_migrations` with a SHA-256 checksum. Do not add new runtime-only schema mutations to pipeline modules when a migration can define the contract explicitly.
+
+As of 2026-05-31, the local PostgreSQL schema has 8 recorded migrations,
+including normalized listing views, recurring source-label reconciliation, and
+deprecated Laravel sync field removal.
+
+If a UI screen needs the same data, build it in the Python/FastAPI stack or make
+it read from PostgreSQL through an explicit Python-owned contract.

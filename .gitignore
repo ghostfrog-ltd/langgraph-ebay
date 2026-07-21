@@ -3,6 +3,9 @@
 __pycache__
 .venv/
 .venv-mac/
+backups/
+*.dump
+*.dump.in_progress
 
 # Laravel local/runtime files
 laravel/.env

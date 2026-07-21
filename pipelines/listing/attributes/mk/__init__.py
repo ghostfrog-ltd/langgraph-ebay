@@ -18,6 +18,34 @@ from .msx125 import honda_msx125_model_key
 from .mini_cooper import mini_cooper_model_key
 
 
+def _with_normalised_aliases(attrs: Mapping[str, Any]) -> Mapping[str, Any]:
+    """
+    The live attributes graph stores a small normalised dict
+    (`brand`, `model_name`, `storage_gb`, etc.), while the source-specific
+    key builders historically read raw eBay item-specific names such as
+    `Brand`, `Model`, and `Storage Capacity`.
+
+    Add raw-style aliases without overwriting richer raw attributes.
+    """
+    if not attrs:
+        return attrs
+
+    merged = dict(attrs)
+
+    if merged.get("brand") and not merged.get("Brand"):
+        merged["Brand"] = merged.get("brand")
+    if merged.get("model_name") and not merged.get("Model"):
+        merged["Model"] = merged.get("model_name")
+    if merged.get("colour") and not merged.get("Colour"):
+        merged["Colour"] = merged.get("colour")
+    if merged.get("storage_gb") and not merged.get("Storage Capacity"):
+        merged["Storage Capacity"] = f"{merged.get('storage_gb')} GB"
+    if merged.get("epid") and not merged.get("ePID"):
+        merged["ePID"] = merged.get("epid")
+
+    return merged
+
+
 def _canonicalise_key(key: Optional[str]) -> Optional[str]:
     """
     Standardise model_key formatting:
@@ -61,7 +89,7 @@ def normalise_model(
         return None
 
     source = (source or "").strip().lower()
-    safe_attrs: Mapping[str, Any] = attrs or {}
+    safe_attrs: Mapping[str, Any] = _with_normalised_aliases(attrs or {})
 
     if source == "ebay-consoles":
         return _canonicalise_key(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, Literal
 
@@ -24,6 +25,12 @@ EBAY_SITE_ID = "3"          # UK
 EBAY_COMPAT_LEVEL = "967"   # compat level for GetItem
 
 UNKNOWN_KEY = "unknown"
+MAX_REASONABLE_STORAGE_GB = 65_536
+_STORAGE_WITH_UNIT_RE = re.compile(
+    r"(?<![A-Za-z0-9])(\d+(?:[.,]\d+)?)\s*"
+    r"(tb|terabytes?|gb|gigabytes?|mb|megabytes?)\b",
+    re.IGNORECASE,
+)
 
 # -------------------------------------------------
 # Helpers (KEEP IN THIS FILE)
@@ -97,16 +104,50 @@ def _call_trading_get_item(item_id: str) -> Optional[str]:
 
 
 def _parse_storage_gb(raw_val: Optional[str]) -> Optional[int]:
+    """
+    Parse eBay storage attributes into integer GB without trusting arbitrary digits.
+
+    Trading item specifics sometimes put catalogue codes, part numbers, or mixed
+    RAM/storage phrases in fields named like "Storage Capacity".  Persisting the
+    old all-digits parse could overflow the PostgreSQL INTEGER column and poison
+    the heartbeat, so this only accepts unit-bearing values or short numeric
+    values that fit a conservative consumer-device storage range.
+    """
     if not raw_val:
         return None
-    txt = str(raw_val).lower()
-    digits = "".join(ch for ch in txt if ch.isdigit())
-    if not digits:
+
+    txt = str(raw_val).strip().lower()
+    if not txt:
         return None
-    try:
-        return int(digits)
-    except Exception:
-        return None
+
+    parsed_values: List[int] = []
+    for match in _STORAGE_WITH_UNIT_RE.finditer(txt):
+        raw_number, unit = match.groups()
+        try:
+            value = float(raw_number.replace(",", "."))
+        except ValueError:
+            continue
+
+        unit = unit.lower()
+        if unit.startswith("tb") or unit.startswith("terabyte"):
+            gb = int(round(value * 1024))
+        elif unit.startswith("mb") or unit.startswith("megabyte"):
+            gb = max(1, int(round(value / 1024)))
+        else:
+            gb = int(round(value))
+
+        if 0 < gb <= MAX_REASONABLE_STORAGE_GB:
+            parsed_values.append(gb)
+
+    if parsed_values:
+        return max(parsed_values)
+
+    if re.fullmatch(r"\d{1,6}", txt):
+        gb = int(txt)
+        if 0 < gb <= MAX_REASONABLE_STORAGE_GB:
+            return gb
+
+    return None
 
 
 def _extract_from_trading(xml_text: str) -> tuple[Dict[str, Optional[Any]], Dict[str, Any]]:
@@ -424,7 +465,7 @@ def _node_apply(state: AttributesState) -> AttributesState:
         storage_gb=attrs.get("storage_gb"),
         colour=attrs.get("colour"),
         epid=attrs.get("epid"),
-        model_key = key
+        model_key=key,
     )
 
     state["processed"] = int(state.get("processed", 0)) + 1
@@ -509,8 +550,18 @@ def save_graph_diagram(path: str = "attributes_graph.mmd") -> None:
 # Public entry
 # -------------------------------------------------
 def run(limit: int = 20, enable_api: bool = True) -> None:
+    """
+    Run one bounded attributes maintenance pass.
+
+    The graph intentionally loops over up to `limit` listings and then exits.
+    LangGraph's default recursion limit is too low for ordinary batches, so the
+    public CLI uses the same raised limit as the main heartbeat wrapper.
+    """
     app = build_graph()
-    final = app.invoke({"limit": int(limit), "enable_api": bool(enable_api)})
+    final = app.invoke(
+        {"limit": int(limit), "enable_api": bool(enable_api)},
+        config={"recursion_limit": 500},
+    )
 
     logger.info(
         "[maint.attributes] run complete "

@@ -474,16 +474,32 @@ def _ensure_table() -> None:
 
 
 def _fetch_live_rows() -> list[dict[str, Any]]:
+    """Load live Mini project rows through the normalized listing read contracts.
+
+    The alert workflow still stores detections in `mini_project_alerts`, but its
+    listing evidence should come from the view layer so future table splitting
+    can happen without changing advisory report logic.
+    """
     with connection.cursor(cursor_factory=RealDictCursor) as cur:
         ensure_utc_session(cur)
         cur.execute(
             """
-            SELECT source, external_id, title, url, price_current, status, model_key, raw_attrs
-            FROM auction_listings
-            WHERE source = 'ebay-mini-cooper'
-              AND LOWER(status) IN ('live', 'active', 'open', 'ending_soon')
-              AND price_current BETWEEN %s AND %s
-            ORDER BY price_current ASC, last_seen_at DESC
+            SELECT identity.source_label AS source,
+                   identity.external_id,
+                   identity.title,
+                   identity.url,
+                   observation.price_current,
+                   outcome.status,
+                   attributes.model_key,
+                   attributes.raw_attrs
+            FROM listing_identity_v AS identity
+            JOIN listing_observation_v AS observation USING (listing_id)
+            JOIN listing_outcome_v AS outcome USING (listing_id)
+            JOIN listing_attribute_v AS attributes USING (listing_id)
+            WHERE identity.source_label = 'ebay-mini-cooper'
+              AND LOWER(outcome.status) IN ('live', 'active', 'open', 'ending_soon')
+              AND observation.price_current BETWEEN %s AND %s
+            ORDER BY observation.price_current ASC, observation.last_seen_at DESC
             """,
             (MIN_PRICE, MAX_PRICE),
         )
