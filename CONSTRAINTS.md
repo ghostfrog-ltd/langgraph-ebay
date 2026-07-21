@@ -1,62 +1,29 @@
-# CONSTRAINTS.md
+# Constraints
 
-## Hard Guardrails for Agentic Execution
+## Hard Nos
 
-These constraints override any generated plan, model recommendation, or user "vibe" unless the Architect records an explicit override in `DECISION_LOG.md`.
+- No autonomous bids, buys, offers, messages, relists, refunds, dispatch marks,
+  or other third-party account writes.
+- No secrets in code, docs, logs, summaries, commits, or chat.
+- No fake comps: confirmed sold final prices only.
+- No whole-product valuation for parts, spares, repairs, boxes, manuals,
+  accessories, locked devices, or incomplete listings.
+- No silent live fallback from PostgreSQL to local files or SQLite.
+- No uncapped marketplace/API loops.
 
-## Universal Hard Nos
+## Buy Candidate Gate
 
-- **No autonomous buying**: No agent may place a bid, buy an item, send an offer, accept an offer, or otherwise commit capital without explicit human approval.
-- **No stealth external writes**: No agent may create, revise, delete, relist, message, mark shipped, refund, or change a third-party account state without a deterministic safety gate and human approval.
-- **No credential exposure**: Secrets must stay in environment variables or secure local configuration. Never hard-code, print, document, or transmit API keys, passwords, OAuth tokens, session cookies, Slack webhook URLs, or database credentials.
-- **No black-box execution**: Commercial decisions must map to documented rules, structured inputs, and auditable outputs. LLM text alone is not a valid execution reason.
-- **No recursive looping**: If a workflow repeats without progress, halt, record the condition in `PROGRESS.txt`, and require operator review.
-- **No live fallback to local files**: Live operations may not silently fall back to temp files, CSVs, or SQLite for state that should be in PostgreSQL.
+A review candidate needs:
 
-## Code Quality Bar
+- live/open listing and valid URL,
+- clean product identity,
+- confirmed sold comp depth,
+- realistic fees/postage/packaging/repair/risk reserves,
+- positive expected profit,
+- safe max buy price,
+- persisted red flags/evidence,
+- human approval before real money moves.
 
-- Core Python architecture should use Pydantic models for meaningful data contracts, FastAPI for service/API boundaries, LangGraph for workflow orchestration, and PostgreSQL for operational persistence.
-- New cross-module payloads, API request/response bodies, decision records, assessment payloads, paper-trade snapshots, and database-facing DTOs should be Pydantic models unless there is a documented reason not to.
-- Existing dict/dataclass-heavy code may be migrated incrementally, but do not add new high-risk untyped payload shapes where a Pydantic model would make the contract clearer.
-- FastAPI endpoint code must stay thin: validate inputs and outputs with Pydantic, delegate workflow execution to pipeline/LangGraph services, and avoid embedding scoring or marketplace logic in route handlers.
-- Code must be readable enough for a future operator to audit under pressure.
-- Public modules, pipeline nodes, non-trivial helpers, scripts, and safety gates must have docstrings or doc-blocks explaining purpose, inputs, outputs, side effects, and any important safety assumptions.
-- Add concise inline comments where logic is domain-specific, high-risk, non-obvious, or intentionally conservative.
-- Do not add noise comments that simply restate obvious syntax.
-- New deterministic scoring, filtering, backfill, and marketplace-adjacent logic must include focused tests or a documented verification command.
-- Prefer clear names and small functions over clever compression.
+## If Unsure
 
-## Buy Desk Safety Gate
-
-Any candidate shown as actionable must pass deterministic checks before being labelled `BUY`, `BID`, or `ACTIONABLE`.
-
-Minimum checks:
-
-- Listing is active/live/open and has a valid item URL.
-- Product identity matches the comp group. Accessories, parts, boxes, manuals, spares, repair-only items, and "empty packaging" must not be valued against whole-product comps.
-- Expected net profit is positive after purchase price, inbound shipping, outbound shipping, packaging, likely repair/refurb cost, platform fees where applicable, and a risk reserve.
-- Comp sample count and freshness meet the niche-specific threshold.
-- Max bid is below the conservative resale estimate after costs.
-- Confidence and red-flag fields are persisted with the candidate.
-- Human approval is required before any real bid or purchase.
-
-## Resource and Cost Limits
-
-- Track model usage and estimated cost for external model calls used in assessment or decisioning.
-- Prefer cheap deterministic filters before LLM calls.
-- Halt or downgrade to review-only mode if cost tracking is unavailable for a paid model workflow.
-
-## Compliance and Marketplace Conduct
-
-- Respect marketplace terms, rate limits, API policies, robots constraints, and account safety.
-- Do not build or run code intended to evade eBay controls, conceal automation, manipulate feedback, scrape aggressively, or bypass payment/listing rules.
-- Do not message buyers or sellers automatically without human review and approval.
-
-## Conflict Resolution
-
-If a request conflicts with this file:
-
-1. Stop the execution chain.
-2. Cite the specific constraint.
-3. Ask for an explicit Architect decision.
-4. Record approved overrides in `DECISION_LOG.md` before implementation.
+Downgrade to review/skip and record why.
