@@ -1,141 +1,260 @@
-# agent/model_keys/samsung.py
 from __future__ import annotations
 
 import re
 from typing import Any, Mapping, Optional
-from utils.condition import _derive_condition_grade
 
 UNKNOWN_KEY = "unknown"
 
 
-def _clean(s: Any) -> str:
-    """Basic string cleaner: None -> "", strip whitespace."""
-    if s is None: return ""
-    if isinstance(s, list):
-        return " ".join(str(v).lower() for v in s)
-    return str(s).strip()
+def _text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple, set)):
+        return " ".join(_text(item) for item in value)
+    return str(value).strip().lower()
 
 
-def _extract_storage(attrs: Mapping[str, Any], title: str) -> str:
-    """
-    Extracts canonical storage (e.g., '128gb', '1tb').
-    Scans 'Storage Capacity' and 'Size' attributes.
-    """
-    raw_storage = _clean(attrs.get("Storage Capacity")) + _clean(attrs.get("Size"))
-    search_text = f"{raw_storage} {title.lower()}"
+def _clean_token(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
-    # 1. Check for TB
-    if re.search(r'1\s?tb', search_text): return "1tb"
-    # 2. Check for GB (Standardizing 128, 256, 512)
-    match = re.search(r'\b(128|256|512|64|32)\s?gb\b', search_text)
+
+def _blob(attrs: Mapping[str, Any], title: str) -> str:
+    fields = [
+        title,
+        _text(attrs.get("Brand")),
+        _text(attrs.get("Model")),
+        _text(attrs.get("Model Number")),
+        _text(attrs.get("MPN")),
+        _text(attrs.get("Product Line")),
+        _text(attrs.get("Series")),
+        _text(attrs.get("Network")),
+        _text(attrs.get("Connectivity")),
+        _text(attrs.get("Cellular Band")),
+        _text(attrs.get("Cellular Technology")),
+        _text(attrs.get("Storage Capacity")),
+        _text(attrs.get("Size")),
+    ]
+    return " ".join(part for part in fields if part).lower()
+
+
+def _is_samsung(attrs: Mapping[str, Any], title: str) -> bool:
+    brand = _text(attrs.get("Brand") or attrs.get("brand"))
+    blob = _blob(attrs, title)
+    return "samsung" in brand or "samsung" in blob or "galaxy" in blob
+
+
+def _is_junk(blob: str) -> bool:
+    junk_terms = (
+        "case for",
+        "phone case",
+        "flip cover",
+        "screen protector",
+        "tempered glass",
+        "replacement screen",
+        "screen assembly",
+        "lcd assembly",
+        "digitizer",
+        "charging port",
+        "flex cable",
+        "back cover",
+        "back glass",
+        "housing",
+        "frame",
+        "battery door",
+        "charger only",
+        "cable only",
+        "box only",
+        "empty box",
+        "dummy phone",
+        "display phone",
+    )
+    return any(term in blob for term in junk_terms)
+
+
+def _capacity_token(amount: str, unit: str) -> str:
+    number = int(amount)
+    unit = unit.lower()
+    if unit == "tb":
+        if number == 1:
+            return "1tb"
+        return f"{number}tb"
+    if number in {250, 251, 255, 256}:
+        return "256gb"
+    if number in {500, 512}:
+        return "512gb"
+    if number in {1000, 1024}:
+        return "1tb"
+    return f"{number}gb"
+
+
+def _storage(attrs: Mapping[str, Any], title: str) -> str:
+    storage_text = " ".join(
+        _text(attrs.get(key))
+        for key in ("Storage Capacity", "Size", "Memory Card Type", "Capacity", "Model")
+        if attrs.get(key)
+    )
+    blob = f"{title.lower()} {storage_text}"
+    candidates: list[str] = []
+    for match in re.finditer(r"\b(32|64|128|256|512|1000|1024|1)\s*(gb|tb)\b", blob):
+        before = blob[max(0, match.start() - 18) : match.start()]
+        after = blob[match.end() : match.end() + 18]
+        if re.search(r"(ram|memory)\s*$", before) or re.search(r"^\s*(ram|memory)", after):
+            continue
+        token = _capacity_token(match.group(1), match.group(2))
+        if token not in candidates:
+            candidates.append(token)
+    return candidates[-1] if candidates else ""
+
+
+def _has_5g(attrs: Mapping[str, Any], title: str) -> bool:
+    return bool(re.search(r"\b5g\b", _blob(attrs, title)))
+
+
+def _foldable_from_model_number(blob: str) -> str:
+    if re.search(r"\bsm-f9(?:16|26|36|46|56|66)[a-z]*\b", blob):
+        mapping = {
+            "916": "z-fold2",
+            "926": "z-fold3",
+            "936": "z-fold4",
+            "946": "z-fold5",
+            "956": "z-fold6",
+            "966": "z-fold7",
+        }
+        code = re.search(r"\bsm-f9(16|26|36|46|56|66)[a-z]*\b", blob)
+        return mapping.get(code.group(1), "") if code else ""
+    if re.search(r"\bsm-f7(?:11|21|31|41|61)[a-z]*\b", blob):
+        mapping = {
+            "11": "z-flip3",
+            "21": "z-flip4",
+            "31": "z-flip5",
+            "41": "z-flip6",
+            "61": "z-flip7",
+        }
+        code = re.search(r"\bsm-f7(11|21|31|41|61)[a-z]*\b", blob)
+        return mapping.get(code.group(1), "") if code else ""
+    return ""
+
+
+def _extract_foldable(blob: str) -> str:
+    model_number = _foldable_from_model_number(blob)
+    if model_number:
+        return model_number
+
+    match = re.search(r"\b(?:galaxy\s*)?z\s*fold\s*(\d)\b", blob)
     if match:
-        return f"{match.group(1)}gb"
+        return f"z-fold{match.group(1)}"
+
+    match = re.search(r"\b(?:galaxy\s*)?z\s*flip\s*(\d)\b", blob)
+    if match:
+        return f"z-flip{match.group(1)}"
+
+    if re.search(r"\bz\s*fold\b|\bfold\b", blob):
+        return ""
+    if re.search(r"\bz\s*flip\b|\bflip\b", blob):
+        return ""
+    return ""
+
+
+def _extract_s_or_note(blob: str) -> str:
+    blob = re.sub(r"\bs(\d{1,2})\+", r"s\1 plus", blob)
+    blob = re.sub(r"\bnote(\d{1,2})\+", r"note\1 plus", blob)
+    match = re.search(r"\b(?:galaxy\s*)?s\s*(\d{1,2})\s*(ultra|fe|plus|\+)?\b", blob)
+    if not match:
+        match = re.search(r"\bs(\d{1,2})(ultra|fe|plus|\+)?\b", blob)
+    if match:
+        generation = match.group(1)
+        tier = match.group(2) or ""
+        if not tier:
+            tail = blob[match.end() : match.end() + 36]
+            tier_match = re.search(r"\b(ultra|fe|plus|\+)\b", tail)
+            tier = tier_match.group(1) if tier_match else ""
+        tier = "plus" if tier == "+" else tier
+        return "-".join(part for part in [f"s{generation}", tier] if part)
+
+    match = re.search(r"\b(?:galaxy\s*)?note\s*(\d{1,2})\s*(ultra|plus|\+)?\b", blob)
+    if not match:
+        match = re.search(r"\bnote(\d{1,2})(ultra|plus|\+)?\b", blob)
+    if match:
+        tier = "plus" if match.group(2) == "+" else (match.group(2) or "")
+        return "-".join(part for part in [f"note{match.group(1)}", tier] if part)
 
     return ""
 
 
-def _is_5g(attrs: Mapping[str, Any], title: str) -> str:
-    """Detects 5G capability, a major price driver for A-series."""
-    conn = _clean(attrs.get("Connectivity"))
-    search_text = f"{conn} {title.lower()}"
-    return "5g" if "5g" in search_text else ""
+def _extract_budget_phone(blob: str) -> str:
+    match = re.search(r"\b(?:galaxy\s*)?([am])\s*(\d{2})(s)?\b", blob)
+    if match:
+        suffix = "s" if match.group(3) else ""
+        return f"{match.group(1)}{match.group(2)}{suffix}"
+    match = re.search(r"\b([am]\d{2}s?)\b", blob)
+    return match.group(1) if match else ""
 
 
-def _normalise_brand(raw: Any) -> str:
-    """Collapses Samsung and competitors found in the data."""
-    s = _clean(raw).lower()
-    if not s or s in {"unbranded", "does not apply"}: return ""
-
-    # List derived from ebay-samsung.md
-    if "samsung" in s: return "samsung"
-    if "google" in s: return "google"
-    if "motorola" in s: return "motorola"
-    if "oneplus" in s: return "oneplus"
-
-    return "".join(ch for ch in s if ch.isalnum())
-
-
-def _compress_model_tokens(tokens: list[str]) -> str:
-    """Collapses phone models into stable families (e.g., 's23ultra')."""
-    if not tokens: return ""
-
-    STOP = {
-        "galaxy", "samsung", "phone", "smartphone", "5g", "lte", "edition",
-        "dual", "sim", "unlocked", "android", "mobile", "sm"
-    }
-
-    out: list[str] = []
-    for tok in tokens:
-        if tok in STOP: continue
-
-        # Handle 'z' + 'fold/flip' logic
-        if not out:
-            out.append(tok)
-            continue
-        if out == ["z"] and tok in {"fold", "flip"}:
-            out[-1] = f"z{tok}"
-            continue
-
-        # Keep major suffixes
-        if re.search(r"\d", tok) or tok in {"ultra", "fe", "plus", "pro", "max"}:
-            out.append(tok)
-            # Once we have something like 's23' + 'ultra', we stop
-            if len(out) >= 2: break
-            continue
-
-        if len(out) >= 2: break
-        out.append(tok)
-
-    return "".join(out)
-
-
-def _normalise_model(attrs: Mapping[str, Any], brand: str) -> str:
-    """Extracts model from Model, Model Number, or MPN."""
-    # Cascade: Model is usually best, Model Number is technical
-    raw = _clean(attrs.get("Model") or attrs.get("Model Number") or attrs.get("MPN"))
-    if not raw or raw in {"does not apply", "n/a", "android phone"}:
+def _extract_tab(blob: str) -> str:
+    if not re.search(r"\b(tab|tablet)\b", blob):
         return ""
 
-    # Clean separators
-    s = raw.replace("/", " ").replace("-", " ")
-    raw_tokens = s.split()
+    line = ""
+    match = re.search(r"\btab\s*([as])\s*(\d{1,2})\s*(ultra|plus|\+|fe)?\b", blob)
+    if match:
+        tier = "plus" if match.group(3) == "+" else (match.group(3) or "")
+        line = "-".join(part for part in [f"tab-{match.group(1)}{match.group(2)}", tier] if part)
+    else:
+        match = re.search(r"\bgalaxy\s*tab\s*([as])(\d{1,2})(ultra|plus|\+|fe)?\b", blob)
+        if match:
+            tier = "plus" if match.group(3) == "+" else (match.group(3) or "")
+            line = "-".join(part for part in [f"tab-{match.group(1)}{match.group(2)}", tier] if part)
 
-    tokens: list[str] = []
-    for tok in raw_tokens:
-        alnum = "".join(ch for ch in tok.lower() if ch.isalnum())
-        if alnum and alnum != brand:
-            tokens.append(alnum)
+    return line
 
-    return _compress_model_tokens(tokens)
+
+def _connectivity_for_model(model: str, attrs: Mapping[str, Any], title: str) -> str:
+    if not _has_5g(attrs, title):
+        return ""
+    if re.match(r"^[am]\d{2}s?$", model):
+        return "5g"
+    return ""
+
+
+def _wifi_or_cellular(attrs: Mapping[str, Any], title: str) -> str:
+    blob = _blob(attrs, title)
+    if re.search(r"\b(cellular|5g|lte|4g|sim)\b", blob):
+        return "cellular"
+    if re.search(r"\b(wifi|wi-fi)\b", blob):
+        return "wifi"
+    return ""
 
 
 def samsung_model_key(
-        attrs: Mapping[str, Any],
-        title: str = "",
+    attrs: Mapping[str, Any],
+    title: str = "",
 ) -> Optional[str]:
     """
-    Builds canonical key: {brand}-{model}-{storage}-{5g?}_{grade}
+    Build strict Samsung product identity only.
 
-    Examples:
-    - Brand="Samsung", Model="Galaxy S23 Ultra", Storage="256 GB" -> "samsung-s23ultra-256gb_B"
-    - Brand="Samsung", Model="Galaxy A54 5G", Storage="128 GB" -> "samsung-a54-128gb-5g_B"
+    Condition is stored separately in auction_listings.condition_grade.
+    Unclear Samsung rows return `unknown` rather than broad comp buckets.
     """
-    brand = _normalise_brand(attrs.get("Brand"))
-    model_core = _normalise_model(attrs, brand)
 
-    if not brand or not model_core:
+    if not _is_samsung(attrs, title):
         return UNKNOWN_KEY
 
-    # Specs Extraction
-    storage = _extract_storage(attrs, title)
-    connectivity = _is_5g(attrs, title)
+    blob = _blob(attrs, title)
+    if _is_junk(blob):
+        return UNKNOWN_KEY
 
-    # Construct base key
-    parts = [brand, model_core]
-    if storage: parts.append(storage)
-    if connectivity: parts.append(connectivity)
+    storage = _storage(attrs, title)
 
-    base_key = "-".join(parts)
-    grade = _derive_condition_grade(attrs, title)
+    tab = _extract_tab(blob)
+    if tab:
+        connectivity = _wifi_or_cellular(attrs, title)
+        if not storage:
+            return UNKNOWN_KEY
+        return "-".join(part for part in ["samsung", "galaxy", tab, storage, connectivity] if part)
 
-    return f"{base_key}_{grade}"
+    model = _extract_foldable(blob) or _extract_s_or_note(blob) or _extract_budget_phone(blob)
+    if not model or not storage:
+        return UNKNOWN_KEY
+
+    connectivity = _connectivity_for_model(model, attrs, title)
+    return "-".join(part for part in ["samsung", "galaxy", model, storage, connectivity] if part)

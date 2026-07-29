@@ -10,7 +10,7 @@ class HeartbeatBackfillTriggerTests(unittest.TestCase):
     def test_backfill_spawn_uses_larger_default_batch_inside_daily_budget(self):
         plan = {
             "api_budget": {"recommended_backfill_calls": 1000},
-            "recommended_stale_candidate_preview": [{"id": 1}],
+            "recommended_unknown_candidate_preview": [{"id": 1}],
         }
 
         with patch("pipelines.listing.main.is_backfill_running", return_value=False):

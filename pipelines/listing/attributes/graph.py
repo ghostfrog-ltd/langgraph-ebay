@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 from utils.db_schema import get_connection
 from utils.usage_tracker import increment_api_usage
 from utils.logger import get_logger
+from utils.condition import _derive_condition_grade
 
 from pipelines.listing.attributes.mk import normalise_model
 
@@ -260,7 +261,8 @@ def _apply_attributes(
     storage_gb: Optional[int],
     colour: Optional[str],
     epid: Optional[str],
-    model_key: Optional[str]
+    model_key: Optional[str],
+    condition_grade: Optional[str] = None,
 ) -> None:
     fields: List[str] = []
     values: List[Any] = []
@@ -293,6 +295,10 @@ def _apply_attributes(
     if model_key is not None:
         fields.append("model_key = %s")
         values.append(model_key)
+
+    if condition_grade is not None:
+        fields.append("condition_grade = %s")
+        values.append(condition_grade)
 
     if not fields:
         return
@@ -456,6 +462,7 @@ def _node_apply(state: AttributesState) -> AttributesState:
     source = state.get("source")
     title = state.get("title")
     key = normalise_model(title=title, attrs=attrs, source=source) or UNKNOWN_KEY
+    condition_grade = _derive_condition_grade(raw_map or attrs, title or "")
 
     _apply_attributes(
         auction_id=auction_id,
@@ -466,6 +473,7 @@ def _node_apply(state: AttributesState) -> AttributesState:
         colour=attrs.get("colour"),
         epid=attrs.get("epid"),
         model_key=key,
+        condition_grade=condition_grade,
     )
 
     state["processed"] = int(state.get("processed", 0)) + 1
@@ -488,6 +496,7 @@ def _node_mark_false(state: AttributesState) -> AttributesState:
         colour=None,
         epid=None,
         model_key=None,
+        condition_grade=None,
     )
 
     state["processed"] = int(state.get("processed", 0)) + 1

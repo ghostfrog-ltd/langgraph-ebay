@@ -5,10 +5,11 @@ PostgreSQL is the live source of truth.
 ## Core Tables / Views
 
 - `auction_listings`: collected listings, current state, product identity,
-  prices, finalization, ROI fields.
+  condition grade, prices, finalization, ROI fields.
 - `auction_price_history`: observed price/bid history.
 - `sources`: configured collection sources.
-- `comps`: confirmed-final-price comp summaries by `model_key`.
+- `comps`: confirmed-final-price comp summaries by `model_key` and
+  `condition_grade`.
 - `listing_assessments`: optional structured assessment history.
 - `paper_trade_predictions`: candidate-validation snapshots and outcomes.
 - `alert_state`: email/Slack throttle state.
@@ -30,6 +31,7 @@ For buy/resale decisions, preserve:
 - external id and URL,
 - source/market,
 - product/model key,
+- condition grade,
 - current price,
 - final price when confirmed,
 - status/finalized state,
@@ -38,6 +40,15 @@ For buy/resale decisions, preserve:
 - expected profit,
 - max buy price,
 - red flags and decision status.
+
+Important listing statuses:
+
+- `live`: currently seen as buyable/open.
+- `unknown`: no longer seen locally, but eBay has not confirmed the outcome.
+- `sold`: ended with confirmed `final_price`.
+- `ended`: ended without confirmed sale evidence.
+
+Do not use a `stale` business state. "Not seen recently" means `unknown`.
 
 ## Migration Rule
 

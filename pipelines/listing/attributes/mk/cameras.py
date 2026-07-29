@@ -1,105 +1,246 @@
 from __future__ import annotations
+
 import re
-from typing import Mapping, Any, Optional
-from utils.condition import _derive_condition_grade
+from typing import Any, Mapping, Optional
 
 
-def _clean(s: Any) -> str:
-    return str(s).strip().lower() if s else ""
+UNKNOWN_KEY = "unknown"
 
 
-def _is_action_cam(attrs: Mapping[str, Any], title: str = "") -> bool:
-    t = _clean(attrs.get("Type"))
-    model = _clean(attrs.get("Model"))
-    title_low = title.lower()
-    # Exclude drones and accessories found in data
-    exclude = {"drone", "mavic", "mount", "strap", "case", "charger"}
-    title_exclude = (
-        "lens mod",
-        "max lens",
-        "media mod",
-        "charger only",
-        "battery only",
-        "case only",
-        "mount only",
+def _clean(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).strip().lower()
+
+
+def _attr_blob(attrs: Mapping[str, Any]) -> str:
+    parts: list[str] = []
+    for value in attrs.values():
+        if isinstance(value, (list, tuple, set)):
+            parts.extend(_clean(item) for item in value)
+        else:
+            parts.append(_clean(value))
+    return " ".join(part for part in parts if part)
+
+
+def _text(attrs: Mapping[str, Any], title: str) -> str:
+    return f"{_clean(title)} {_attr_blob(attrs)}".strip()
+
+
+def _is_accessory_or_non_camera(text: str) -> bool:
+    return any(
+        term in text
+        for term in (
+            "lens mod",
+            "max lens",
+            "media mod",
+            "display mod",
+            "light mod",
+            "charger only",
+            "battery only",
+            "case only",
+            "mount only",
+            "housing only",
+            "frame only",
+            "floaty",
+            "strap",
+            "harness",
+            "chest mount",
+            "head strap",
+            "waterproof case",
+            "protective case only",
+            "screen protector",
+            "nd filter",
+            "filter set",
+            "mic adapter",
+            "drone only",
+            "gimbal only",
+            "karma drone",
+            "mavic",
+            "phantom",
+            "mini 4 pro",
+            "mini 3 pro",
+        )
     )
-    if (
-        any(x in t for x in exclude)
-        or any(x in model for x in exclude)
-        or any(x in title_low for x in title_exclude)
-    ):
-        return False
-    if re.search(r"\b(gopro|hero\s*\d{1,2}|osmo\s+action|insta\s*360|insta360)\b", title_low):
-        return True
-    return "camera" in t or "camera" in model or "cam" in t
 
 
-def _brand_from_title(title: str) -> str:
-    title_low = title.lower()
-    if re.search(r"\bgopro\b", title_low):
-        return "gopro"
-    if re.search(r"\bdji\b|\bosmo\s+action\b", title_low):
-        return "dji"
-    if re.search(r"\binsta\s*360\b|\binsta360\b", title_low):
-        return "insta360"
+def _storage(title: str, attrs: Mapping[str, Any]) -> str:
+    text = " ".join(
+        [
+            _clean(title),
+            _clean(attrs.get("Flash Memory Installed")),
+            _clean(attrs.get("Storage Capacity")),
+            _clean(attrs.get("storage_gb")),
+        ]
+    )
+    if re.search(r"\b128\s?gb\b", text):
+        return "128gb"
+    if re.search(r"\b64\s?gb\b", text):
+        return "64gb"
+    if re.search(r"\b32\s?gb\b", text):
+        return "32gb"
     return ""
 
 
-def _model_from_title(title: str, brand: str) -> str:
-    title_low = title.lower()
-    if brand == "gopro":
-        match = re.search(r"\bhero\s*([0-9]{1,2})\b", title_low)
-        if match:
-            return f"hero{match.group(1)}"
-    if brand == "dji":
-        match = re.search(r"\b(?:dji\s+)?(?:osmo\s+)?action\s*([0-9]{1,2})\b", title_low)
-        if match:
-            return f"osmoaction{match.group(1)}"
-    if brand == "insta360":
-        match = re.search(r"\b(?:insta\s*360|insta360)\s*([a-z0-9]+)\b", title_low)
-        if match:
-            return match.group(1)
-    return ""
+def _gopro_key(title_text: str, text: str) -> str:
+    if "gopro" not in text and "hero" not in text:
+        return UNKNOWN_KEY
+
+    if re.search(r"\bgopro\s+max\b|\bmax\s+360\b", text):
+        return "gopro-max"
+    if "fusion" in text:
+        return "gopro-fusion"
+
+    if "hero 2018" in text or re.search(r"\bhero\s+4k\b", title_text):
+        return "gopro-hero-2018"
+
+    match = re.search(r"\bhero\s*([0-9]{1,2})(?:\s*(?:\+|plus))?(?=\b|\s|$)", text)
+    if not match:
+        return UNKNOWN_KEY
+
+    generation = int(match.group(1))
+    if generation in {8, 9, 10, 11, 12, 13}:
+        if "mini" in title_text and generation in {11, 13}:
+            return f"gopro-hero{generation}-mini"
+        return f"gopro-hero{generation}"
+
+    if generation == 7:
+        if "silver" in title_text:
+            return "gopro-hero7-silver"
+        if "white" in title_text:
+            return "gopro-hero7-white"
+        if "black" in title_text:
+            return "gopro-hero7-black"
+        return UNKNOWN_KEY
+
+    if generation == 6:
+        return "gopro-hero6-black"
+
+    if generation == 5:
+        if "session" in title_text:
+            return "gopro-hero5-session"
+        return "gopro-hero5-black"
+
+    if generation == 4:
+        if "session" in title_text:
+            return "gopro-hero4-session"
+        if "silver" in title_text:
+            return "gopro-hero4-silver"
+        if "black" in title_text:
+            return "gopro-hero4-black"
+        return UNKNOWN_KEY
+
+    if generation == 3:
+        if "+" in text or "plus" in text:
+            return "gopro-hero3plus"
+        return "gopro-hero3"
+
+    return UNKNOWN_KEY
 
 
-def _extract_cam_storage(attrs: Mapping[str, Any], title: str) -> str:
-    # Use 'Flash Memory Installed' for internal units
-    search = (_clean(attrs.get("Flash Memory Installed")) + title.lower())
-    if "128" in search: return "128gb"
-    if "64" in search: return "64gb"
-    if "32" in search: return "32gb"
-    return ""
+def _dji_key(title_text: str, text: str) -> str:
+    if not any(term in text for term in ("dji", "osmo", "action 2", "action 3", "action 4", "action 5", "action 6")):
+        return UNKNOWN_KEY
+
+    if re.search(r"\bosmo\s+pocket\s*3\b|\bpocket\s*3\b", text):
+        return "dji-osmo-pocket-3"
+    if re.search(r"\bosmo\s*360\b", text):
+        return "dji-osmo-360"
+    if re.search(r"\baction\s*2\b", text):
+        return "dji-action-2"
+
+    match = re.search(r"\b(?:osmo\s+)?action\s*([3-6])\b", text)
+    if not match:
+        return UNKNOWN_KEY
+
+    generation = match.group(1)
+    if generation == "5":
+        return "dji-osmo-action-5-pro" if "pro" in title_text else UNKNOWN_KEY
+    return f"dji-osmo-action-{generation}"
+
+
+def _insta360_go_key(title_text: str, attrs: Mapping[str, Any]) -> str:
+    storage = _storage(title_text, attrs)
+    if re.search(r"\bgo\s*ultra\b", title_text):
+        return "insta360-go-ultra"
+    if re.search(r"\bgo\s*3s\b", title_text):
+        return f"insta360-go-3s-{storage}" if storage else UNKNOWN_KEY
+    if re.search(r"\bgo\s*3\b", title_text):
+        return f"insta360-go-3-{storage}" if storage else UNKNOWN_KEY
+    if re.search(r"\bgo\s*2\b", title_text):
+        return "insta360-go-2"
+    return UNKNOWN_KEY
+
+
+def _insta360_key(title_text: str, text: str, attrs: Mapping[str, Any]) -> str:
+    if "insta360" not in text and "insta 360" not in text:
+        return UNKNOWN_KEY
+
+    if re.search(r"\bone\s*x2\b", title_text):
+        return "insta360-one-x2"
+    if re.search(r"\bone\s*x\b", title_text):
+        return "insta360-one-x"
+    if re.search(r"\bone\s*rs\b", title_text):
+        if "twin" in title_text:
+            return "insta360-one-rs-twin"
+        return "insta360-one-rs"
+    if re.search(r"\bone\s*r\b", title_text):
+        if "twin" in title_text:
+            return "insta360-one-r-twin"
+        return "insta360-one-r"
+
+    for generation in ("5", "4", "3", "2"):
+        if re.search(rf"\bx\s*{generation}\b", title_text):
+            return f"insta360-x{generation}"
+
+    if re.search(r"\bace\s*pro\s*2\b", title_text):
+        return "insta360-ace-pro-2"
+    if re.search(r"\bace\s*pro\b", title_text):
+        return "insta360-ace-pro"
+    if re.search(r"\bace\b", title_text):
+        return "insta360-ace"
+
+    go_key = _insta360_go_key(title_text, attrs)
+    if go_key != UNKNOWN_KEY:
+        return go_key
+
+    return UNKNOWN_KEY
+
+
+def _secondary_key(title_text: str) -> str:
+    if "akaso" in title_text:
+        if re.search(r"\bek7000\s+pro\b", title_text):
+            return "akaso-ek7000-pro"
+        if "ek7000" in title_text:
+            return "akaso-ek7000"
+        if "brave 7 le" in title_text:
+            return "akaso-brave-7-le"
+        if "brave 7" in title_text:
+            return "akaso-brave-7"
+        if re.search(r"\bv50\b", title_text):
+            return "akaso-v50"
+    if "drift ghost xl" in title_text:
+        return "drift-ghost-xl"
+    if "sjcam c300" in title_text:
+        return "sjcam-c300"
+    return UNKNOWN_KEY
 
 
 def camera_drone_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
-    if not _is_action_cam(attrs or {}, title):
-        return "unknown"
+    safe_attrs = attrs or {}
+    title_text = _clean(title)
+    text = _text(safe_attrs, title)
 
-    brand = _clean(attrs.get("Brand")).replace(" ", "") or _brand_from_title(title)
-    model_raw = _clean(attrs.get("Model"))
+    if _is_accessory_or_non_camera(text):
+        return UNKNOWN_KEY
 
-    # Model Repair Logic
-    if brand == "gopro":
-        if "hero" not in model_raw and any(char.isdigit() for char in model_raw):
-            model_raw = "hero" + "".join(filter(str.isdigit, model_raw))
-    elif brand == "dji" and "action" in model_raw and "osmo" not in model_raw:
-        model_raw = "osmo" + model_raw
+    for key in (
+        _gopro_key(title_text, text),
+        _dji_key(title_text, text),
+        _insta360_key(title_text, text, safe_attrs),
+        _secondary_key(title_text),
+    ):
+        if key != UNKNOWN_KEY:
+            return key
 
-    title_model = _model_from_title(title, brand)
-
-    if brand and model_raw.startswith(brand):
-        model_raw = model_raw[len(brand):].strip()
-
-    # Keep only alphanumeric for the key. A clear title signal beats item
-    # specifics because eBay attributes are often copied from a different model.
-    model_core = title_model or "".join(ch for ch in model_raw if ch.isalnum())
-
-    # Specific storage for internal-memory units
-    if "go" in model_core or "insta360" in brand:
-        storage = _extract_cam_storage(attrs, title)
-        if storage: model_core += f"_{storage}"
-
-    if not brand or not model_core: return "unknown"
-
-    grade = _derive_condition_grade(attrs, title)
-    return f"{brand}-{model_core}_{grade}"
+    return UNKNOWN_KEY

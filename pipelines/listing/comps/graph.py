@@ -14,7 +14,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 connection = db_connection.connection
 
-COMPS_BLOCKED_TITLE_PATTERNS: tuple[str, ...] = (
+COMPS_BLOCKED_TEXT_PATTERNS: tuple[str, ...] = (
     "%for parts%",
     "%parts only%",
     "%parts missing%",
@@ -33,6 +33,15 @@ COMPS_BLOCKED_TITLE_PATTERNS: tuple[str, ...] = (
     "%not working%",
     "%not starting%",
     "%dead%",
+    "%scrap%",
+    "%scraps%",
+    "%selling for scraps%",
+    "%badly damaged%",
+    "%screen damage%",
+    "%damaged screen%",
+    "%screen is damaged%",
+    "%screen badly damaged%",
+    "%badly damaged screen%",
     "%broken screen%",
     "%cracked screen%",
     "%broken lcd%",
@@ -45,6 +54,9 @@ COMPS_BLOCKED_TITLE_PATTERNS: tuple[str, ...] = (
     "%grade d%",
     "%box only%",
     "%empty box%",
+    "%empty original box%",
+    "%box & inserts%",
+    "%box and inserts%",
     "%manual only%",
     "%charger only%",
     "%battery only%",
@@ -54,12 +66,36 @@ COMPS_BLOCKED_TITLE_PATTERNS: tuple[str, ...] = (
     "%cable only%",
     "%adapter only%",
     "%replacement part%",
+    "%logic board%",
+    "%logic board missing%",
+    "%missing logic board%",
+    "%screen for%",
+    "%joy-con%",
+    "%joy con%",
+    "%joycon%",
+    "%usb-c cable%",
+    "%usb cable%",
+    "%usb-a to usb-c%",
+    "%stealth case%",
+    "%carrying case%",
+    "%carrying cases%",
+    "%protective case%",
+    "%travel case%",
+    "%touch id issue%",
+    "%touchid issue%",
+    "%touch id missing%",
+    "%screen issue%",
+    "%screen & mic issue%",
+    "%mic issue%",
+    "%microphone issue%",
     "%job lot%",
     "%joblot%",
     "%unit only%",
     "%no accessories%",
     "%macbook neo%",
 )
+
+APPLE_MAC_ALLOWED_CPU_PATTERN = r"-(m[1-9](pro|max|ultra)?|intel|core-i[3579]|core-m[357])(-|_)"
 
 # ---------------------------------
 # Tunable knobs
@@ -156,9 +192,10 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
     )
 
     sql = """
-        INSERT INTO comps (model_key, median_final_price, mean_final_price, samples, computed_at)
+        INSERT INTO comps (model_key, condition_grade, median_final_price, mean_final_price, samples, computed_at)
         SELECT
             model_key,
+            COALESCE(condition_grade, 'B') AS condition_grade,
             PERCENTILE_CONT(0.5) WITHIN GROUP (
                 ORDER BY final_price
             )::numeric AS median_final_price,
@@ -173,28 +210,33 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
           AND LOWER(model_key) NOT LIKE 'unknown%%'
           AND LOWER(model_key) NOT LIKE '%%generic%%'
           AND LOWER(model_key) NOT LIKE '%%gen-unk%%'
+          AND LOWER(model_key) !~ '_[a-d](-[a-d])?$'
           AND NOT (
               LOWER(model_key) LIKE 'apple-iphone-%%'
               AND LOWER(model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+)(-|_)'
           )
           AND NOT (
               LOWER(model_key) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'
-              AND LOWER(model_key) !~ '-(m[1-9](pro|max|ultra)?|intel)(-|_)'
+              AND LOWER(model_key) !~ %s
           )
           AND NOT (
-              LOWER(COALESCE(title, '')) LIKE ANY(%s)
+              LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) LIKE ANY(%s)
               OR (
                   source = 'ebay-apple'
-                  AND LOWER(COALESCE(title, '')) LIKE '%%macbook%%'
-                  AND LOWER(COALESCE(title, '')) ~ '\\ma[0-9]{1,2}\\s*(pro|max|ultra)?\\M'
+                  AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) LIKE '%%macbook%%'
+                  AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) ~ '\\ma[0-9]{1,2}\\s*(pro|max|ultra)?\\M'
+              )
+              OR (
+                  source = 'ebay-apple'
+                  AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) ~ '\\mlocked\\M'
               )
           )
-        GROUP BY model_key
+        GROUP BY model_key, COALESCE(condition_grade, 'B')
     """
 
     with connection, connection.cursor() as cur:
         _ensure_utc_session(cur)
-        cur.execute(sql, (str(days), list(COMPS_BLOCKED_TITLE_PATTERNS)))
+        cur.execute(sql, (str(days), APPLE_MAC_ALLOWED_CPU_PATTERN, list(COMPS_BLOCKED_TEXT_PATTERNS)))
 
     # Debug: how many comps did we just insert?
     with connection.cursor() as cur:

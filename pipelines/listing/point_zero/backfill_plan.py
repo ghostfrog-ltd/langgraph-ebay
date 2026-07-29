@@ -1,15 +1,16 @@
 """
-Plan targeted stale-listing backfills under the daily eBay API budget.
+Plan targeted unknown-listing final-price checks under the daily eBay API budget.
 
 The planner is read-only with respect to marketplace state. Its only database
 side effect is ensuring local audit columns exist so apply batches can avoid
-rechecking the same stale rows too frequently.
+rechecking the same unknown rows too frequently.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+from collections import defaultdict
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -17,6 +18,7 @@ from psycopg2.extras import RealDictCursor
 
 from utils.db_schema import get_fresh_connection
 from utils.condition import has_investible_product_identity
+from utils.ebay_api_accounting import build_api_accounting
 
 DEFAULT_EXCLUDED_BACKFILL_SOURCES = (
     "ebay-honda-msx125",
@@ -39,6 +41,9 @@ DEFAULT_BACKFILL_SOURCE_PRIORITY = (
 )
 
 BACKFILL_RECHECK_COOLDOWN = "7 days"
+BACKFILL_CANDIDATE_PAGE_SIZE = 5000
+BACKFILL_MAX_SCAN_ROWS = 250000
+BACKFILL_RECENT_ENDED_WINDOW = "30 days"
 
 
 @dataclass
@@ -54,13 +59,14 @@ class ApiBudget:
     planned_normal_calls: int
     theoretical_spare: int
     recommended_backfill_calls: int
+    budget_bucket: str
 
 
 def ensure_backfill_tracking_columns(cur) -> None:
     """
     Create local audit columns used by Point Zero backfill batches.
 
-    These fields do not change marketplace state. They record that a stale row
+    These fields do not change marketplace state. They record that an unknown row
     was checked, why it was or was not finalized, and when it can safely be
     considered again without burning the same API call every run.
     """
@@ -92,32 +98,46 @@ def compute_api_budget(
     safety_reserve: int,
     max_backfill_per_day: int,
 ) -> ApiBudget:
-    today = _fetch_one(
+    today_rows = _fetch_all(
         cur,
         """
-        SELECT COALESCE(SUM(call_count), 0)::int AS today_calls
+        SELECT service, call_count::int AS call_count
         FROM api_usage
         WHERE date = CURRENT_DATE
         """,
     )
-    recent = _fetch_one(
+    today_accounting = build_api_accounting(
+        {str(row.get("service")): int(row.get("call_count") or 0) for row in today_rows}
+    )
+
+    recent_rows = _fetch_all(
         cur,
         """
         SELECT
-            COALESCE(ROUND(AVG(total_calls)), 0)::int AS avg_total_7d,
-            COALESCE(MAX(total_calls), 0)::int AS max_total_7d
-        FROM (
-            SELECT date, SUM(call_count)::int AS total_calls
-            FROM api_usage
-            WHERE date >= CURRENT_DATE - interval '7 days'
-            GROUP BY date
-        ) d
+            date,
+            service,
+            call_count::int AS call_count
+        FROM api_usage
+        WHERE date >= CURRENT_DATE - interval '7 days'
         """,
     )
 
-    today_calls = int(today.get("today_calls") or 0)
-    avg_total_7d = int(recent.get("avg_total_7d") or 0)
-    max_total_7d = int(recent.get("max_total_7d") or 0)
+    totals_by_date: dict[Any, dict[str, int]] = defaultdict(dict)
+    for row in recent_rows:
+        totals_by_date[row.get("date")][str(row.get("service"))] = int(row.get("call_count") or 0)
+
+    recent_trading_totals = [
+        int(build_api_accounting(usage)["buckets"]["trading"]["used"])
+        for usage in totals_by_date.values()
+    ]
+
+    today_calls = int(today_accounting["buckets"]["trading"]["used"])
+    avg_total_7d = (
+        int(round(sum(recent_trading_totals) / len(recent_trading_totals)))
+        if recent_trading_totals
+        else 0
+    )
+    max_total_7d = max(recent_trading_totals) if recent_trading_totals else 0
     planned_normal_calls = max(today_calls, avg_total_7d, max_total_7d)
     theoretical_spare = max(daily_cap - planned_normal_calls - safety_reserve, 0)
     recommended = min(theoretical_spare, max_backfill_per_day)
@@ -132,6 +152,7 @@ def compute_api_budget(
         planned_normal_calls=planned_normal_calls,
         theoretical_spare=theoretical_spare,
         recommended_backfill_calls=recommended,
+        budget_bucket="trading",
     )
 
 
@@ -149,12 +170,16 @@ def live_unknown_model_key_summary(cur) -> list[dict[str, Any]]:
     )
 
 
-def stale_backfill_source_summary(cur) -> list[dict[str, Any]]:
+def unknown_backfill_source_summary(cur) -> list[dict[str, Any]]:
     return _fetch_all(
         cur,
         """
         WITH live_keys AS (
-            SELECT source, model_key, COUNT(*)::int AS live_count
+            SELECT
+                source,
+                model_key,
+                COALESCE(condition_grade, 'B') AS condition_grade,
+                COUNT(*)::int AS live_count
             FROM auction_listings
             WHERE status = 'live'
               AND model_key IS NOT NULL
@@ -162,43 +187,49 @@ def stale_backfill_source_summary(cur) -> list[dict[str, Any]]:
               AND LOWER(model_key) <> 'unknown'
               AND LOWER(model_key) NOT LIKE 'unknown%%'
               AND LOWER(model_key) NOT LIKE '%%generic%%'
-            GROUP BY source, model_key
+            GROUP BY source, model_key, COALESCE(condition_grade, 'B')
         ),
         needed_keys AS (
             SELECT
                 lk.source,
                 lk.model_key,
+                lk.condition_grade,
                 lk.live_count,
                 COALESCE(c.samples, 0)::int AS comp_samples
             FROM live_keys lk
-            LEFT JOIN latest_comps c ON c.model_key = lk.model_key
+            LEFT JOIN latest_comps c
+              ON c.model_key = lk.model_key
+             AND c.condition_grade = lk.condition_grade
             WHERE COALESCE(c.samples, 0) < 3
         ),
-        stale_pool AS (
+        unknown_pool AS (
             SELECT
                 l.source,
                 l.model_key,
-                COUNT(*)::int AS stale_count,
-                MAX(l.last_seen_at) AS newest_stale
+                COALESCE(l.condition_grade, 'B') AS condition_grade,
+                COUNT(*)::int AS unknown_count,
+                MAX(l.last_seen_at) AS newest_unknown
             FROM auction_listings l
             JOIN needed_keys nk
               ON nk.source = l.source
              AND nk.model_key = l.model_key
-            WHERE l.status = 'stale'
+             AND nk.condition_grade = COALESCE(l.condition_grade, 'B')
+            WHERE l.status = 'unknown'
               AND COALESCE(l.finalized, FALSE) = FALSE
               AND l.end_time <= (now() AT TIME ZONE 'utc') - interval '1 day'
-            GROUP BY l.source, l.model_key
+            GROUP BY l.source, l.model_key, COALESCE(l.condition_grade, 'B')
         )
         SELECT
             nk.source,
             COUNT(*)::int AS model_keys_needing_comps,
             SUM(nk.live_count)::int AS live_listings_needing_comps,
-            SUM(COALESCE(sp.stale_count, 0))::int AS stale_backfill_pool,
-            MAX(sp.newest_stale) AS newest_stale
+            SUM(COALESCE(up.unknown_count, 0))::int AS unknown_backfill_pool,
+            MAX(up.newest_unknown) AS newest_unknown
         FROM needed_keys nk
-        LEFT JOIN stale_pool sp
-          ON sp.source = nk.source
-         AND sp.model_key = nk.model_key
+        LEFT JOIN unknown_pool up
+          ON up.source = nk.source
+         AND up.model_key = nk.model_key
+         AND up.condition_grade = nk.condition_grade
         GROUP BY nk.source
         ORDER BY
             CASE nk.source
@@ -214,23 +245,70 @@ def stale_backfill_source_summary(cur) -> list[dict[str, Any]]:
                 ELSE 99
             END,
             live_listings_needing_comps DESC,
-            stale_backfill_pool DESC
+            unknown_backfill_pool DESC
         """,
     )
 
 
-def stale_backfill_candidates(
+def unknown_backfill_candidates(
     cur,
     *,
     limit: int,
     excluded_sources: tuple[str, ...],
 ) -> list[dict[str, Any]]:
-    raw_limit = max(limit * 20, limit)
-    rows = _fetch_all(
+    if limit <= 0:
+        return []
+
+    # The queue is filtered again by Python product-identity guardrails. Page
+    # through the ordered backlog until the requested limit is filled or the
+    # bounded SQL candidate set is genuinely exhausted.
+    filtered = []
+    offset = 0
+    page_size = max(BACKFILL_CANDIDATE_PAGE_SIZE, min(limit * 2, 20000))
+    max_scan_rows = max(BACKFILL_CANDIDATE_PAGE_SIZE, min(BACKFILL_MAX_SCAN_ROWS, limit * 1000))
+
+    while len(filtered) < limit and offset < max_scan_rows:
+        rows = _fetch_unknown_backfill_candidate_page(
+            cur,
+            limit=min(page_size, max_scan_rows - offset),
+            offset=offset,
+            excluded_sources=excluded_sources,
+        )
+        if not rows:
+            break
+
+        for row in rows:
+            if not has_investible_product_identity(
+                str(row.get("title") or ""),
+                source=str(row.get("source") or ""),
+                model_key=str(row.get("model_key") or ""),
+            ):
+                continue
+            filtered.append(row)
+            if len(filtered) >= limit:
+                break
+
+        offset += len(rows)
+
+    return filtered
+
+
+def _fetch_unknown_backfill_candidate_page(
+    cur,
+    *,
+    limit: int,
+    offset: int,
+    excluded_sources: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    return _fetch_all(
         cur,
         """
         WITH live_keys AS (
-            SELECT source, model_key, COUNT(*)::int AS live_count
+            SELECT
+                source,
+                model_key,
+                COALESCE(condition_grade, 'B') AS condition_grade,
+                COUNT(*)::int AS live_count
             FROM auction_listings
             WHERE status = 'live'
               AND model_key IS NOT NULL
@@ -238,16 +316,19 @@ def stale_backfill_candidates(
               AND LOWER(model_key) <> 'unknown'
               AND LOWER(model_key) NOT LIKE 'unknown%%'
               AND LOWER(model_key) NOT LIKE '%%generic%%'
-            GROUP BY source, model_key
+            GROUP BY source, model_key, COALESCE(condition_grade, 'B')
         ),
         needed_keys AS (
             SELECT
                 lk.source,
                 lk.model_key,
+                lk.condition_grade,
                 lk.live_count,
                 COALESCE(c.samples, 0)::int AS comp_samples
             FROM live_keys lk
-            LEFT JOIN latest_comps c ON c.model_key = lk.model_key
+            LEFT JOIN latest_comps c
+              ON c.model_key = lk.model_key
+             AND c.condition_grade = lk.condition_grade
             WHERE COALESCE(c.samples, 0) < 3
         ),
         eligible AS (
@@ -256,6 +337,7 @@ def stale_backfill_candidates(
                 l.external_id,
                 l.source,
                 l.model_key,
+                COALESCE(l.condition_grade, 'B') AS condition_grade,
                 COALESCE(nk.live_count, 0)::int AS live_count,
                 COALESCE(nk.comp_samples, c.samples, 0)::int AS comp_samples,
                 l.title,
@@ -269,26 +351,26 @@ def stale_backfill_candidates(
                 l.backfill_check_count,
                 l.backfill_last_reason,
                 CASE
-                    WHEN COALESCE(l.bids_count, 0) > 0 THEN 'bid_observed'
-                    WHEN nk.model_key IS NOT NULL THEN 'live_comp_gap'
-                    WHEN l.sale_type = 'bin' THEN 'fixed_price_learning'
-                    WHEN l.sale_type = 'auction' THEN 'auction_learning'
-                    ELSE 'source_learning'
-                END AS selection_reason,
+                    WHEN nk.model_key IS NOT NULL THEN 'known_key_live_demand_under_3_comps'
+                    WHEN l.source = ANY(%s) THEN 'known_key_high_value_source'
+                    WHEN l.end_time >= (now() AT TIME ZONE 'utc') - (%s)::interval THEN 'known_key_recent_ended'
+                    ELSE 'known_key_backlog'
+                END AS backfill_priority,
                 CASE
-                    WHEN COALESCE(l.bids_count, 0) > 0 THEN 0
                     WHEN nk.model_key IS NOT NULL THEN 1
-                    WHEN l.sale_type = 'bin' THEN 2
-                    WHEN l.sale_type = 'auction' THEN 3
+                    WHEN l.source = ANY(%s) THEN 2
+                    WHEN l.end_time >= (now() AT TIME ZONE 'utc') - (%s)::interval THEN 3
                     ELSE 4
                 END AS tier_rank
             FROM auction_listings l
             LEFT JOIN needed_keys nk
               ON nk.source = l.source
              AND nk.model_key = l.model_key
+             AND nk.condition_grade = COALESCE(l.condition_grade, 'B')
             LEFT JOIN latest_comps c
               ON c.model_key = l.model_key
-            WHERE l.status = 'stale'
+             AND c.condition_grade = COALESCE(l.condition_grade, 'B')
+            WHERE l.status = 'unknown'
               AND COALESCE(l.finalized, FALSE) = FALSE
               AND l.end_time <= (now() AT TIME ZONE 'utc') - interval '1 day'
               AND l.external_id LIKE 'v1|%%|%%'
@@ -308,6 +390,7 @@ def stale_backfill_candidates(
             external_id,
             source,
             model_key,
+            condition_grade,
             live_count,
             comp_samples,
             title,
@@ -315,7 +398,9 @@ def stale_backfill_candidates(
             bids_count,
             price_bid_current,
             sale_type,
-            selection_reason,
+            backfill_priority,
+            backfill_priority AS selection_reason,
+            tier_rank::int AS backfill_priority_tier,
             end_time,
             last_seen_at,
             backfill_checked_at,
@@ -336,29 +421,27 @@ def stale_backfill_candidates(
                 WHEN 'ebay-consoles' THEN 8
                 ELSE 99
             END,
-            backfill_checked_at ASC NULLS FIRST,
-            comp_samples ASC,
-            live_count DESC,
+            CASE WHEN tier_rank = 1 THEN comp_samples ELSE NULL END ASC NULLS LAST,
+            CASE WHEN tier_rank = 1 THEN live_count ELSE NULL END DESC NULLS LAST,
+            CASE WHEN tier_rank = 2 THEN COALESCE(price_current, price_bid_current, 0) ELSE NULL END DESC NULLS LAST,
+            CASE WHEN COALESCE(bids_count, 0) > 0 THEN 0 ELSE 1 END,
             last_seen_at DESC NULLS LAST,
-            end_time DESC NULLS LAST
+            end_time DESC NULLS LAST,
+            backfill_checked_at ASC NULLS FIRST
         LIMIT %s
+        OFFSET %s
         """,
-        (BACKFILL_RECHECK_COOLDOWN, list(excluded_sources), raw_limit),
+        (
+            list(DEFAULT_BACKFILL_SOURCE_PRIORITY),
+            BACKFILL_RECENT_ENDED_WINDOW,
+            list(DEFAULT_BACKFILL_SOURCE_PRIORITY),
+            BACKFILL_RECENT_ENDED_WINDOW,
+            BACKFILL_RECHECK_COOLDOWN,
+            list(excluded_sources),
+            limit,
+            offset,
+        ),
     )
-
-    filtered = []
-    for row in rows:
-        if not has_investible_product_identity(
-            str(row.get("title") or ""),
-            source=str(row.get("source") or ""),
-            model_key=str(row.get("model_key") or ""),
-        ):
-            continue
-        filtered.append(row)
-        if len(filtered) >= limit:
-            break
-
-    return filtered
 
 
 def build_plan(
@@ -368,6 +451,7 @@ def build_plan(
     max_backfill_per_day: int,
     candidate_detail_limit: int,
     include_vehicle_sources: bool,
+    recommended_backfill_override: int | None = None,
 ) -> dict[str, Any]:
     conn = get_fresh_connection()
     try:
@@ -380,30 +464,48 @@ def build_plan(
                 safety_reserve=safety_reserve,
                 max_backfill_per_day=max_backfill_per_day,
             )
-            candidate_limit = max(budget.recommended_backfill_calls, 0)
+            if recommended_backfill_override is None:
+                candidate_limit = max(budget.recommended_backfill_calls, 0)
+                candidate_limit_source = "api_budget"
+            else:
+                candidate_limit = max(recommended_backfill_override, 0)
+                candidate_limit_source = "operator_limit"
             detail_limit = min(candidate_limit, max(candidate_detail_limit, 0))
             excluded_sources = () if include_vehicle_sources else DEFAULT_EXCLUDED_BACKFILL_SOURCES
+            candidates = (
+                unknown_backfill_candidates(
+                    cur,
+                    limit=detail_limit,
+                    excluded_sources=excluded_sources,
+                )
+                if detail_limit > 0
+                else []
+            )
+            candidate_shortfall = max(detail_limit - len(candidates), 0)
             return {
                 "mode": "read_only_backfill_plan",
                 "api_budget": asdict(budget),
                 "excluded_backfill_sources": list(excluded_sources),
                 "source_priority": list(DEFAULT_BACKFILL_SOURCE_PRIORITY),
                 "unknown_model_key_work": live_unknown_model_key_summary(cur),
-                "stale_backfill_source_summary": stale_backfill_source_summary(cur),
+                "unknown_backfill_source_summary": unknown_backfill_source_summary(cur),
                 "candidate_detail_limit": detail_limit,
-                "recommended_stale_candidate_preview": stale_backfill_candidates(
-                    cur,
-                    limit=detail_limit,
-                    excluded_sources=excluded_sources,
-                )
-                if detail_limit > 0
-                else [],
+                "candidate_limit_source": candidate_limit_source,
+                "candidate_count": len(candidates),
+                "candidate_shortfall": candidate_shortfall,
+                "candidate_shortfall_reason": "eligible_backfill_queue_exhausted_after_filters"
+                if candidate_shortfall > 0
+                else None,
+                "recommended_unknown_candidate_preview": candidates,
                 "strategy": [
                     "Do not backfill unknown model_key rows with API calls until model-key extraction is fixed.",
-                    "Prioritise Apple final-price evidence first, then Samsung, because those lanes have the strongest current buy-side learning value.",
+                    "Priority 1: known model_key rows with live demand and fewer than 3 same-grade comps.",
+                    "Priority 2: known model_key rows from high-value sources we are likely to trade.",
+                    "Priority 3: known model_key rows that ended recently.",
+                    "Priority 4: unknown model_key rows only after model-key repair gives them a usable key.",
+                    "Priority 5: inaccessible/deleted Trading rows are deleted locally by apply; do not recheck them forever.",
                     "Exclude vehicle/parts-heavy sources by default until model keys separate complete vehicles from parts.",
-                    "Use spare calls first on bid-observed stale rows, then live comp gaps, then fixed-price learning rows with known model keys.",
-                    "Do not wait for the full historical stale backlog; backfill is an incremental enrichment loop for active opportunity decisions.",
+                    "Do not wait for the full historical unknown backlog; backfill is an incremental enrichment loop for active opportunity decisions.",
                     "Start below the theoretical spare budget, then increase only after API usage and outcome quality are reviewed.",
                     "After each backfill batch, recompute comps and ROI before judging Buy Desk readiness.",
                 ],
@@ -413,7 +515,7 @@ def build_plan(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Plan API-budgeted stale listing backfill.")
+    parser = argparse.ArgumentParser(description="Plan API-budgeted unknown listing final-price checks.")
     parser.add_argument("--daily-cap", type=int, default=5000)
     parser.add_argument("--safety-reserve", type=int, default=500)
     parser.add_argument("--max-backfill-per-day", type=int, default=1000)

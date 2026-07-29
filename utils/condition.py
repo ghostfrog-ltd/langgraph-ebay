@@ -33,6 +33,15 @@ GENERIC_PART_ONLY_TERMS = (
     "not working",
     "not starting",
     "dead",
+    "scrap",
+    "scraps",
+    "selling for scraps",
+    "badly damaged",
+    "screen damage",
+    "damaged screen",
+    "screen is damaged",
+    "screen badly damaged",
+    "badly damaged screen",
     "broken screen",
     "cracked screen",
     "broken lcd",
@@ -45,6 +54,9 @@ GENERIC_PART_ONLY_TERMS = (
     "grade d",
     "box only",
     "empty box",
+    "empty original box",
+    "box & inserts",
+    "box and inserts",
     "manual only",
     "instructions only",
     "charger only",
@@ -93,12 +105,22 @@ LEGO_PART_TERMS = (
     "minifig only",
     "no minifigure",
     "no figures",
+    "no minifigures",
+    "no mini figures",
+    "without minifigures",
+    "without minifigs",
+    "missing pieces",
+    "missing parts",
+    "incomplete",
+    "build only",
+    "builds only",
     "part only",
     "spare parts",
     "bulk bricks",
     "job lot bricks",
     "joblot bricks",
     "instruction book only",
+    "instructions only",
 )
 
 DEVICE_ACCESSORY_TERMS = (
@@ -114,6 +136,12 @@ DEVICE_ACCESSORY_TERMS = (
     "controller only",
     "controller cable",
     "controller battery",
+    "usb-c cable",
+    "usb cable",
+    "usb-a to usb-c",
+    "joy-con",
+    "joy con",
+    "joycon",
     "thumb grip",
     "thumb grips",
     "thumbstick",
@@ -122,6 +150,11 @@ DEVICE_ACCESSORY_TERMS = (
     "fps freek",
     "charging stand",
     "cooling fan",
+    "stealth case",
+    "carrying case",
+    "carrying cases",
+    "protective case",
+    "travel case",
     "remote only",
     "headset",
     "headphones",
@@ -134,6 +167,8 @@ DEVICE_ACCESSORY_TERMS = (
 DEVICE_PART_TERMS = (
     "motherboard",
     "logic board",
+    "logic board missing",
+    "missing logic board",
     "logicboard",
     "main board",
     "mainboard",
@@ -141,8 +176,18 @@ DEVICE_PART_TERMS = (
     "pcb board",
     "daughterboard",
     "screen assembly",
+    "screen for",
     "display assembly",
     "lcd assembly",
+    "battery assembly",
+    "keyboard palmrest",
+    "palmrest",
+    "palm rest",
+    "touchpad",
+    "trackpad",
+    "topcase",
+    "top case",
+    "bottom case",
     "digitizer",
     "touch screen digitizer",
     "touchscreen digitizer",
@@ -186,8 +231,16 @@ DEVICE_REPAIR_REVIEW_TERMS = (
     "no face id",
     "face id not working",
     "touch id not working",
+    "touch id missing",
+    "touch id issue",
+    "touchid issue",
     "truedepth issue",
     "true depth issue",
+    "screen issue",
+    "screen is damaged",
+    "screen & mic issue",
+    "mic issue",
+    "microphone issue",
     "passcode locked",
     "password locked",
     "needs new battery",
@@ -311,6 +364,9 @@ def looks_like_partial_or_accessory_listing(
 
     is_apple = "ebay-apple" in source_text or "apple-" in model_key_text or " apple " in f" {blob} "
     is_macbook = "macbook" in blob or "apple-macbook" in model_key_text
+    if is_apple and re.search(r"\blocked\b", blob):
+        return True
+
     if is_apple and is_macbook and re.search(r"\ba\d{1,2}\s*(pro|max|ultra)?\b", blob):
         return True
 
@@ -346,8 +402,12 @@ def looks_like_partial_or_accessory_listing(
         for term in (
             "playstation 5",
             "playstation 4",
+            "playstation 3",
+            "playstation vita",
             "ps5",
             "ps4",
+            "ps3",
+            "ps vita",
             "nintendo switch",
             "xbox one",
             "xbox series",
@@ -416,20 +476,153 @@ def has_investible_product_identity(
     mk = _as_text(model_key)
     if not mk or mk == "unknown" or mk.startswith("unknown") or "generic" in mk:
         return False
+    if re.search(r"_[a-d](?:-[a-d])?$", mk):
+        return False
 
     source_text = _as_text(source)
     is_apple = source_text == "ebay-apple" or mk.startswith("apple-")
-    if not is_apple:
+    is_samsung = source_text == "ebay-samsung" or mk.startswith("samsung-")
+    is_console = (
+        source_text == "ebay-consoles"
+        or mk.startswith("sony-playstation-")
+        or mk.startswith("microsoft-xbox-")
+        or mk.startswith("nintendo-switch-")
+    )
+    is_actioncam = (
+        source_text == "ebay-actioncams"
+        or mk.startswith("gopro-")
+        or mk.startswith("dji-")
+        or mk.startswith("insta360-")
+        or mk.startswith("akaso-")
+        or mk.startswith("drift-")
+        or mk.startswith("sjcam-")
+    )
+    is_lego = source_text == "ebay-lego" or mk.startswith("lego-")
+    is_motor_vehicle = source_text == "ebay-motors" or mk.startswith("vehicle-")
+    if (
+        not is_apple
+        and not is_samsung
+        and not is_console
+        and not is_actioncam
+        and not is_lego
+        and not is_motor_vehicle
+    ):
         return True
 
     if "gen-unk" in mk:
         return False
 
+    if is_motor_vehicle:
+        if "_" in mk:
+            return False
+        return bool(re.match(r"^vehicle-[a-z0-9-]+-[a-z0-9]+(?:-[a-z0-9.]+)*-\d{4}$", mk))
+
+    if is_lego:
+        if "_" in mk:
+            return False
+        lego_set = r"^lego-set-\d{4,7}$"
+        lego_minifig = r"^lego-minifig-[a-z0-9-]+-\d{3,5}[a-z]?$"
+        return bool(re.match(lego_set, mk) or re.match(lego_minifig, mk))
+
+    if is_actioncam:
+        if "_" in mk:
+            return False
+        gopro = (
+            r"^gopro-"
+            r"("
+            r"hero(8|9|10|11|12|13)(-mini)?|"
+            r"hero7-(black|silver|white)|"
+            r"hero6-black|"
+            r"hero5-(black|session)|"
+            r"hero4-(black|silver|session)|"
+            r"hero3plus|hero3|hero-2018|max|fusion"
+            r")$"
+        )
+        dji = (
+            r"^dji-"
+            r"("
+            r"osmo-action-(3|4|6)|"
+            r"osmo-action-5-pro|"
+            r"action-2|"
+            r"osmo-pocket-3|"
+            r"osmo-360"
+            r")$"
+        )
+        insta360 = (
+            r"^insta360-"
+            r"("
+            r"x(2|3|4|5)|"
+            r"go-(2|ultra)|"
+            r"go-(3|3s)-(32|64|128)gb|"
+            r"ace|ace-pro|ace-pro-2|"
+            r"one-x|one-x2|one-r|one-r-twin|one-rs|one-rs-twin"
+            r")$"
+        )
+        secondary_actioncam = r"^(akaso-(ek7000|ek7000-pro|brave-7|brave-7-le|v50)|drift-ghost-xl|sjcam-c300)$"
+        return bool(
+            re.match(gopro, mk)
+            or re.match(dji, mk)
+            or re.match(insta360, mk)
+            or re.match(secondary_actioncam, mk)
+        )
+
+    if is_console:
+        if "_" in mk:
+            return False
+        playstation = (
+            r"^sony-playstation-"
+            r"("
+            r"5-(disc|digital)-825gb|"
+            r"5-slim-(disc|digital)-1tb|"
+            r"5-pro-2tb|"
+            r"4-(base|slim|pro)-(500gb|1tb|2tb)|"
+            r"3|vita"
+            r")$"
+        )
+        xbox = (
+            r"^microsoft-xbox-"
+            r"("
+            r"series-x-(1tb|2tb)|"
+            r"series-s-(512gb|1tb)|"
+            r"one-(base|s|x)-(500gb|1tb|2tb)|"
+            r"360(-(320|250|120|60|40|20|12)gb)?"
+            r")$"
+        )
+        switch = r"^nintendo-switch-(base|oled|lite|2|tablet-only)$"
+        return bool(
+            re.match(playstation, mk)
+            or re.match(xbox, mk)
+            or re.match(switch, mk)
+        )
+
+    if is_samsung:
+        if "_" in mk:
+            return False
+        samsung_phone = (
+            r"^samsung-galaxy-"
+            r"(s\d{1,2}(-(ultra|plus|fe))?|note\d{1,2}(-(ultra|plus))?|z-(fold|flip)\d|[am]\d{2}s?)"
+            r"-(32|64|128|256|512)gb(-5g)?$"
+        )
+        samsung_phone_tb = (
+            r"^samsung-galaxy-"
+            r"(s\d{1,2}(-(ultra|plus|fe))?|note\d{1,2}(-(ultra|plus))?|z-(fold|flip)\d)"
+            r"-1tb$"
+        )
+        samsung_tab = (
+            r"^samsung-galaxy-tab-[as]\d{1,2}(-(ultra|plus|fe))?"
+            r"-(32|64|128|256|512)gb(-(wifi|cellular))?$"
+        )
+        return bool(
+            re.match(samsung_phone, mk)
+            or re.match(samsung_phone_tb, mk)
+            or re.match(samsung_tab, mk)
+        )
+
     if mk.startswith("apple-iphone-") and not re.match(r"^apple-iphone-(se|x|xr|xs|\d+)\b", mk):
         return False
 
     if mk.startswith(("apple-macbook", "apple-imac", "apple-mac-mini", "apple-mac-studio")):
-        if not re.search(r"-(m[1-9](pro|max|ultra)?|intel)(-|_)", mk):
+        if not re.search(r"-(m[1-9](pro|max|ultra)?|intel|core-i[3579]|core-m[357])(-|_)", mk):
             return False
 
     return True
@@ -469,7 +662,9 @@ def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
         "no display", "no video", "no sound", "dead", "powers on then off",
         "boot loop", "does not charge", "won't charge", "wont charge",
         "overheating", "water damaged", "liquid damaged", "liquid damage",
-        "screen damaged", "screen cracked", "cracked screen", "screen issues",
+        "water damage",
+        "screen damage", "damaged screen", "screen is damaged", "screen badly damaged",
+        "badly damaged screen", "screen damaged", "screen cracked", "cracked screen", "screen issues",
         "screen fault", "display fault", "display issue", "faulty battery",
         "bad battery", "battery issue", "battery fault", "charging port issue",
         "charging fault", "screen flickers", "read description", "empty",
@@ -479,6 +674,7 @@ def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
         # Spares/repairs flags
         "for spares", "for parts", "spares or repairs", "spares & repairs",
         "repair only", "needs repair", "for repair", "parts only",
+        "parts or repair", "parts & repair",
         "non working", "non-working", "untested", "sold as seen", "as is", "as-is",
         "not tested", "unable to test",
 
@@ -501,11 +697,16 @@ def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
 
         # Console-specific
         "drift issue", "stick drift", "joystick drift", "controller drift",
-        "no hdmi output", "av output fault",
+        "no hdmi output", "av output fault", "white light error",
+        "blue light error", "yellow light of death", "red ring of death",
+        "wlod", "ylod", "rrod",
     ]
 
     if any(term in blob for term in faulty_terms):
         return "D"
+
+    if re.search(r"\b(grade\s*c|used\s+fair|fair\s+condition|condition\s+fair)\b", blob):
+        return "C"
 
     # ----------------
     # Explicit grade / condition fields (if present)
@@ -552,7 +753,9 @@ def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
     # ----------------
     rough_terms = [
         "heavy wear", "heavily used", "scratches",
-        "cosmetic damage", "cosmetically poor","scraped screen"
+        "cosmetic damage", "cosmetically poor", "scraped screen",
+        "no box", "without box", "unboxed", "no original box",
+        "no manual", "no instructions", "missing manual",
     ]
     if any(term in blob for term in rough_terms):
         return "C"

@@ -36,7 +36,7 @@ from utils.usage_tracker import increment_api_usage
 
 logger = get_logger(__name__)
 
-TERMINAL_STATUSES = {"ended", "sold", "complete", "completed", "stale"}
+TERMINAL_STATUSES = {"ended", "sold", "complete", "completed"}
 DEFAULT_SNAPSHOT_LIMIT = int(os.getenv("GF_PAPER_TRADE_LIMIT", "25"))
 DEFAULT_OUTCOME_RESOLVE_LIMIT = int(os.getenv("GF_PAPER_OUTCOME_RESOLVE_LIMIT", "5"))
 OUTCOME_RESOLVE_GRACE_MINUTES = int(os.getenv("GF_PAPER_OUTCOME_GRACE_MINUTES", "60"))
@@ -427,7 +427,7 @@ def classify_observed_outcome(row: dict[str, Any]) -> ObservedOutcome:
     A sold listing with `final_price` gives us the would-have-paid purchase
     price. It is only a profitable paper trade if that price stayed under the
     stored max bid and the expected resale clears the full paper cost stack.
-    Ended/stale rows without confirmed final price remain no-evidence closes.
+    Ended rows without confirmed final price remain no-evidence closes.
     """
     prediction_id = int(row["id"])
     status = str(row.get("listing_status") or "").lower()
@@ -619,7 +619,7 @@ def collect_current_snapshots(limit: int) -> list[PaperTradeSnapshot]:
 
     We refresh every current ROI shortlist row, even if the stricter paper cost
     reserves pull it below the future buy-signal threshold. That keeps same-day
-    rows from carrying stale assumptions and gives the learning loop visibility
+    rows from carrying old assumptions and gives the learning loop visibility
     into which candidates are only marginal after real-world costs.
     """
     listings = _fetch_active_listings()

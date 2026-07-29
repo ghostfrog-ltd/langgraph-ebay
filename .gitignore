@@ -7,6 +7,7 @@ __pycache__/
 .venv/
 .venv-mac/
 backups/
+logs/
 *.dump
 *.dump.in_progress
 

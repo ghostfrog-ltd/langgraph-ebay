@@ -1,6 +1,7 @@
 import unittest
 
 from pipelines.listing.attributes.mk import normalise_model
+from utils.condition import _derive_condition_grade
 
 
 class ModelKeyRepairTests(unittest.TestCase):
@@ -11,12 +12,485 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-apple",
         )
 
-        self.assertEqual(key, "apple-iphone-11-64gb_b")
+        self.assertEqual(key, "apple-iphone-11-64gb")
+
+    def test_macbook_bad_ram_attribute_does_not_duplicate_storage(self):
+        key = normalise_model(
+            title='Apple MacBook Air 13.6" M2 A2681 (2022) 16GB RAM 512GB SSD',
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook Air",
+                "Series": "MacBook Air",
+                "RAM Size": "512 GB",
+                "Processor": "Apple M2",
+                "Screen Size": "13.6 in",
+                "Storage Capacity": "512 GB",
+                "MPN": "A2681",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-air-a2681-136in-m2-16gb-512gb")
+
+    def test_macbook_core_m3_is_not_apple_silicon_m3(self):
+        key = normalise_model(
+            title="Apple MacBook A1534 12inch Laptop M3-7Y32 8GB RAM 250GB SSD Ventura",
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook",
+                "Series": "MacBook",
+                "RAM Size": "8 GB",
+                "Processor": "Intel Core M3",
+                "Screen Size": "12 in",
+                "SSD Capacity": "256 GB",
+                "MPN": "A1534",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-a1534-12in-core-m3-8gb-256gb")
+
+    def test_m3_pro_macbook_is_not_old_intel_core_m3(self):
+        key = normalise_model(
+            title='Apple MacBook Pro A2991 16.2" M3 PRO 36GB RAM 512GB SSD 18-Core GPU Grade B',
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook Pro",
+                "Series": "MacBook Pro",
+                "RAM Size": "36 GB",
+                "Processor": "Apple M3 Pro",
+                "Screen Size": "16.2 in",
+                "SSD Capacity": "512 GB",
+                "MPN": "A2991",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-pro-a2991-162in-m3pro-36gb-512gb")
+
+    def test_macbook_16_point_0_screen_maps_to_16in(self):
+        key = normalise_model(
+            title='Apple MacBook Pro A2485 2021 16" M1 Pro 512GB 16GB',
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook Pro",
+                "Series": "MacBook Pro",
+                "RAM Size": "16 GB",
+                "Processor": "Apple M1 Pro",
+                "Screen Size": '16.0"',
+                "SSD Capacity": "512 GB",
+                "MPN": "A2485",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-pro-a2485-16in-m1pro-16gb-512gb")
+
+    def test_title_only_iphone_can_get_strict_key(self):
+        key = normalise_model(
+            title="iPhone 15 Pro 256GB Blue Titanium, Unlocked",
+            attrs={},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-iphone-15-pro-256gb")
+
+    def test_iphone_air_is_not_plain_iphone_bucket(self):
+        key = normalise_model(
+            title="Apple iPhone 17 Air 256GB Sky Blue Unlocked UK Model",
+            attrs={},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-iphone-17-air-256gb")
+
+    def test_plain_iphone_17_stays_plain_iphone_bucket(self):
+        key = normalise_model(
+            title="Apple iPhone 17 256GB Black Unlocked UK Model",
+            attrs={},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-iphone-17-256gb")
+
+    def test_macbook_unlabelled_tb_storage_after_ram_is_used(self):
+        key = normalise_model(
+            title='2025 APPLE MACBOOK AIR 13" M4 10C/10C 16GB RAM 1TB MIDNIGHT SEALED',
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook Air",
+                "Series": "MacBook Air",
+                "RAM Size": "16 GB",
+                "Processor": "Apple M4",
+                "Screen Size": "13 in",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-air-136in-m4-16gb-1tb")
+
+    def test_m2_macbook_air_13_seller_shorthand_maps_to_136in(self):
+        key = normalise_model(
+            title='Apple MacBook Air 13" 2022 M2 16GB 512GB',
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook Air",
+                "Series": "MacBook Air",
+                "RAM Size": "16 GB",
+                "Processor": "Apple M2",
+                "Screen Size": "13 in",
+                "SSD Capacity": "512 GB",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-air-136in-m2-16gb-512gb")
+
+    def test_macbook_ram_without_space_before_storage_does_not_become_512gb_ram(self):
+        key = normalise_model(
+            title="Apple MacBook Pro 16 2024 M4 Pro Chip 24GB RAM512GB SSD",
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook Pro",
+                "Series": "MacBook Pro",
+                "RAM Size": "24 GB",
+                "Processor": "Apple M4 Pro",
+                "Screen Size": "16 in",
+                "SSD Capacity": "512 GB",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-pro-16in-m4pro-24gb-512gb")
+
+    def test_macbook_bad_512gb_ram_title_uses_plausible_16gb_ram(self):
+        key = normalise_model(
+            title='MacBook Pro Touch Bar 15" 512GB RAM Intel Core i7 2.9GHz 16GB RAM',
+            attrs={
+                "Brand": "Apple",
+                "Model": "A1707",
+                "Series": "MacBook Pro",
+                "RAM Size": "16 GB",
+                "Processor": "Intel Core i7",
+                "Screen Size": "15 in",
+                "SSD Capacity": "512 GB",
+                "MPN": "A1707",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-pro-a1707-15in-core-i7-16gb-512gb")
+
+    def test_macbook_cpu_conflict_becomes_unknown(self):
+        key = normalise_model(
+            title="Apple MacBook Pro 16 2024 M4 Pro Chip 24GB RAM 512GB SSD",
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook Pro",
+                "Series": "MacBook Pro",
+                "RAM Size": "24 GB",
+                "Processor": "Apple M3",
+                "Screen Size": "16 in",
+                "SSD Capacity": "512 GB",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_macbook_title_line_beats_bad_series_attribute(self):
+        key = normalise_model(
+            title="MacBook Pro 13 2022 M2 Touch Bar 16GB / 512GB Parts Or Repair - Water Damage",
+            attrs={
+                "Brand": "Apple",
+                "Model": "MacBook Air",
+                "Series": "MacBook Air",
+                "RAM Size": "16 GB",
+                "Processor": "Apple M2",
+                "Screen Size": "13 in",
+                "SSD Capacity": "512 GB",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-macbook-pro-13in-m2-16gb-512gb")
+
+    def test_water_damage_parts_or_repair_is_condition_d(self):
+        grade = _derive_condition_grade(
+            {"Condition": "Used"},
+            "MacBook Pro 13 2022 M2 Touch Bar 16GB / 512GB Parts Or Repair - Water Damage",
+        )
+
+        self.assertEqual(grade, "D")
+
+    def test_screen_damage_is_condition_d(self):
+        grade = _derive_condition_grade(
+            {},
+            'Apple MacBook Pro A2485 16 inch M1 PRO 16GB RAM 512GB SSD Screen Damage',
+        )
+
+        self.assertEqual(grade, "D")
+
+    def test_used_fair_is_condition_c(self):
+        grade = _derive_condition_grade(
+            {},
+            "MacBook Pro A1707 (2017) i7 16GB | 256GB (RADEON PRO 555) GREY (USED FAIR)",
+        )
+
+        self.assertEqual(grade, "C")
+
+    def test_console_white_light_error_is_condition_d(self):
+        grade = _derive_condition_grade(
+            {},
+            "PS4 500GB Console Only Genuine white light error CUH-1116A",
+        )
+
+        self.assertEqual(grade, "D")
+
+    def test_macbook_missing_exact_spec_becomes_unknown(self):
+        key = normalise_model(
+            title="Apple MacBook Air laptop good condition",
+            attrs={"Brand": "Apple", "Model": "MacBook Air", "Series": "MacBook Air"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_iphone_storage_only_key_becomes_unknown(self):
+        key = normalise_model(
+            title="Apple iPhone 256GB Unlocked",
+            attrs={"Brand": "Apple", "Model": "iPhone", "Storage Capacity": "256 GB"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_ps3_game_title_does_not_become_console_key(self):
+        key = normalise_model(
+            title="Final Fantasy XIV A Realm Reborn PS3 Complete With Manual Tested And Working",
+            attrs={"Brand": "Sony"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_iphone_mini_does_not_mix_with_base_iphone(self):
+        key = normalise_model(
+            title="Apple iPhone 13 mini (PRODUCT)RED - 256GB - Unlocked",
+            attrs={"Brand": "Apple", "Model": "Apple iPhone 13 mini", "Storage Capacity": "256 GB"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-iphone-13-mini-256gb")
+
+    def test_iphone_pro_max_keeps_tier_and_storage(self):
+        key = normalise_model(
+            title="Apple iPhone 15 Pro Max 512GB Natural Titanium Unlocked",
+            attrs={"Brand": "Apple", "Model": "Apple iPhone 15 Pro Max", "Storage Capacity": "512 GB"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-iphone-15-pro-max-512gb")
+
+    def test_ipad_pro_m4_keeps_size_chip_storage_and_cellular(self):
+        key = normalise_model(
+            title="Apple iPad Pro (2024) M4 11-inch Tablet Cel 1TB Black WiFi",
+            attrs={
+                "Brand": "Apple",
+                "Model": "iPad Pro",
+                "Series": "iPad Pro",
+                "Screen Size": "11 in",
+                "Processor": "Apple M4",
+            },
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-ipad-pro-11in-m4-1tb-cellular")
+
+    def test_base_ipad_without_generation_becomes_unknown(self):
+        key = normalise_model(
+            title="Apple iPad 10.2 inch 64GB WiFi",
+            attrs={"Brand": "Apple", "Model": "iPad", "Screen Size": "10.2 in", "Storage Capacity": "64 GB"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_base_ipad_generation_storage_and_connectivity(self):
+        key = normalise_model(
+            title="Apple iPad 10th Generation 10.9 inch 64GB Wi-Fi Blue",
+            attrs={"Brand": "Apple", "Model": "iPad 10th Generation", "Screen Size": "10.9 in"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-ipad-109in-10th-gen-64gb-wifi")
+
+    def test_apple_watch_series_size_and_gps(self):
+        key = normalise_model(
+            title="Apple Watch Series 9 45mm GPS Midnight Aluminium",
+            attrs={"Brand": "Apple", "Model": "Apple Watch Series 9", "Case Size": "45 mm"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-watch-series-9-45mm-gps")
+
+    def test_airpods_pro_generation_and_connector(self):
+        key = normalise_model(
+            title="Apple AirPods Pro 2nd Generation USB-C with MagSafe Charging Case",
+            attrs={"Brand": "Apple", "Model": "AirPods Pro 2"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-airpods-pro-2-usbc")
+
+    def test_airpods_case_only_is_unknown(self):
+        key = normalise_model(
+            title="Apple AirPods Pro Charging Case Only",
+            attrs={"Brand": "Apple", "Model": "AirPods Pro"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_apple_tv_4k_storage(self):
+        key = normalise_model(
+            title="Apple TV 4K 3rd Generation 128GB Wi-Fi + Ethernet",
+            attrs={"Brand": "Apple", "Model": "Apple TV 4K", "Storage Capacity": "128 GB"},
+            source="ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-tv-4k-128gb")
+
+    def test_samsung_s_ultra_keeps_tier_and_storage(self):
+        key = normalise_model(
+            title="Samsung Galaxy S24 Ultra 256GB Unlocked Titanium Grey",
+            attrs={"Brand": "Samsung", "Model": "Samsung Galaxy S24 Ultra", "Storage Capacity": "256 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-s24-ultra-256gb")
+
+    def test_samsung_s_plus_keeps_plus_tier(self):
+        key = normalise_model(
+            title="Samsung Galaxy S25+ 512GB 5G Unlocked",
+            attrs={"Brand": "Samsung", "Model": "Samsung Galaxy S25+", "Storage Capacity": "512 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-s25-plus-512gb")
+
+    def test_samsung_s_fe_keeps_fe_tier(self):
+        key = normalise_model(
+            title="Samsung Galaxy S25 FE 5G 256GB",
+            attrs={"Brand": "Samsung", "Model": "Samsung Galaxy S25 FE 5G", "Storage Capacity": "256 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-s25-fe-256gb")
+
+    def test_samsung_storage_missing_becomes_unknown(self):
+        key = normalise_model(
+            title="Samsung Galaxy S23 Ultra Unlocked",
+            attrs={"Brand": "Samsung", "Model": "Samsung Galaxy S23 Ultra"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_samsung_fold_without_generation_becomes_unknown(self):
+        key = normalise_model(
+            title="Samsung Galaxy Fold 256GB",
+            attrs={"Brand": "Samsung", "Model": "Samsung Fold", "Storage Capacity": "256 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_samsung_z_fold_generation_and_storage(self):
+        key = normalise_model(
+            title="Samsung Galaxy Z Fold 6 512GB Unlocked",
+            attrs={"Brand": "Samsung", "Model": "Z Fold 6", "Storage Capacity": "512 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-z-fold6-512gb")
+
+    def test_samsung_z_flip_model_number_maps_generation(self):
+        key = normalise_model(
+            title="Samsung Galaxy Z Flip 256GB",
+            attrs={"Brand": "Samsung", "Model Number": "SM-F741B/DS", "Storage Capacity": "256 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-z-flip6-256gb")
+
+    def test_samsung_a_series_5g_is_kept_when_it_matters(self):
+        key = normalise_model(
+            title="Samsung Galaxy A55 5G 128GB Awesome Navy",
+            attrs={"Brand": "Samsung", "Model": "Galaxy A55 5G", "Storage Capacity": "128 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-a55-128gb-5g")
+
+    def test_samsung_tab_keeps_generation_tier_storage_and_connectivity(self):
+        key = normalise_model(
+            title="Samsung Galaxy Tab S9 Ultra 256GB Wi-Fi Graphite",
+            attrs={"Brand": "Samsung", "Model": "Galaxy Tab S9 Ultra", "Storage Capacity": "256 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-tab-s9-ultra-256gb-wifi")
+
+    def test_samsung_case_does_not_become_phone_key(self):
+        key = normalise_model(
+            title="Case for Samsung Galaxy S24 Ultra",
+            attrs={"Brand": "Samsung", "Model": "Galaxy S24 Ultra"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_non_samsung_in_samsung_source_is_unknown(self):
+        key = normalise_model(
+            title="Google Pixel 9 Pro 256GB",
+            attrs={"Brand": "Google", "Model": "Google Pixel 9 Pro", "Storage Capacity": "256 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "unknown")
 
     def test_console_game_does_not_become_console_key(self):
         key = normalise_model(
             title="L.A Noire Game for Sony PS4 Playstation 4",
             attrs={"Platform": "Sony PlayStation 4", "Game Name": "L.A Noire"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_switch_accessory_kit_does_not_become_oled_console_key(self):
+        key = normalise_model(
+            title="10 in 1 Switch Sports Accessories Kit Bundle for Nintendo Switch Oled Game A5",
+            attrs={"Platform": "Nintendo Switch"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_switch_joycon_pair_does_not_become_console_key(self):
+        key = normalise_model(
+            title="Nintendo Switch Joy-Con Controller Pair - Neon Red/Neon Blue 100% ORIGINAL",
+            attrs={"Platform": "Nintendo Switch"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_playstation_one_title_does_not_use_ps3_attribute_key(self):
+        key = normalise_model(
+            title="Sony PlayStation 1 Console Bundle Controllers Cables & 3 Games",
+            attrs={"Platform": "Sony PlayStation 3"},
             source="ebay-consoles",
         )
 
@@ -29,7 +503,34 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-consoles",
         )
 
-        self.assertEqual(key, "xbox_series_1tb_b")
+        self.assertEqual(key, "microsoft-xbox-series-x-1tb")
+
+    def test_xbox_series_s_storage_gets_separate_key(self):
+        key = normalise_model(
+            title="Microsoft Xbox Series S 512GB White Console",
+            attrs={"Brand": "Microsoft", "Model": "Xbox Series S"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "microsoft-xbox-series-s-512gb")
+
+    def test_xbox_series_s_title_beats_broad_xs_attribute(self):
+        key = normalise_model(
+            title="Microsoft Xbox Series S 512GB Video Game Console - White",
+            attrs={"Brand": "Microsoft", "Model": "Microsoft Xbox Series X|S"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "microsoft-xbox-series-s-512gb")
+
+    def test_broad_xbox_series_key_is_unknown(self):
+        key = normalise_model(
+            title="Microsoft Xbox Series Console With Controller",
+            attrs={"Brand": "Microsoft", "Model": "Xbox Series"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "unknown")
 
     def test_switch_tablet_only_gets_separate_key(self):
         key = normalise_model(
@@ -38,7 +539,16 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-consoles",
         )
 
-        self.assertEqual(key, "switch_tablet_b")
+        self.assertEqual(key, "nintendo-switch-tablet-only")
+
+    def test_switch_oled_ignores_bundle_storage(self):
+        key = normalise_model(
+            title="Nintendo Switch OLED Console With 128GB SD Card",
+            attrs={"Platform": "Nintendo Switch"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "nintendo-switch-oled")
 
     def test_ps4_slim_storage_gets_separate_key(self):
         key = normalise_model(
@@ -47,7 +557,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-consoles",
         )
 
-        self.assertEqual(key, "ps4_slim_500gb_b")
+        self.assertEqual(key, "sony-playstation-4-slim-500gb")
 
     def test_ps5_game_title_does_not_become_console_key(self):
         key = normalise_model(
@@ -74,7 +584,16 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-consoles",
         )
 
-        self.assertEqual(key, "ps5_825gb_b")
+        self.assertEqual(key, "sony-playstation-5-disc-825gb")
+
+    def test_ps5_slim_digital_storage_gets_separate_key(self):
+        key = normalise_model(
+            title="Sony PlayStation 5 Slim Digital Edition 1TB Console",
+            attrs={"Platform": "Sony PlayStation 5"},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "sony-playstation-5-slim-digital-1tb")
 
     def test_console_replacement_part_does_not_become_console_key(self):
         key = normalise_model(
@@ -101,7 +620,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-lego",
         )
 
-        self.assertEqual(key, "lego-31376_b-c")
+        self.assertEqual(key, "lego-set-31376")
 
     def test_lego_short_piece_count_is_not_used_as_set_number(self):
         key = normalise_model(
@@ -119,7 +638,43 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-lego",
         )
 
-        self.assertEqual(key, "lego-21338_b-c")
+        self.assertEqual(key, "lego-set-21338")
+
+    def test_lego_missing_minifigures_is_unknown(self):
+        key = normalise_model(
+            title="LEGO Star Wars A-Wing Starfighter 75003 Instructions No Mini figures Nearly Complete",
+            attrs={"Brand": "LEGO", "MPN": "75003", "LEGO Theme": "Star Wars"},
+            source="ebay-lego",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_lego_multi_set_bundle_is_unknown(self):
+        key = normalise_model(
+            title="LEGO 10356 Star Trek USS Enterprise + 40768 Shuttlepod New & Sealed",
+            attrs={"Brand": "LEGO"},
+            source="ebay-lego",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_lego_compatible_blocks_are_unknown(self):
+        key = normalise_model(
+            title="Pokemon Charizard Building Block Set LEGO Compatible 273pcs NEW Sealed",
+            attrs={"Brand": "LEGO", "Type": "Complete Set"},
+            source="ebay-lego",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_lego_minifig_id_gets_minifig_key(self):
+        key = normalise_model(
+            title="Lego - Black Classic Space Minifigure with Airtanks - White Logo sp003",
+            attrs={"Brand": "LEGO", "Item Type": "Minifigure"},
+            source="ebay-lego",
+        )
+
+        self.assertEqual(key, "lego-minifig-space-003")
 
     def test_bike_capacity_digits_are_not_trimmed_as_year(self):
         key = normalise_model(
@@ -133,6 +688,58 @@ class ModelKeyRepairTests(unittest.TestCase):
         )
 
         self.assertEqual(key, "yamaha-yzfr125-125cc_b")
+
+    def test_motors_vehicle_uses_manufacturer_model_and_specs(self):
+        key = normalise_model(
+            title="2014 BMW 1 Series 118d M Sport Manual Diesel Hatchback",
+            attrs={
+                "Manufacturer": "BMW",
+                "Model": "1 Series 118d M Sport",
+                "Engine Size": "2.0 L",
+                "Fuel Type": "Diesel",
+                "Transmission": "Manual",
+                "Body Type": "5 Door Hatchback",
+                "Year": "2014",
+            },
+            source="ebay-motors",
+        )
+
+        self.assertEqual(key, "vehicle-bmw-1series118d-2.0l-diesel-manual-hatchback-2014")
+
+    def test_motors_make_alias_and_registration_date(self):
+        key = normalise_model(
+            title="Volkswagen Golf GT TDI Estate",
+            attrs={
+                "Manufacturer": "volgswagen",
+                "Model": "Golf GT TDI",
+                "Engine": "1.9 TDI",
+                "Fuel Type": "Diesel",
+                "Transmission": "Manual",
+                "Body Type": "Estate",
+                "Date of 1st Registration": "01032009",
+            },
+            source="ebay-motors",
+        )
+
+        self.assertEqual(key, "vehicle-volkswagen-golfgt-1.9l-diesel-manual-estate-2009")
+
+    def test_motors_part_listing_is_unknown(self):
+        key = normalise_model(
+            title="PORSCHE 911 992 Front Right Bumper Air Inlet Trim 992807764A041",
+            attrs={"Manufacturer": "Porsche", "Model": "911"},
+            source="ebay-motors",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_motors_non_vehicle_pollution_is_unknown(self):
+        key = normalise_model(
+            title="Daiwa fishing bivvy carp shelter",
+            attrs={"Brand": "Daiwa", "Model": "Shelter"},
+            source="ebay-motors",
+        )
+
+        self.assertEqual(key, "unknown")
 
     def test_tools_title_only_mafell_model_key(self):
         key = normalise_model(
@@ -165,7 +772,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-actioncams",
         )
 
-        self.assertEqual(key, "gopro-hero12_b")
+        self.assertEqual(key, "gopro-hero12")
 
     def test_actioncam_structured_model_drops_brand_prefix(self):
         key = normalise_model(
@@ -174,7 +781,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-actioncams",
         )
 
-        self.assertEqual(key, "gopro-hero12_b")
+        self.assertEqual(key, "gopro-hero12")
 
     def test_actioncam_title_beats_wrong_copied_model_attribute(self):
         key = normalise_model(
@@ -183,7 +790,70 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-actioncams",
         )
 
-        self.assertEqual(key, "gopro-hero12_b")
+        self.assertEqual(key, "gopro-hero12")
+
+    def test_actioncam_gopro_hero7_keeps_colour_variant(self):
+        key = normalise_model(
+            title="GoPro HERO7 Silver Action Camera Bundle",
+            attrs={"Brand": "GoPro", "Model": "GoPro HERO7"},
+            source="ebay-actioncams",
+        )
+
+        self.assertEqual(key, "gopro-hero7-silver")
+
+    def test_actioncam_broad_gopro_hero7_is_unknown(self):
+        key = normalise_model(
+            title="GoPro HERO7 Action Camera Bundle",
+            attrs={"Brand": "GoPro", "Model": "GoPro HERO7"},
+            source="ebay-actioncams",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_actioncam_dji_osmo_pocket_3_gets_key(self):
+        key = normalise_model(
+            title="DJI Osmo Pocket 3 Creator Combo 4K Ultra HD Action Camera",
+            attrs={"Brand": "DJI", "Model": "Osmo Pocket 3"},
+            source="ebay-actioncams",
+        )
+
+        self.assertEqual(key, "dji-osmo-pocket-3")
+
+    def test_actioncam_dji_action_5_requires_pro_signal(self):
+        key = normalise_model(
+            title="DJI Osmo Action 5 Pro Adventure Combo",
+            attrs={"Brand": "DJI", "Model": "Osmo Action 5"},
+            source="ebay-actioncams",
+        )
+
+        self.assertEqual(key, "dji-osmo-action-5-pro")
+
+    def test_actioncam_insta360_go_3s_keeps_storage(self):
+        key = normalise_model(
+            title="Insta360 GO 3S 128GB Standard Edition 4K Action Camera",
+            attrs={"Brand": "Insta360", "Model": "GO 3S"},
+            source="ebay-actioncams",
+        )
+
+        self.assertEqual(key, "insta360-go-3s-128gb")
+
+    def test_actioncam_insta360_one_x2_gets_separate_key(self):
+        key = normalise_model(
+            title="Insta360 ONE X2 360 Degree Waterproof Action Camera",
+            attrs={"Brand": "Insta360", "Model": "ONE X2"},
+            source="ebay-actioncams",
+        )
+
+        self.assertEqual(key, "insta360-one-x2")
+
+    def test_actioncam_akaso_model_gets_key(self):
+        key = normalise_model(
+            title="AKASO EK7000 Pro 4K Action Camera",
+            attrs={"Brand": "AKASO", "Model": "EK7000 Pro"},
+            source="ebay-actioncams",
+        )
+
+        self.assertEqual(key, "akaso-ek7000-pro")
 
     def test_actioncam_lens_mod_does_not_become_camera_key(self):
         key = normalise_model(

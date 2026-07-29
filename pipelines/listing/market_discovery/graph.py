@@ -1,305 +1,326 @@
 """
-Rank candidate eBay market lanes from local PostgreSQL evidence.
+Read-only live listing potentials from local PostgreSQL evidence.
 
-This workflow is signal-only. It does not call eBay, create sources, bid, buy,
-message sellers, relist items, or mutate marketplace state. It exists to decide
-which eBay lanes have enough evidence to become reviewable buy leads by
-comparing confirmed comp depth, active supply, post-cost spread, and identity
-risk.
+This module answers one plain question:
+
+Which live eBay listings are priced below our safe buy price for the same
+`model_key`, using confirmed sold comps only?
 """
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from statistics import median
-from typing import Any
+from typing import Any, Mapping
 
 from psycopg2.extras import RealDictCursor
 
 import utils.db_schema as schema
 from utils.condition import has_investible_product_identity
+from pipelines.listing.review_actions import ensure_review_table
 
 FEE_RATE = 0.13
 OUTBOUND_SHIP_GBP = 7.0
 INBOUND_SHIP_GBP = 5.0
 PACKAGING_GBP = 2.0
 SELLING_RESERVE_GBP = 3.0
-VEHICLE_LIKE_SOURCES = {
-    "ebay-honda-msx125",
-    "ebay-honda-nc750",
-    "ebay-mini-cooper",
-    "ebay-motors",
-    "motomine",
-}
-STATUS_PRIORITY = {
-    "buy_candidate": 4,
-    "data_gap": 3,
-    "parked": 2,
-    "rejected": 1,
-}
+MIN_PROFIT_GBP = 50.0
+MIN_ROI = 0.0
+MIN_CANDIDATE_COMPS = 15
+NEAR_MISS_WINDOW_GBP = 10.0
 
 
 @dataclass
-class MarketLane:
-    """Aggregated local evidence for one source/model-key market lane."""
+class ListingPotential:
+    """One live listing compared directly against same-model sold comps."""
 
     source: str
+    external_id: str
+    title: str
+    url: str
     model_key: str
-    active_count: int
-    active_median_price: float
-    active_min_price: float
+    condition_grade: str
+    sale_type: str
+    end_time: Any
+    current_price: float
+    sold_median: float
     comp_samples: int
-    comp_median_price: float
-    guardrail_blocked_count: int
-
-
-@dataclass
-class MarketDiscoveryScore:
-    """Review-only score and recommendation for a candidate market lane."""
-
-    source: str
-    model_key: str
-    score: float
-    status: str
-    recommendation: str
-    active_count: int
-    active_median_price: float
-    active_min_price: float
-    comp_samples: int
-    comp_median_price: float
-    estimated_net_spread: float
-    spread_ratio: float
-    guardrail_blocked_share: float
-    risk_flags: list[str]
+    max_safe_buy: float
+    expected_profit: float
+    expected_roi: float
+    price_gap_to_max_buy: float
+    signal: str
 
 
 def _money(value: float) -> float:
     return round(float(value or 0.0) + 1e-9, 2)
 
 
-def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
-    return max(low, min(high, value))
-
-
-def score_lane(lane: MarketLane) -> MarketDiscoveryScore:
-    """
-    Convert aggregated lane evidence into a conservative buy-signal score.
-
-    The score is not permission to buy. It answers whether this lane has enough
-    clean spread, comps, and supply to review as a possible eBay flip.
-    """
-    risk_flags: list[str] = []
-    if not lane.model_key or lane.model_key.lower() == "unknown":
-        risk_flags.append("unknown_model_key")
-    if lane.comp_samples < 3:
-        risk_flags.append("thin_confirmed_comps")
-    if lane.active_count < 2:
-        risk_flags.append("thin_active_supply")
-
-    guardrail_share = (
-        lane.guardrail_blocked_count / lane.active_count
-        if lane.active_count > 0
-        else 1.0
-    )
-    if guardrail_share >= 0.25:
-        risk_flags.append("high_false_positive_risk")
-    if lane.source in VEHICLE_LIKE_SOURCES:
-        risk_flags.append("vehicle_logistics_not_modelled")
-
-    estimated_net_spread = _money(
-        lane.comp_median_price * (1.0 - FEE_RATE)
+def _expected_profit(*, current_price: float, sold_median: float) -> float:
+    return _money(
+        sold_median * (1.0 - FEE_RATE)
         - OUTBOUND_SHIP_GBP
         - INBOUND_SHIP_GBP
         - PACKAGING_GBP
         - SELLING_RESERVE_GBP
-        - lane.active_median_price
-    )
-    spread_ratio = 0.0 if lane.active_median_price <= 0 else estimated_net_spread / lane.active_median_price
-    if estimated_net_spread < 20:
-        risk_flags.append("weak_post_cost_spread")
-    if lane.active_median_price >= 300:
-        risk_flags.append("higher_capital_required")
-
-    comp_depth_score = _clamp(lane.comp_samples / 30.0) * 25.0
-    supply_score = _clamp(lane.active_count / 10.0) * 20.0
-    spread_score = _clamp(estimated_net_spread / 120.0) * 30.0
-    identity_score = (1.0 - _clamp(guardrail_share)) * 15.0
-    capital_score = (1.0 - _clamp((lane.active_median_price - 50.0) / 350.0)) * 10.0
-    score = _money(comp_depth_score + supply_score + spread_score + identity_score + capital_score)
-
-    if "vehicle_logistics_not_modelled" in risk_flags:
-        status = "parked"
-        recommendation = "Keep parked until transport, inspection, repair, storage, and paperwork reserves exist."
-    elif "unknown_model_key" in risk_flags or "thin_confirmed_comps" in risk_flags:
-        status = "data_gap"
-        recommendation = "Data gap: clean model key or confirmed final-price coverage is too weak."
-    elif "high_false_positive_risk" in risk_flags:
-        status = "parked"
-        recommendation = "Keep parked: identity/accessory risk is too high."
-    elif estimated_net_spread >= 50 and lane.comp_samples >= 10 and lane.active_count >= 2:
-        status = "buy_candidate"
-        recommendation = "Review as a possible buy candidate; human approval still required."
-    elif estimated_net_spread >= 20:
-        status = "data_gap"
-        recommendation = "Data gap: spread is possible, but supply or final-price depth is incomplete."
-    else:
-        status = "parked"
-        recommendation = "Spread is too thin after costs for current assumptions."
-
-    return MarketDiscoveryScore(
-        source=lane.source,
-        model_key=lane.model_key,
-        score=score,
-        status=status,
-        recommendation=recommendation,
-        active_count=lane.active_count,
-        active_median_price=_money(lane.active_median_price),
-        active_min_price=_money(lane.active_min_price),
-        comp_samples=lane.comp_samples,
-        comp_median_price=_money(lane.comp_median_price),
-        estimated_net_spread=estimated_net_spread,
-        spread_ratio=round(spread_ratio, 4),
-        guardrail_blocked_share=round(guardrail_share, 4),
-        risk_flags=risk_flags,
+        - current_price
     )
 
 
-def _load_active_rows(cur) -> list[dict[str, Any]]:
-    """
-    Load active listing evidence through the normalized read-only view surface.
+def _max_safe_buy(*, sold_median: float, min_profit: float) -> float:
+    return _money(
+        sold_median * (1.0 - FEE_RATE)
+        - OUTBOUND_SHIP_GBP
+        - INBOUND_SHIP_GBP
+        - PACKAGING_GBP
+        - SELLING_RESERVE_GBP
+        - min_profit
+    )
 
-    This signal report is intentionally read-only, so it should be one of the
-    first consumers to move away from the wide `auction_listings` table.
+
+def potential_from_row(
+    row: dict[str, Any],
+    *,
+    min_profit: float = MIN_PROFIT_GBP,
+) -> ListingPotential:
     """
-    cur.execute(
+    Convert one live listing + comp row into deterministic buy maths.
+
+    No LLM judgement, no lane scoring, no status buckets.
+    """
+    current_price = float(row.get("price_current") or 0.0)
+    sold_median = float(row.get("median_final_price") or 0.0)
+    comp_samples = int(row.get("samples") or 0)
+    profit = _expected_profit(current_price=current_price, sold_median=sold_median)
+    roi = 0.0 if current_price <= 0 else profit / current_price
+    max_buy = _max_safe_buy(sold_median=sold_median, min_profit=min_profit)
+    gap = _money(max_buy - current_price)
+
+    return ListingPotential(
+        source=str(row.get("source") or ""),
+        external_id=str(row.get("external_id") or ""),
+        title=str(row.get("title") or ""),
+        url=str(row.get("url") or ""),
+        model_key=str(row.get("model_key") or ""),
+        condition_grade=str(row.get("condition_grade") or "B"),
+        sale_type=str(row.get("sale_type") or ""),
+        end_time=row.get("end_time"),
+        current_price=_money(current_price),
+        sold_median=_money(sold_median),
+        comp_samples=comp_samples,
+        max_safe_buy=max_buy,
+        expected_profit=profit,
+        expected_roi=round(roi, 4),
+        price_gap_to_max_buy=gap,
+        signal=(
+            f"current £{_money(current_price)} vs max buy £{max_buy}; "
+            f"sold median £{_money(sold_median)} from {comp_samples} same-grade comps; "
+            f"expected profit £{profit}"
+        ),
+    )
+
+
+def _fetch_live_listing_comp_rows(
+    cur,
+    *,
+    include_future_unknown: bool = False,
+) -> list[dict[str, Any]]:
+    status_predicate = "a.status = 'live'"
+    if include_future_unknown:
+        status_predicate = """
+          (
+            a.status = 'live'
+            OR (
+              a.status = 'unknown'
+              AND a.end_time IS NOT NULL
+              AND a.end_time > (now() AT TIME ZONE 'utc')
+            )
+          )
         """
+
+    cur.execute(
+        f"""
         SELECT
-            identity.source_label AS source,
-            attrs.model_key,
-            identity.title,
-            observation.price_current
-        FROM listing_identity_v AS identity
-        JOIN listing_attribute_v AS attrs
-          ON attrs.listing_id = identity.listing_id
-        JOIN listing_observation_v AS observation
-          ON observation.listing_id = identity.listing_id
-        JOIN listing_outcome_v AS outcome
-          ON outcome.listing_id = identity.listing_id
-        WHERE outcome.is_live_like = TRUE
-          AND observation.price_current IS NOT NULL
-          AND attrs.model_key IS NOT NULL
-          AND attrs.model_key <> ''
-          AND LOWER(attrs.model_key) <> 'unknown'
+            a.source,
+            a.external_id,
+            a.title,
+            a.url,
+            a.model_key,
+            COALESCE(a.condition_grade, 'B') AS condition_grade,
+            a.sale_type,
+            a.raw_attrs,
+            a.end_time,
+            COALESCE(a.price_current, 0) AS price_current,
+            lc.samples,
+            lc.median_final_price
+        FROM auction_listings AS a
+        JOIN latest_comps AS lc
+          ON lc.model_key = a.model_key
+         AND lc.condition_grade = COALESCE(a.condition_grade, 'B')
+        WHERE {status_predicate}
+          AND a.price_current IS NOT NULL
+          AND a.price_current > 0
+          AND a.model_key IS NOT NULL
+          AND a.model_key <> ''
+          AND a.model_key <> 'unknown'
+          AND COALESCE(lc.samples, 0) > 0
+          AND COALESCE(lc.median_final_price, 0) > 0
+          AND NOT EXISTS (
+              SELECT 1
+              FROM (
+                  SELECT DISTINCT ON (external_id)
+                      external_id,
+                      action
+                  FROM listing_review_actions
+                  ORDER BY external_id, created_at DESC, id DESC
+              ) AS review
+              WHERE review.external_id = a.external_id
+                AND review.action = 'down'
+          )
         """
     )
     return [dict(row) for row in cur.fetchall()]
 
 
-def _load_comp_map(cur) -> dict[str, dict[str, Any]]:
-    cur.execute(
-        """
-        SELECT model_key, samples, median_final_price
-        FROM latest_comps
-        WHERE model_key IS NOT NULL
-          AND COALESCE(samples, 0) > 0
-          AND COALESCE(median_final_price, 0) > 0
-        """
-    )
-    return {str(row["model_key"]): dict(row) for row in cur.fetchall()}
-
-
-def build_lanes(active_rows: list[dict[str, Any]], comp_map: dict[str, dict[str, Any]]) -> list[MarketLane]:
+def build_potentials(
+    rows: list[dict[str, Any]],
+    *,
+    min_profit: float = MIN_PROFIT_GBP,
+    min_roi: float = MIN_ROI,
+    min_comps: int = MIN_CANDIDATE_COMPS,
+) -> tuple[list[ListingPotential], list[ListingPotential], dict[str, int]]:
     """
-    Aggregate active listings into source/model-key lanes.
+    Return rows that clear the buy maths, plus closest misses for debugging.
 
-    Guardrail-blocked rows remain in the lane count because their presence is a
-    useful market-quality signal: lanes full of accessories or repair-only rows
-    are expensive to automate safely.
+    `potentials` are live rows where current price is below max safe buy,
+    expected profit clears `min_profit`, and comp depth is at least `min_comps`.
+    ROI is returned for context and can be used as an optional extra gate.
     """
-    grouped: dict[tuple[str, str], dict[str, Any]] = {}
-    for row in active_rows:
-        source = str(row.get("source") or "")
-        model_key = str(row.get("model_key") or "")
-        price = float(row.get("price_current") or 0.0)
-        if price <= 0:
-            continue
+    stats = {
+        "live_rows_with_comps": 0,
+        "blocked_identity": 0,
+        "below_min_comps": 0,
+        "checked": 0,
+    }
+    all_checked: list[ListingPotential] = []
+    potentials: list[ListingPotential] = []
 
-        key = (source, model_key)
-        bucket = grouped.setdefault(
-            key,
-            {
-                "prices": [],
-                "active_count": 0,
-                "guardrail_blocked_count": 0,
-            },
-        )
+    for row in rows:
+        stats["live_rows_with_comps"] += 1
+        attrs = row.get("raw_attrs") if isinstance(row.get("raw_attrs"), Mapping) else {}
         if not has_investible_product_identity(
             str(row.get("title") or ""),
-            source=source,
-            model_key=model_key,
+            attrs=attrs,
+            source=str(row.get("source") or ""),
+            model_key=str(row.get("model_key") or ""),
         ):
-            bucket["guardrail_blocked_count"] += 1
-        else:
-            bucket["prices"].append(price)
-        bucket["active_count"] += 1
-
-    lanes: list[MarketLane] = []
-    for (source, model_key), data in grouped.items():
-        comp = comp_map.get(model_key)
-        prices = list(data["prices"])
-        if not comp or not prices:
+            stats["blocked_identity"] += 1
             continue
-        lanes.append(
-            MarketLane(
-                source=source,
-                model_key=model_key,
-                active_count=int(data["active_count"]),
-                active_median_price=float(median(prices)),
-                active_min_price=float(min(prices)),
-                comp_samples=int(comp.get("samples") or 0),
-                comp_median_price=float(comp.get("median_final_price") or 0.0),
-                guardrail_blocked_count=int(data["guardrail_blocked_count"]),
-            )
-        )
-    return lanes
+
+        potential = potential_from_row(row, min_profit=min_profit)
+        if potential.comp_samples < min_comps:
+            stats["below_min_comps"] += 1
+            continue
+
+        stats["checked"] += 1
+        all_checked.append(potential)
+        if (
+            potential.current_price <= potential.max_safe_buy
+            and potential.expected_profit >= min_profit
+            and (min_roi <= 0 or potential.expected_roi >= min_roi)
+        ):
+            potentials.append(potential)
+
+    potentials.sort(key=lambda item: (item.expected_profit, item.expected_roi), reverse=True)
+    all_checked.sort(key=lambda item: (item.price_gap_to_max_buy, item.expected_profit), reverse=True)
+    return potentials, all_checked, stats
 
 
-def run(*, limit: int = 20, min_score: float = 0.0) -> dict[str, Any]:
+def useful_near_misses(
+    rows: list[Mapping[str, Any]],
+    *,
+    min_profit: float,
+    limit: int,
+    near_window: float = NEAR_MISS_WINDOW_GBP,
+) -> list[Mapping[str, Any]]:
     """
-    Build a ranked buy-signal report from local database evidence only.
+    Filter raw closest rows down to human-useful near misses.
 
-    The report is intended for operator review and does not persist results.
+    A raw closest row can be mathematically closest while still being useless,
+    e.g. expected profit of £17 against a £25 gate when the current bid is
+    already above our max buy. A useful near miss must still be at or below the
+    max-buy ceiling, within `near_window` of the gate, and have a positive max
+    safe buy.
     """
+
+    useful: list[Mapping[str, Any]] = []
+    min_near_profit = max(float(min_profit or 0.0) - float(near_window or 0.0), 0.0)
+    for row in rows:
+        try:
+            profit = float(row.get("expected_profit") or 0.0)
+            max_safe_buy = float(row.get("max_safe_buy") or 0.0)
+            current_price = float(row.get("current_price") or 0.0)
+        except (TypeError, ValueError):
+            continue
+        if profit < min_near_profit or max_safe_buy < 0 or current_price > max_safe_buy:
+            continue
+        useful.append(row)
+        if limit and len(useful) >= limit:
+            break
+    return useful
+
+
+def run(
+    *,
+    limit: int = 20,
+    min_score: float = 0.0,
+    min_profit: float = MIN_PROFIT_GBP,
+    min_roi: float = MIN_ROI,
+    min_comps: int = MIN_CANDIDATE_COMPS,
+    include_future_unknown: bool = False,
+) -> dict[str, Any]:
+    """
+    Run the read-only potentials query.
+
+    `min_score` is accepted for old callers but ignored.
+    """
+    ensure_review_table()
     conn = schema.get_fresh_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             schema.ensure_utc_session(cur)
-            active_rows = _load_active_rows(cur)
-            comp_map = _load_comp_map(cur)
+            rows = _fetch_live_listing_comp_rows(
+                cur,
+                include_future_unknown=include_future_unknown,
+            )
     finally:
         conn.close()
 
-    lanes = build_lanes(active_rows, comp_map)
-    scores = [score_lane(lane) for lane in lanes]
-    scores = [score for score in scores if score.score >= min_score]
-    scores.sort(key=lambda item: (STATUS_PRIORITY.get(item.status, 0), item.score), reverse=True)
-    limited = scores[:limit] if limit else scores
-
-    status_counts: dict[str, int] = {}
-    for score in scores:
-        status_counts[score.status] = status_counts.get(score.status, 0) + 1
+    potentials, checked, stats = build_potentials(
+        rows,
+        min_profit=min_profit,
+        min_roi=min_roi,
+        min_comps=min_comps,
+    )
+    limited_potentials = potentials[:limit] if limit else potentials
+    closest = checked[:limit] if limit else checked
 
     return {
-        "workflow": "buy_signal_lanes",
-        "mode": "read_only_local_evidence",
-        "lanes_scored": len(scores),
-        "status_counts": status_counts,
-        "assumptions": {
+        "workflow": "live_listing_potentials",
+        "mode": "read_only_sql_math",
+        "thresholds": {
+            "min_profit_gbp": min_profit,
+            "min_roi": min_roi,
+            "min_comps": min_comps,
             "fee_rate": FEE_RATE,
             "outbound_shipping_gbp": OUTBOUND_SHIP_GBP,
             "inbound_shipping_gbp": INBOUND_SHIP_GBP,
             "packaging_gbp": PACKAGING_GBP,
             "selling_reserve_gbp": SELLING_RESERVE_GBP,
         },
-        "top_lanes": [asdict(score) for score in limited],
+        "summary": {
+            **stats,
+            "potentials": len(potentials),
+        },
+        "potentials": [asdict(row) for row in limited_potentials],
+        "closest": [asdict(row) for row in closest],
     }

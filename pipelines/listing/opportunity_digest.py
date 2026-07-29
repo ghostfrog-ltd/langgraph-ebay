@@ -36,6 +36,7 @@ SCOUT_SOURCES = tuple(
     if source.strip()
 )
 SCOUT_LIMIT = int(os.getenv("GF_SLACK_SCOUT_LIMIT", "4"))
+MAX_FRESH_LISTINGS = int(os.getenv("GF_SLACK_MAX_FRESH_LISTINGS", "500"))
 MIN_MAIN_PROFIT_GBP = float(os.getenv("GF_SLACK_MIN_MAIN_PROFIT_GBP", "0"))
 LOW_INTEREST_COMPUTER_TERMS = (
     "pentium",
@@ -409,40 +410,44 @@ def _build_scout_items(
     return scouts
 
 
-def _fetch_active_listings() -> list[dict[str, Any]]:
+def _fetch_active_listings(now: datetime | None = None, *, limit: int = MAX_FRESH_LISTINGS) -> list[dict[str, Any]]:
     """
-    Load digest candidates from the normalized read-only listing projections.
+    Load only fresh live digest candidates.
 
-    The Slack digest is an operator report, not an ROI write path. Keeping this
-    loader local lets the digest use the same pure ROI shortlist helpers while
-    avoiding a direct dependency on the wide `auction_listings` read contract.
+    The heartbeat runs every five minutes, so do not pull the full live table
+    and filter it in Python. Push the freshness/end-time gate into PostgreSQL
+    and keep the result capped.
     """
 
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(minutes=FRESHNESS_MINUTES)
+    capped_limit = max(1, min(int(limit), 2000))
     query = """
         SELECT
-            identity.source_label AS source,
-            identity.external_id,
-            identity.title,
-            identity.url,
-            attrs.model_key,
-            COALESCE(observation.price_current, 0) AS price_current,
-            outcome.status,
-            observation.end_time,
-            observation.time_left_s,
-            observation.last_seen_at
-        FROM listing_identity_v AS identity
-        JOIN listing_attribute_v AS attrs
-          ON attrs.listing_id = identity.listing_id
-        JOIN listing_observation_v AS observation
-          ON observation.listing_id = identity.listing_id
-        JOIN listing_outcome_v AS outcome
-          ON outcome.listing_id = identity.listing_id
-        WHERE outcome.is_live_like = TRUE
-          AND observation.price_current IS NOT NULL
+            source,
+            external_id,
+            title,
+            url,
+            model_key,
+            COALESCE(condition_grade, 'B') AS condition_grade,
+            COALESCE(price_current, 0) AS price_current,
+            status,
+            end_time,
+            time_left_s,
+            last_seen_at
+        FROM auction_listings
+        WHERE status = 'live'
+          AND price_current IS NOT NULL
+          AND end_time IS NOT NULL
+          AND end_time > %s
+          AND last_seen_at IS NOT NULL
+          AND last_seen_at >= %s
+        ORDER BY last_seen_at DESC, end_time ASC, price_current DESC
+        LIMIT %s
     """
     with schema.connection.cursor(cursor_factory=RealDictCursor) as cur:
         schema.ensure_utc_session(cur)
-        cur.execute(query)
+        cur.execute(query, (now, cutoff, capped_limit))
         return [dict(row) for row in cur.fetchall()]
 
 
@@ -462,7 +467,7 @@ def build_review_auction_digest(limit: int = 4, now: datetime | None = None) -> 
 
     listings = [
         listing
-        for listing in _fetch_active_listings()
+        for listing in _fetch_active_listings(now)
         if _is_fresh_live_listing_for_slack(listing, now)
     ]
     comps_by_model = _comps_lookup()

@@ -1,187 +1,395 @@
-# agent/model_keys/motors.py
 from __future__ import annotations
 
 import re
-from typing import Mapping, Any, Optional
+from typing import Any, Mapping, Optional
 
-from utils.condition import _derive_condition_grade
 
 UNKNOWN_KEY = "unknown"
 
 
-def _clean(s: Any) -> str:
-    """Basic string cleaner: None -> "", strip whitespace."""
-    if s is None: return ""
-    if isinstance(s, list):
-        return " ".join(str(v).lower() for v in s)
-    return str(s).strip()
+MAKE_ALIASES = {
+    "citroa n": "citroen",
+    "citroen": "citroen",
+    "landrover": "land-rover",
+    "land rover": "land-rover",
+    "range rover": "land-rover",
+    "mercedes": "mercedes-benz",
+    "mercedes benz": "mercedes-benz",
+    "mercedesbenz": "mercedes-benz",
+    "mini": "mini",
+    "skoda": "skoda",
+    "a koda": "skoda",
+    "toyoya": "toyota",
+    "volgswagen": "volkswagen",
+    "vw": "volkswagen",
+    "vw split screen": "volkswagen",
+    "vauxhall opel": "vauxhall",
+    "vauxhall": "vauxhall",
+    "vauxhaul": "vauxhall",
+}
+
+KNOWN_MAKES = {
+    "abarth",
+    "alfa-romeo",
+    "aston-martin",
+    "audi",
+    "austin",
+    "bentley",
+    "bmw",
+    "chevrolet",
+    "chrysler",
+    "citroen",
+    "dacia",
+    "dodge",
+    "ds",
+    "fiat",
+    "ford",
+    "honda",
+    "hummer",
+    "hyundai",
+    "jaguar",
+    "jeep",
+    "kia",
+    "land-rover",
+    "lexus",
+    "lotus",
+    "maserati",
+    "mazda",
+    "mercedes-benz",
+    "mg",
+    "mini",
+    "mitsubishi",
+    "nissan",
+    "peugeot",
+    "porsche",
+    "reliant",
+    "renault",
+    "rover",
+    "saab",
+    "seat",
+    "skoda",
+    "smart",
+    "ssangyong",
+    "subaru",
+    "suzuki",
+    "tesla",
+    "toyota",
+    "trabant",
+    "vauxhall",
+    "volkswagen",
+    "volvo",
+}
+
+PART_TERMS = (
+    "alloy wheel",
+    "wheels and tyres",
+    "wheel & tyre",
+    "tyre",
+    "tyres",
+    "headlight",
+    "headlamp",
+    "rear light",
+    "tail light",
+    "bumper",
+    "bonnet",
+    "bootlid",
+    "tailgate",
+    "door handle",
+    "grille",
+    "radiator",
+    "intercooler",
+    "turbo",
+    "exhaust",
+    "brake disc",
+    "brake pad",
+    "caliper",
+    "shock absorber",
+    "strut",
+    "spring",
+    "seat",
+    "steering wheel",
+    "airbag",
+    "dashboard",
+    "engine control unit",
+    "ecu",
+    "cover headlamp",
+)
+
+NON_VEHICLE_TERMS = (
+    "diecast",
+    "die-cast",
+    "model car",
+    "model bike",
+    "hot wheels",
+    "matchbox",
+    "corgi",
+    "lego",
+    "technic",
+    "poster",
+    "brochure",
+    "owners manual",
+    "owner s manual",
+    "workshop manual",
+    "haynes manual",
+    "number plate",
+    "private plate",
+    "keyring",
+    "t-shirt",
+    "t shirt",
+    "fishing",
+    "carp",
+    "daiwa",
+    "trakker",
+    "prologic",
+    "nash",
+)
+
+MODEL_STOP_WORDS = {
+    "sport",
+    "msport",
+    "m-sport",
+    "m",
+    "amg",
+    "line",
+    "sline",
+    "s-line",
+    "edition",
+    "luxury",
+    "premium",
+    "quattro",
+    "xdrive",
+    "hatchback",
+    "saloon",
+    "estate",
+    "auto",
+    "manual",
+    "diesel",
+    "petrol",
+    "bluehdi",
+    "puretech",
+    "tdi",
+    "tfsi",
+}
 
 
-def _extract_engine_size(attrs: Mapping[str, Any], title: str) -> str:
-    """
-    Extracts canonical engine size (e.g., '1.6l', '1200cc').
-    Scans Engine Size, Engine, Engine Number, and Drivetrain attributes.
-    """
-    # Cascade: Check structured attributes first
-    candidates = [
-        attrs.get("Engine Size"),
-        attrs.get("Engine"),
-        attrs.get("Engine Number"),
-        attrs.get("Drivetrain")
-    ]
+def _clean(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple, set)):
+        return " ".join(_clean(item) for item in value)
+    return str(value).strip().lower()
 
-    search_text = " ".join(_clean(c) for c in candidates) + " " + title.lower()
 
-    # 1. Look for 'cc' patterns (e.g., 1197cc, 1200 cc)
-    cc_match = re.search(r'(\d{3,4})\s?cc', search_text)
-    if cc_match:
-        return f"{cc_match.group(1)}cc"
+def _spaced(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
 
-    # 2. Look for Litre patterns (e.g., 1.6, 1.6L, 2.0 Litre)
-    litre_match = re.search(r'(\d\.\d)\s?(?:l|ltr|litre)?', search_text)
-    if litre_match:
-        return f"{litre_match.group(1)}l"
 
-    # 3. Look for raw 3-4 digit numbers that look like displacement (e.g., 1300)
-    raw_cc_match = re.search(r'\b(8\d{2}|[1-5]\d{3})\b', search_text)
-    if raw_cc_match:
-        return f"{raw_cc_match.group(1)}cc"
+def _slug(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", _spaced(value)).strip("-")
 
+
+def _blob(attrs: Mapping[str, Any], title: str) -> str:
+    parts = [title]
+    parts.extend(str(value) for value in attrs.values() if value is not None)
+    return _spaced(" ".join(parts))
+
+
+def _normalise_make(raw: Any, title: str = "") -> str:
+    cleaned = _spaced(_clean(raw))
+    if cleaned in {"other", "unbranded", "does not apply", "not supplied", "n a"}:
+        cleaned = ""
+
+    if cleaned:
+        cleaned = MAKE_ALIASES.get(cleaned, cleaned)
+        cleaned = _slug(cleaned)
+        if cleaned in KNOWN_MAKES:
+            return cleaned
+
+        for make in sorted(KNOWN_MAKES, key=len, reverse=True):
+            make_text = make.replace("-", " ")
+            if re.search(rf"\b{re.escape(make_text)}\b", cleaned.replace("-", " ")):
+                return make
+
+    title_text = _spaced(title)
+    for make in sorted(KNOWN_MAKES, key=len, reverse=True):
+        if re.search(rf"\b{re.escape(make.replace('-', ' '))}\b", title_text):
+            return make
     return ""
+
+
+def _extract_make(attrs: Mapping[str, Any], title: str) -> str:
+    for key in ("Manufacturer", "Make", "Brand"):
+        make = _normalise_make(attrs.get(key), title)
+        if make:
+            return make
+    return _normalise_make("", title)
 
 
 def _extract_year(attrs: Mapping[str, Any], title: str) -> str:
-    """
-    Extracts manufacture year using registration dates and manufacture attributes.
-    """
-    # Grab all year-related candidates
-    candidates = [
-        str(attrs.get("Year", "")),
-        str(attrs.get("Date of 1st Registration", "")),
-        str(attrs.get("Year Manufactured", ""))
-    ]
-
-    blob = " ".join(candidates) + " " + title
-
-    # Search for plausible years (1950-2030)
-    match = re.search(r'\b(19\d{2}|20[0-2]\d)\b', blob)
-    return match.group(1) if match else ""
-
-
-def _extract_mileage_bucket(attrs: Mapping[str, Any], title: str) -> str:
-    """
-    Groups mileage into 10,000 mile buckets to facilitate clustering.
-    Example: 34,500 miles -> '30k'.
-    """
-    raw_mileage = _clean(attrs.get("Mileage"))
-    search_text = f"{raw_mileage} {title.lower()}".replace(",", "")
-
-    match = re.search(r'\b(\d{1,6})\b', search_text)
-    if match:
-        try:
-            val = int(match.group(1))
-            # Create 10k buckets (e.g., 34000 -> 30k)
-            bucket = (val // 10000) * 10
-            return f"{bucket}k"
-        except ValueError:
-            pass
+    for value in (
+        _clean(attrs.get("Year")),
+        _clean(attrs.get("Year Manufactured")),
+        _clean(attrs.get("Date of 1st Registration")),
+        _clean(title),
+    ):
+        match = re.search(r"\b(19\d{2}|20[0-2]\d)\b", value)
+        if match:
+            return match.group(1)
+        date_match = re.search(r"\b(19\d{2}|20[0-2]\d)\d{4}\b", value)
+        if date_match:
+            return date_match.group(1)
+        uk_date_match = re.search(r"\b\d{4}(19\d{2}|20[0-2]\d)\b", value)
+        if uk_date_match:
+            return uk_date_match.group(1)
     return ""
 
 
-def _normalise_brand(raw: Any) -> str:
-    """Normalises Brand/Make to compact alphanumeric."""
-    s = _clean(raw)
-    if not s or s.lower() in {"other", "unbranded", "does not apply"}:
+def _extract_engine(attrs: Mapping[str, Any], title: str) -> str:
+    text = _spaced(
+        " ".join(
+            _clean(attrs.get(key))
+            for key in ("Engine Size", "Engine", "Engine Number")
+        )
+        + " "
+        + title
+    )
+    cc_match = re.search(r"\b(\d{3,4})\s?cc\b", text)
+    if cc_match:
+        return f"{cc_match.group(1)}cc"
+
+    litre_match = re.search(r"\b([0-5])[\s.]([0-9])\s?(?:l|ltr|litre)?\b", text)
+    if litre_match:
+        return f"{litre_match.group(1)}.{litre_match.group(2)}l"
+
+    return ""
+
+
+def _extract_fuel(attrs: Mapping[str, Any], title: str) -> str:
+    text = _spaced(" ".join([_clean(attrs.get("Fuel Type")), _clean(attrs.get("Fuel")), title]))
+    fuel_map = (
+        ("diesel electric", "diesel-hybrid"),
+        ("petrol electric", "petrol-hybrid"),
+        ("petrol mhev", "petrol-mhev"),
+        ("diesel mhev", "diesel-mhev"),
+        ("phev", "phev"),
+        ("hybrid", "hybrid"),
+        ("electricity", "electric"),
+        ("electric", "electric"),
+        ("diesel", "diesel"),
+        ("petrol", "petrol"),
+        ("lpg", "lpg"),
+    )
+    for needle, token in fuel_map:
+        if needle in text:
+            return token
+    return ""
+
+
+def _extract_transmission(attrs: Mapping[str, Any], title: str) -> str:
+    text = _spaced(f"{_clean(attrs.get('Transmission'))} {title}")
+    if "automatic" in text or "auto" in text or "dsg" in text:
+        return "automatic"
+    if "manual" in text:
+        return "manual"
+    return ""
+
+
+def _extract_body(attrs: Mapping[str, Any], title: str) -> str:
+    text = _spaced(f"{_clean(attrs.get('Body Type'))} {_clean(attrs.get('Car Type'))} {title}")
+    body_map = (
+        ("campervan", "campervan"),
+        ("convertible", "convertible"),
+        ("cabriolet", "convertible"),
+        ("roadster", "roadster"),
+        ("coupe", "coupe"),
+        ("estate", "estate"),
+        ("tourer", "estate"),
+        ("hatchback", "hatchback"),
+        ("saloon", "saloon"),
+        ("suv", "suv"),
+        ("4x4", "suv"),
+        ("mpv", "mpv"),
+        ("van", "van"),
+        ("pickup", "pickup"),
+        ("pick up", "pickup"),
+    )
+    for needle, token in body_map:
+        if needle in text:
+            return token
+    return ""
+
+
+def _extract_drive(attrs: Mapping[str, Any], title: str) -> str:
+    text = _spaced(f"{_clean(attrs.get('Drivetrain'))} {title}")
+    if "quattro" in text or "4wd" in text or "4x4" in text or "awd" in text or "xdrive" in text:
+        return "awd"
+    if "rwd" in text:
+        return "rwd"
+    if "fwd" in text:
+        return "fwd"
+    return ""
+
+
+def _extract_model(attrs: Mapping[str, Any], make: str, title: str) -> str:
+    raw = _clean(attrs.get("Model")) or _clean(attrs.get("Variant"))
+    if not raw or raw in {"not supplied", "does not apply", "n a", "."}:
+        raw = title
+
+    text = _spaced(raw)
+    if make:
+        text = re.sub(rf"\b{re.escape(make.replace('-', ' '))}\b", " ", text)
+    year = _extract_year(attrs, title)
+    if year:
+        text = re.sub(rf"\b{year}\b", " ", text)
+
+    tokens = [token for token in text.split() if token and token not in MODEL_STOP_WORDS]
+    if not tokens:
         return ""
-    return "".join(ch for ch in s.lower() if ch.isalnum())
-
-
-def _compress_model_tokens(tokens: list[str]) -> str:
-    """Collapses noisy trim strings into a stable family token."""
-    if not tokens: return ""
-
-    STOP_TOKENS = {
-        "sport", "msport", "amg", "line", "sline", "edition", "luxury",
-        "premium", "quattro", "xdrive", "awd", "fwd", "hatchback", "saloon",
-        "estate", "auto", "manual", "diesel", "petrol"
-    }
 
     out: list[str] = []
-    have_digit_anchor = False
-
-    for tok in tokens:
-        if not out:
-            out.append(tok)
-            if any(ch.isdigit() for ch in tok): have_digit_anchor = True
-            continue
-
-        if tok in STOP_TOKENS: break
-
-        # Keep identity anchors like '320d' or 'tt'
-        if any(ch.isdigit() for ch in tok):
-            out.append(tok)
-            have_digit_anchor = True
-            if len(out) >= 2: break
-            continue
-
-        if have_digit_anchor or len(out) >= 2: break
-        out.append(tok)
+    for token in tokens:
+        if token in MODEL_STOP_WORDS:
+            break
+        out.append(token)
+        if any(ch.isdigit() for ch in token) and len(out) >= 2:
+            break
+        if len(out) >= 3:
+            break
 
     return "".join(out)
 
 
-def _normalise_model(raw_model: Any, raw_brand: Any) -> str:
-    """Standardizes Model or Variant attributes."""
-    s = _clean(raw_model)
-    if not s or s.lower() in {"not supplied", "does not apply", "n/a"}:
-        return ""
-
-    s = s.replace("/", " ").replace("-", " ")
-    raw_tokens = s.split()
-
-    brand_first = _clean(raw_brand).split()[0].lower() if raw_brand else ""
-    tokens: list[str] = []
-    for tok in raw_tokens:
-        alnum = "".join(ch for ch in tok if ch.isalnum()).lower()
-        if alnum and alnum != brand_first:
-            tokens.append(alnum)
-
-    return _compress_model_tokens(tokens)
+def _is_vehicle_listing(attrs: Mapping[str, Any], title: str, make: str) -> bool:
+    text = _blob(attrs, title)
+    if any(term in text for term in NON_VEHICLE_TERMS):
+        return False
+    if any(term in text for term in PART_TERMS):
+        return False
+    if not make:
+        return False
+    return True
 
 
-def motors_model_key(
-        attrs: Mapping[str, Any],
-        title: str = "",
-) -> Optional[str]:
-    """
-    Builds canonical motors key: {brand}-{model}-{engine}-{year}-{mileage}_{grade}
-
-    Supported Logic:
-    - Identity: Brand + (Model or Variant cascade)
-    - Engine: Standardized Litre/CC extractor
-    - Age: Year extraction from registration dates
-    - Usage: 10k Mileage buckets
-    """
-    brand = _normalise_brand(attrs.get("Brand"))
-    # Fallback cascade for identification
-    model_core = _normalise_model(attrs.get("Model"), attrs.get("Brand")) or \
-                 _normalise_model(attrs.get("Variant"), attrs.get("Brand"))
-
-    if not brand or not model_core:
+def motors_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
+    safe_attrs = attrs or {}
+    make = _extract_make(safe_attrs, title)
+    if not _is_vehicle_listing(safe_attrs, title, make):
         return UNKNOWN_KEY
 
-    # Extraction Layer
-    engine = _extract_engine_size(attrs, title)
-    year = _extract_year(attrs, title)
-    mileage = _extract_mileage_bucket(attrs, title)
+    model = _extract_model(safe_attrs, make, title)
+    if not model:
+        return UNKNOWN_KEY
 
-    # Construct base key with identity + specs
-    base_parts = [brand, model_core]
-    if engine: base_parts.append(engine)
-    if year: base_parts.append(year)
-    if mileage: base_parts.append(mileage)
+    parts = ["vehicle", make, model]
+    for value in (
+        _extract_engine(safe_attrs, title),
+        _extract_fuel(safe_attrs, title),
+        _extract_transmission(safe_attrs, title),
+        _extract_drive(safe_attrs, title),
+        _extract_body(safe_attrs, title),
+        _extract_year(safe_attrs, title),
+    ):
+        if value and value not in parts:
+            parts.append(value)
 
-    base_key = "-".join(base_parts)
-    grade = _derive_condition_grade(attrs, title)
-
-    return f"{base_key}_{grade}"
+    return "-".join(parts)

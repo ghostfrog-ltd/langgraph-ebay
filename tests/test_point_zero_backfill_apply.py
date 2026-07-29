@@ -1,11 +1,17 @@
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
+import requests
 from pipelines.listing.ended.graph import _parse_trading_get_item
-from pipelines.listing.point_zero.backfill_apply import _classify_trading_snapshot
+from pipelines.listing.point_zero.backfill_apply import (
+    _classify_trading_snapshot,
+    run_backfill,
+)
 
 
 class PointZeroBackfillApplyTests(unittest.TestCase):
-    """Classifier tests for safe stale-listing finalization backfills."""
+    """Classifier tests for safe unknown-listing finalization backfills."""
 
     def _classify(self, parsed):
         return _classify_trading_snapshot(
@@ -63,19 +69,21 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
         self.assertEqual(outcome.new_status, "ended")
         self.assertIsNone(outcome.final_price)
 
-    def test_item_not_found_is_finalized_as_ended_not_sold(self):
+    def test_item_not_found_is_deleted_not_sold(self):
         outcome = self._classify({"code": "1505"})
 
-        self.assertEqual(outcome.action, "finalize")
-        self.assertEqual(outcome.new_status, "ended")
+        self.assertEqual(outcome.action, "delete")
+        self.assertEqual(outcome.new_status, "deleted")
         self.assertIsNone(outcome.final_price)
+        self.assertEqual(outcome.reason, "trading_item_not_found_1505")
 
-    def test_inaccessible_deleted_item_is_finalized_as_ended_not_retried(self):
+    def test_inaccessible_deleted_item_is_deleted_locally(self):
         outcome = self._classify({"code": "17"})
 
-        self.assertEqual(outcome.action, "finalize")
-        self.assertEqual(outcome.new_status, "ended")
+        self.assertEqual(outcome.action, "delete")
+        self.assertEqual(outcome.new_status, "deleted")
         self.assertIsNone(outcome.final_price)
+        self.assertEqual(outcome.reason, "trading_item_not_found_17")
 
     def test_trading_parser_preserves_inaccessible_error_code(self):
         parsed = _parse_trading_get_item(
@@ -119,19 +127,21 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
         self.assertEqual(parsed["bid_count"], 0)
         self.assertEqual(parsed["quantity_sold"], 1)
 
-    def test_live_trading_response_is_left_unchanged(self):
+    def test_live_trading_response_restores_unknown_listing_to_live(self):
         outcome = self._classify(
             {
                 "ended": False,
                 "sold_flag": False,
                 "final_price": 52.0,
                 "bid_count": 0,
+                "ebay_end_time": "2026-07-22T12:00:00.000Z",
             }
         )
 
-        self.assertEqual(outcome.action, "skip")
-        self.assertEqual(outcome.new_status, "skipped")
+        self.assertEqual(outcome.action, "restore")
+        self.assertEqual(outcome.new_status, "live")
         self.assertEqual(outcome.reason, "trading_says_not_ended")
+        self.assertEqual(outcome.ebay_end_time, "2026-07-22T12:00:00.000Z")
 
     def test_unparseable_response_is_error_without_update(self):
         outcome = self._classify(None)
@@ -139,6 +149,69 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
         self.assertEqual(outcome.action, "skip")
         self.assertEqual(outcome.new_status, "error")
         self.assertEqual(outcome.reason, "unparseable_trading_response")
+
+    def test_backfill_timeout_is_recorded_and_batch_continues(self):
+        candidates = [
+            {
+                "id": 1,
+                "external_id": "v1|111111111111|0",
+                "source": "ebay-apple",
+                "model_key": "apple-iphone-15-128gb",
+                "title": "Timeout row",
+            },
+            {
+                "id": 2,
+                "external_id": "v1|222222222222|0",
+                "source": "ebay-apple",
+                "model_key": "apple-iphone-15-128gb",
+                "title": "Sold row",
+            },
+        ]
+        captured_outcomes = []
+
+        def fake_call(item_id):
+            if item_id == "111111111111":
+                raise requests.ConnectTimeout("timed out")
+            return SimpleNamespace(text="<xml/>")
+
+        def fake_apply(outcomes):
+            captured_outcomes.extend(outcomes)
+            return 1
+
+        with patch(
+            "pipelines.listing.point_zero.backfill_apply.backfill_checks_today",
+            return_value=0,
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._load_candidates_from_plan",
+            return_value=(candidates, {"api_budget": {}}),
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply.increment_api_usage",
+        ) as usage, patch(
+            "pipelines.listing.point_zero.backfill_apply._call_trading_get_item",
+            side_effect=fake_call,
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._parse_trading_get_item",
+            return_value={
+                "ended": True,
+                "sold_flag": True,
+                "final_price": 199.99,
+                "bid_count": 3,
+            },
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._apply_outcomes",
+            side_effect=fake_apply,
+        ):
+            summary = run_backfill(limit=2, apply=True, daily_backfill_budget=10)
+
+        self.assertEqual(summary["outcome_count"], 2)
+        self.assertEqual(summary["applied"], 1)
+        self.assertEqual(usage.call_count, 2)
+        self.assertEqual(captured_outcomes[0].action, "skip")
+        self.assertEqual(captured_outcomes[0].new_status, "error")
+        self.assertEqual(captured_outcomes[0].reason, "trading_api_timeout")
+        self.assertEqual(captured_outcomes[1].new_status, "sold")
+        self.assertIn("skip:error:trading_api_timeout", summary["counts"])
+        self.assertIn("finalize:sold:ended_with_bids", summary["counts"])
 
 
 if __name__ == "__main__":

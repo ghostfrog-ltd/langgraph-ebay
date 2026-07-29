@@ -4,7 +4,7 @@
 
 1. Retrieve listings.
 2. Mark ended/sold outcomes.
-3. Recover final prices for stale valuable rows.
+3. Recover final prices for unknown past-end rows.
 4. Extract product identity/model keys.
 5. Rebuild confirmed-price comps.
 6. Score live listings against safe max buy price.

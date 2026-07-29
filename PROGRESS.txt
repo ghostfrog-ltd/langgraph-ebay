@@ -3,11 +3,11 @@ CURRENT_STATE_2026_07_21:
 Mission: buy cheap from eBay to resell on eBay for profit.
 
 Active priority:
-1. Fix slow heartbeat/database queries.
-2. Recover final sold prices in useful markets.
-3. Clean product identity and parts/accessory filters.
-4. Build comps only from confirmed final prices.
-5. Produce a tiny human-review shortlist.
+1. Recover final sold prices in useful markets.
+2. Clean product identity and parts/accessory filters.
+3. Build comps only from confirmed final prices.
+4. Run the live-listing potentials query.
+5. Show potentials and closest misses so the human can decide whether to punt.
 
 Current known issues:
 - Heartbeat could stall on slow `auction_listings` queries; migration
@@ -65,6 +65,179 @@ Current known issues:
   80 scored lanes, 0 buy candidates, 27 data gaps, and 53 parked. The useful
   next work is closing data gaps: repair model keys where they are broad, and
   recover enough confirmed final prices for clean model keys.
+- Next capped backfill apply checked 200 more candidates and recovered 88 sold
+  final prices, finalized 40 ended/no-sale/inaccessible rows, and skipped 72
+  rows that Trading still reports active. New dirty-title misses seen in the
+  batch (`screen for`, empty original box/inserts, Touch ID issue, screen/mic
+  issue) are now blocked from comps and candidate scoring. Rebuilt comps rose
+  to 2,436 rows, confirmed final-price rows rose to 13,124, and 461 comp keys
+  now have 3+ samples. Buy-signal report now shows 83 scored lanes, 0 buy
+  candidates, 29 data gaps, and 54 parked; ROI still has 0 rows above the £50
+  profit / 25% ROI gate.
+- The `thin_active_supply` flag is now warning-only for buy-signal lanes.
+  One live listing can qualify if the model key is clean, confirmed final-price
+  depth is strong, and spread clears the gate. Current counts after this fix
+  are unchanged: 83 scored lanes, 0 buy candidates, 29 data gaps, and 54 parked,
+  so the live-supply threshold was not the blocker.
+- Replaced the abstract lane/status report with a plain live-listing potentials
+  query. It compares each live listing directly to same-`model_key` confirmed
+  sold comps and outputs current price, sold median, comp count, max safe buy,
+  expected profit, ROI, and a simple signal string. Default gate is now side
+  hustle aligned: expected profit >= £50, minimum 3 sold comps, ROI shown for
+  context but not blocking by default. Current run: 145 live rows with comps,
+  83 checked after filters, 0 potentials, and closest miss is an Apple MacBook
+  Air M2 16GB/512GB at £400 versus max safe buy £391.06 for £41.06 expected
+  profit. Query runs in ~0.2s using the live status/model-key index.
+- Human decision rule: if a row misses the £50 gate but is close, the system
+  does not decide. It shows the maths; the human decides whether condition,
+  lower postage, negotiation, resale upside, or lane-learning makes the punt
+  worthwhile.
+- Apple/Mac model-key repair is now live. Apple keys no longer include `_a/_b/_d`
+  condition suffixes; `auction_listings.condition_grade` stores condition
+  separately. Mac identity is strict on line/chassis/screen/CPU/RAM/SSD, refuses
+  missing/conflicting Mac specs as `unknown`, maps M2/M3/M4 MacBook Air `13in`
+  seller shorthand to `13.6in`, treats Intel Core m3 separately from Apple M3,
+  and blocks bad RAM parsing such as `512gb-512gb`. Applied migrations
+  `20260721_002_add_condition_grade.sql` and
+  `20260721_003_comps_condition_primary_key.sql`, rebuilt 30,115 Apple rows,
+  then rebuilt comps by `model_key + condition_grade` to 2,136 rows. Known
+  Apple `512gb-512gb` keys are now 0. Current simple potentials run after the
+  rebuild: at £50 profit gate, 165 live rows with comps, 88 checked, 2
+  potentials; at £25 punt gate, 5 potentials.
+- Heartbeat bottleneck check: the review-only auction digest was doing an
+  uncapped live-like view scan and filtering freshness in Python, taking over a
+  minute in a local timing run. It now pushes `status='live'`, future `end_time`,
+  recent `last_seen_at`, ordering, and a row cap into SQL. Read-only heartbeat
+  metrics now compute once per tick and expose per-section timings in Slack/email.
+  Latest timing sample: 2.62s total; slowest reads were listing counts at 0.93s
+  and backfill planning at 0.80s; review digest was 0.03s inside metrics.
+- Added a local operator console: run `./ebay` from the repo to list useful
+  commands. Installed `/opt/homebrew/bin/ebay` as a symlink to that wrapper so
+  plain `ebay` works from normal terminals. It exposes the serious/punt
+  potentials lists, `stats`, custom potentials, backfill planning, bounded backfill
+  dry-run/apply, comp rebuild, Apple key repair, migration check, tests, and one
+  full heartbeat tick. Commands are labelled by safety so API-spending and
+  local-DB-writing actions are not hidden.
+- Fixed stale backfill selection returning zero work even with budget remaining.
+  The queue was looking at too few old rows before product-identity guardrails,
+  so dirty/rejected rows at the front could hide useful backfill rows deeper down.
+  The planner now scans deeper to fill a bounded batch after rejects and matches
+  comp gaps by `model_key + condition_grade`.
+- Raised the normal backfill batch from 10 to 100 rows. Plain
+  `ebay backfill-apply` is now useful for catch-up work while still respecting
+  the local daily backfill budget.
+- New final-price cleanup rule: eBay item-not-found/inaccessible rows such as
+  `trading_item_not_found_17` are deleted locally, including their local price
+  history, because they cannot produce confirmed final prices.
+- Replaced the old listing state design: collector no longer marks missing rows
+  as ended-like. It marks them `unknown`. Final-price backfill only checks
+  unknown rows whose `end_time` has passed; Trading then resolves them to
+  `live`, `sold`, `ended`, or local deletion.
+- Backfill CLI now exposes the useful daily override as `--daily-limit`; the
+  help examples show `ebay backfill-apply --limit 250 --daily-limit 5000` for
+  faster catch-up days.
+- Removed paper-trading from the hourly heartbeat path and alert output. The
+  email/Slack heartbeat now focuses on live listings, confirmed comps, final
+  prices, unknown queue, backfill, model keys, ROI caution, and fresh review
+  rows.
+- Added `ebay heartbeat-email` to send the current heartbeat email on demand,
+  with optional `--to` overrides for test recipients.
+- Removed the explanatory "What Matters Right Now" section from the heartbeat
+  email; the email now leads with metrics and concrete review/backfill tables.
+- Trimmed the heartbeat email again: after the metric cards it now shows only
+  `GBP 50 Profit Candidates` and `GBP 25 Profit Candidates`, both built from
+  live-listing potentials.
+- Backfill limit semantics fixed: `ebay backfill-apply --limit N --daily-limit M`
+  now treats `N` as the requested candidate count, pages through the eligible
+  unknown backlog until it fills that count or exhausts the queue, and reports
+  budget/candidate shortfalls if it cannot. Apply/dry-run uses the operator
+  limit rather than the conservative read-only planner recommendation. Dry-run
+  verification for `--limit 2000 --daily-limit 10000` returned 2,000 candidates
+  with no shortfall.
+- Apple key repair expanded beyond Macs. iPhone keys now require exact model/tier
+  and storage, iPad keys require generation/chip plus storage, Apple Watch keys
+  require series/model and size, AirPods/Apple TV/iPod/HomePod/AirTag get
+  separate strict keys, and obvious Apple accessory/part listings become
+  `unknown` instead of polluting whole-product comps.
+- Samsung key repair now uses strict product identity without condition suffixes.
+  Galaxy S/Note phones keep generation/tier/storage, Fold/Flip keep generation
+  and storage, A/M phones keep exact model/storage plus 5G where it separates
+  variants, and Galaxy Tab keys keep line/generation/tier/storage/connectivity.
+  Broad old Samsung keys and condition-suffixed Samsung keys are blocked from
+  investible comps until rebuilt.
+- Console key repair now uses strict product identity without condition suffixes.
+  PlayStation separates PS5 disc/digital/slim/pro and PS4 base/slim/pro by
+  storage, Xbox separates Series X/S and One base/S/X by storage, and Switch uses
+  base/OLED/Lite/Switch 2/tablet-only without SD-card storage pollution. Broad
+  old console keys such as `ps5_825gb_b`, `xbox_series_b`, and `switch_b` are
+  blocked from investible comps. Applied the console-only rebuild across 20,991
+  rows, changed 9,992 keys, then fixed the Series S/X attr conflict and changed
+  a further 342 rows. Rebuilt comps afterward: 2,283 comp rows / 8,257 final-price
+  samples.
+- Actioncam key repair now uses strict product identity without condition suffixes.
+  GoPro separates Hero generations and important variants, DJI separates Osmo
+  Action/Pocket/360 generations, Insta360 separates X/GO/ONE/ACE variants and GO
+  storage where it affects value, and obvious mods/accessories/drone listings
+  become `unknown`. Applied the Actioncam-only rebuild across 2,716 rows, changed
+  2,393 keys, and verified a follow-up dry run changed 0 rows. Rebuilt comps
+  afterward: 2,269 comp rows / 8,246 final-price samples.
+- Motors key repair is code-ready for the later one-shot rebuild. It now uses
+  vehicle make/model plus engine/fuel/transmission/drive/body/year, reads
+  `Manufacturer`/`Make` before `Brand`, normalises common make aliases, removes
+  mileage and condition suffixes from `model_key`, and sends obvious parts,
+  accessories, manuals, toys, fishing gear, and other non-vehicle pollution to
+  `unknown`. No Motors DB rebuild has been run yet.
+- Fixed the Apple no-candidates deep dive. Mac comps now allow strict Intel
+  `core-i*`/`core-m*` keys as well as Apple Silicon, Apple title-only rows and
+  storage/RAM/screen/chip parsing are stricter, screen-damaged and fair-condition
+  rows are graded/blocked correctly, and PS3 game listings no longer become
+  console comps. Apple live collection is now auction-only, and successful
+  auction-only scrapes clear old live BIN rows to `unknown`; applied the Apple
+  cleanup once, leaving Apple live rows auction-only.
+- Fixed the live auction discovery bug: category searches now use Browse API
+  `buyingOptions:{AUCTION|FIXED_PRICE}` filters instead of the wrong
+  `listingType` filter. A focused refresh immediately lifted Apple live auction
+  rows from single digits to ~100 and produced real `ebay serious`/`ebay punt`
+  candidates again. Also tightened console pollution for Switch accessory kits,
+  Joy-Con pairs, PS1 rows with bad attrs, and PS4 white-light-error faults, and
+  blocked old condition-suffixed `_a/_b/_c/_d` model keys from comps/potentials.
+- Heartbeat email candidates now get a narrow live price refresh before the
+  email report is finalized. The heartbeat first builds serious/punt shortlists,
+  calls Browse `getItem` through the normal source adapters for those exact
+  candidate/near-miss IDs, then reruns the potential maths so displayed current
+  price, max buy, and profit use freshly updated live rows. This does not rebuild
+  comps; comps still come only from confirmed final sold prices.
+- Fixed candidate disappearance caused by broad-search freshness. The collector
+  no longer marks future-dated live rows `unknown` just because a later broad
+  search did not see them; only stale rows whose `end_time` has passed move to
+  `unknown` for final-price resolution. Heartbeat pre-refresh candidate discovery
+  can temporarily include future-dated `unknown` rows so exact `getItem` refresh
+  can re-confirm/re-promote them before the email is rendered. `getItem` 404 rows
+  now set `end_time` to now so disappeared listings cannot sit forever as
+  future-dated maybe-live rows.
+- Heartbeat email now shows all refreshed serious candidates, all refreshed punt
+  candidates, and all useful near misses instead of hidden top-10/top-40 caps.
+  `HEARTBEAT_EMAIL_REPORT_LIMIT = 0` means unlimited for the email path; CLI
+  commands still keep their operator-requested limits.
+- Tightened heartbeat API spend after the future-unknown rescue change. The
+  email can still render all useful serious/punt rows, but the pre-email Browse
+  `getItem` refresh now only checks actual candidates plus useful near misses
+  within the profit-gate window, not every raw closest/future-unknown row.
+- Browse refresh/collection now removes dead candidates before rendering the
+  heartbeat. Rows with explicit out-of-stock/sold-out/unavailable signals or a
+  past `itemEndDate` are marked local `unknown` with `end_time=now`, so the
+  final live-only potentials query drops them and the normal final-price
+  backfill can later resolve sold/ended/deleted.
+- Added local human review actions for email candidates. Heartbeat candidate
+  tables now include `Up`/`Down` localhost links; `down` excludes the listing
+  from future local candidate discovery, while `up` adds it to a local
+  favourites list. Operator commands: `ebay review-server`, `ebay review-up`,
+  `ebay review-down`, `ebay favourites`, and `ebay reviews`.
+- Backfill now treats eBay Trading network failures as retryable per-row errors
+  instead of crashing the command. `requests.Timeout`, connection errors, and
+  other request exceptions become `skip:error:trading_api_*` outcomes, leaving
+  listing status/final price untouched while allowing the rest of the batch to
+  continue.
 
 Boundary: no autonomous bids, buys, messages, relists, refunds, shipping marks,
 or other marketplace writes.

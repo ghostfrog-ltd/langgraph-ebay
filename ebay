@@ -1,0 +1,18 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+ROOT="${0:A:h}"
+PYTHON_BIN="$ROOT/.venv-mac/bin/python"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  PYTHON_BIN="$ROOT/.venv/bin/python"
+fi
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+  PYTHON_BIN="$(command -v python3)"
+fi
+
+cd "$ROOT"
+export GF_LOG_DIR="${GF_LOG_DIR:-$ROOT/logs}"
+exec "$PYTHON_BIN" -m pipelines.listing.operator_console "$@"

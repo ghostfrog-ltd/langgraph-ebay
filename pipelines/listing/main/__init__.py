@@ -3,17 +3,19 @@ from __future__ import annotations
 import os
 import sys
 import subprocess
+import time
 from pathlib import Path
 from dataclasses import asdict
 from html import escape
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
-from typing import TypedDict, Any, Dict, List
+from typing import TypedDict, Any, Dict, List, Sequence
 
 from langgraph.graph import StateGraph, END
 
 from utils.logger import get_logger
 from utils.auth import get_auth
+from utils.ebay_api_accounting import SERVICE_LIMIT_DEFAULTS, build_api_accounting
 from utils.usage_tracker import get_all_api_usage_today
 from utils.db_schema import connection
 from utils.pipeline_control import is_heartbeat_paused
@@ -22,24 +24,28 @@ from utils.slack_notifier import send_slack_message, slack_notifications_enabled
 
 from pipelines.listing.ended.graph import build_graph as build_ended
 from pipelines.listing.retrieve.graph import build_graph as build_retrieve
+from pipelines.listing.retrieve.graph import ADAPTERS as RETRIEVE_ADAPTERS
 from pipelines.listing.pph.graph import build_graph as build_pph
 from pipelines.listing.comps.graph import build_graph as build_comps
 from pipelines.listing.attributes.graph import build_graph as build_attributes
 from pipelines.listing.hot.graph import build_graph as build_hot
 from pipelines.listing.roi.graph import build_graph as build_roi
-from pipelines.listing.paper_trading.graph import build_graph as build_paper_trading
-from pipelines.listing.paper_trading.graph import ensure_tables as ensure_paper_trade_tables
-from pipelines.listing.paper_trading.graph import lesson_report as build_paper_lesson_report
 from pipelines.listing.new.graph import build_graph as build_new
 from pipelines.listing.project_mini.graph import build_graph as build_project_mini
 from pipelines.listing.project_msx125.graph import build_graph as build_project_msx125
 from pipelines.listing.point_zero.backfill_apply import backfill_checks_today, is_backfill_running
 from pipelines.listing.point_zero.backfill_plan import build_plan as build_backfill_plan
-from pipelines.listing.market_discovery.graph import run as run_market_discovery
+from pipelines.listing.market_discovery.graph import (
+    MIN_CANDIDATE_COMPS,
+    run as run_market_discovery,
+    useful_near_misses,
+)
+from pipelines.listing.operator_metrics import build_operator_metrics
 from pipelines.listing.opportunity_digest import (
     build_review_auction_digest,
     format_review_auction_digest_for_slack,
 )
+from pipelines.listing.review_actions import list_favourites, review_url
 
 logger = get_logger(__name__)
 
@@ -47,57 +53,9 @@ logger = get_logger(__name__)
 # API usage config
 # ---------------------------------------------------------------------------
 
-# Default limits if no env override is provided.
-# Based on what you said:
-# - trading: 5000/day
-# - browse:  5000/day
-# - auth:    1000/day
+# Local service counters are grouped into real eBay quota buckets by
+# utils.ebay_api_accounting before anything is blocked.
 DEFAULT_DAILY_LIMIT = 5000
-
-SERVICE_LIMIT_DEFAULTS: Dict[str, int] = {
-    # Trading API
-    "ebay_ended_v1": 5000,
-    "ebay_attributes_v1": 5000,
-    # Browse API
-    "ebay_base_fetch_items_by_id_v1": 5000,
-    "ebay_base_fetch_category_items_v1": 5000,
-    # Auth
-    "ebay_auth_v1": 1000,
-}
-
-
-def _limit_env_key(service: str) -> str:
-    """
-    Turn 'ebay_ended_v1' into 'EBAY_LIMIT_EBAY_ENDED_V1'
-    so you can override limits via env, e.g.:
-        EBAY_LIMIT_EBAY_BASE_FETCH_ITEMS_BY_ID_V1=4500
-    """
-    cleaned = "".join(ch if ch.isalnum() else "_" for ch in service.upper())
-    return f"EBAY_LIMIT_{cleaned}"
-
-
-def _get_limit_for_service(service: str) -> int:
-    env_key = _limit_env_key(service)
-    raw = os.getenv(env_key)
-    if raw:
-        try:
-            value = int(raw)
-            if value > 0:
-                return value
-            logger.warning(
-                "[main] Non-positive %s=%r; falling back to default for %s",
-                env_key,
-                raw,
-                service,
-            )
-        except ValueError:
-            logger.warning(
-                "[main] Invalid %s=%r; falling back to default for %s",
-                env_key,
-                raw,
-                service,
-            )
-    return SERVICE_LIMIT_DEFAULTS.get(service, DEFAULT_DAILY_LIMIT)
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +80,7 @@ BACKFILL_DAILY_BUDGET = int(os.getenv("GF_BACKFILL_DAILY_BUDGET", "1000"))
 BACKFILL_DAILY_CAP = int(os.getenv("GF_BACKFILL_DAILY_CAP", "5000"))
 BACKFILL_SAFETY_RESERVE = int(os.getenv("GF_BACKFILL_SAFETY_RESERVE", "500"))
 BACKFILL_INCLUDE_VEHICLE_SOURCES = os.getenv("GF_BACKFILL_INCLUDE_VEHICLE_SOURCES", "0") == "1"
+HEARTBEAT_MODEL_KEYS_PER_MARKET = int(os.getenv("GF_HEARTBEAT_MODEL_KEYS_PER_MARKET", "80"))
 
 HEARTBEAT_EMAIL_NAME = "listing_system_hourly_heartbeat"
 HEARTBEAT_EMAIL_INTERVAL = timedelta(hours=int(os.getenv("GF_HEARTBEAT_EMAIL_HOURS", "1")))
@@ -145,6 +104,12 @@ HEARTBEAT_LAUNCHD_LABEL = os.getenv(
     "com.ghostfrog.langgraph-ebay.python-heartbeat",
 )
 HEARTBEAT_SCHEDULE_MINUTES = int(os.getenv("GF_HEARTBEAT_SCHEDULE_MINUTES", "5"))
+HEARTBEAT_STAGE_WARN_SECONDS = float(os.getenv("GF_HEARTBEAT_STAGE_WARN_SECONDS", "30"))
+HEARTBEAT_EMAIL_REPORT_LIMIT = 0
+HEARTBEAT_CANDIDATE_REFRESH_LIMIT = int(
+    os.getenv("GF_HEARTBEAT_CANDIDATE_REFRESH_LIMIT", str(HEARTBEAT_EMAIL_REPORT_LIMIT))
+)
+REVIEW_SERVER_URL = os.getenv("GF_REVIEW_SERVER_URL", "http://127.0.0.1:8765")
 
 
 class MainState(TypedDict, total=False):
@@ -166,12 +131,12 @@ class MainState(TypedDict, total=False):
     attributes_out: Dict[str, Any]
     hot_out: Dict[str, Any]
     roi_out: Dict[str, Any]
-    paper_trading_out: Dict[str, Any]
     new_out: Dict[str, Any]
     project_mini_out: Dict[str, Any]
     project_msx125_out: Dict[str, Any]
     backfill_trigger_out: Dict[str, Any]
     scheduler_status_out: Dict[str, Any]
+    heartbeat_metrics_out: Dict[str, Any]
     heartbeat_email_out: Dict[str, Any]
     heartbeat_slack_out: Dict[str, Any]
 
@@ -242,30 +207,17 @@ def init(state: MainState) -> MainState:
 
     raw_usage = get_all_api_usage_today()
 
-    breakdown: Dict[str, int] = {}
-    limit_info_services: Dict[str, Dict[str, Any]] = {}
-    blocked_services: List[str] = []
-
     if isinstance(raw_usage, dict):
         # Normal case: dict of {service: count}
         breakdown = {str(k): int(v or 0) for k, v in raw_usage.items()}
-        for service, default_limit in SERVICE_LIMIT_DEFAULTS.items():
-            used = breakdown.get(service, 0)
-            limit = _get_limit_for_service(service)
-            blocked = used >= limit
-            if blocked:
-                blocked_services.append(service)
-            limit_info_services[service] = {
-                "used": used,
-                "limit": limit,
-                "blocked": blocked,
-            }
+        api_accounting = build_api_accounting(breakdown)
+        blocked_services = list(api_accounting["blocked_services"])
 
         logger.info(
-            "[main] API usage today: %s",
+            "[main] API bucket usage today: %s",
             ", ".join(
-                f"{svc}={info['used']}/{info['limit']}"
-                for svc, info in limit_info_services.items()
+                f"{bucket}={info['used']}/{info['limit']}"
+                for bucket, info in api_accounting["buckets"].items()
             ),
         )
     else:
@@ -285,11 +237,16 @@ def init(state: MainState) -> MainState:
         if blocked:
             blocked_services = list(SERVICE_LIMIT_DEFAULTS.keys())
 
-        for service, default_limit in SERVICE_LIMIT_DEFAULTS.items():
-            limit_info_services[service] = {
+        breakdown = {"unknown": used_total}
+        api_accounting = build_api_accounting(breakdown)
+        api_accounting["blocked_services"] = blocked_services
+        for service in SERVICE_LIMIT_DEFAULTS:
+            api_accounting["services"][service] = {
                 "used": used_total,
                 "limit": generic_limit,
                 "blocked": blocked,
+                "bucket": "generic",
+                "bucket_label": "Generic API",
             }
 
         logger.warning(
@@ -302,14 +259,17 @@ def init(state: MainState) -> MainState:
     state["blocked_services"] = blocked_services
     state["skip"] = bool(blocked_services)  # legacy semantics: "some API is blocked"
     state["limit_info"] = {
-        "mode": "per_service" if isinstance(raw_usage, dict) else "generic",
-        "services": limit_info_services,
+        "mode": "bucketed" if isinstance(raw_usage, dict) else "generic",
+        "services": api_accounting["services"],
+        "buckets": api_accounting["buckets"],
+        "blocked_buckets": api_accounting["blocked_buckets"],
         "raw_breakdown": breakdown,
     }
 
     if blocked_services:
         logger.warning(
-            "[main] services blocked due to daily API limits: %s",
+            "[main] API buckets blocked: %s; services affected: %s",
+            ", ".join(sorted(api_accounting["blocked_buckets"])) or "generic",
             ", ".join(sorted(blocked_services)),
         )
     else:
@@ -362,9 +322,16 @@ def run_subgraph(name: str, build_graph_fn, services: List[str] | None = None):
 
         graph = build_graph_fn()
         logger.info("[main] -> %s begin", name)
+        started = time.perf_counter()
         out = graph.invoke(dict(state), config={"recursion_limit": 500})
+        duration = time.perf_counter() - started
+        if isinstance(out, dict):
+            out["duration_seconds"] = round(duration, 3)
         state[f"{name}_out"] = out
-        logger.info("[main] -> %s end", name)
+        if duration >= HEARTBEAT_STAGE_WARN_SECONDS:
+            logger.warning("[main] -> %s end after %.2fs", name, duration)
+        else:
+            logger.info("[main] -> %s end after %.2fs", name, duration)
         return state
 
     return _node
@@ -522,7 +489,7 @@ def backfill_trigger(state: MainState) -> MainState:
 
     This node deliberately does not call eBay itself. It only checks whether a
     worker is already active, whether today's dedicated backfill budget remains,
-    and whether the planner can see at least one useful stale candidate.
+    and whether the planner can see at least one useful unknown candidate.
     """
     if not BACKFILL_ENABLED:
         state["backfill_trigger_out"] = {"status": "disabled"}
@@ -570,7 +537,7 @@ def backfill_trigger(state: MainState) -> MainState:
 
     api_budget = plan.get("api_budget") or {}
     recommended_calls = int(api_budget.get("recommended_backfill_calls") or 0)
-    candidates = plan.get("recommended_stale_candidate_preview") or []
+    candidates = plan.get("recommended_unknown_candidate_preview") or []
     if recommended_calls <= 0:
         state["backfill_trigger_out"] = {
             "status": "skipped_no_api_budget",
@@ -650,6 +617,18 @@ def _set_last_heartbeat_slack_sent(when: datetime) -> None:
     connection.commit()
 
 
+def _metrics_for_heartbeat(state: MainState) -> dict[str, Any]:
+    """Return this tick's heartbeat metrics, computing them at most once."""
+
+    cached = state.get("heartbeat_metrics_out")
+    if isinstance(cached, dict):
+        return cached
+
+    metrics = _heartbeat_metrics()
+    state["heartbeat_metrics_out"] = metrics
+    return metrics
+
+
 def _summarise_node(state: MainState, key: str) -> str:
     out = state.get(key)
     if not isinstance(out, dict):
@@ -682,6 +661,28 @@ def _fmt_pct(value: Any) -> str:
         return "0%"
 
 
+def _api_bucket_summary(api_accounting: Any, *, long: bool = False) -> str:
+    if not isinstance(api_accounting, dict):
+        return "no bucket data"
+    buckets = api_accounting.get("buckets")
+    if not isinstance(buckets, dict):
+        return "no bucket data"
+    parts: list[str] = []
+    for bucket, short_label in (("trading", "T"), ("browse", "B"), ("identity", "I")):
+        info = buckets.get(bucket)
+        if not isinstance(info, dict):
+            continue
+        used = _fmt_int(info.get("used"))
+        limit = _fmt_int(info.get("limit"))
+        label = str(info.get("label") or bucket)
+        status = " blocked" if info.get("blocked") else ""
+        if long:
+            parts.append(f"{label}: {used}/{limit}{status}")
+        else:
+            parts.append(f"{short_label} {used}/{limit}{status}")
+    return " | ".join(parts) if parts else "no bucket data"
+
+
 def _fmt_num(value: Any) -> str:
     try:
         return f"{float(value or 0):.2f}"
@@ -697,6 +698,38 @@ def _fmt_dt(value: Any) -> str:
             value = value.replace(tzinfo=timezone.utc)
         return value.astimezone(ASSESS_TZ).strftime("%d %b %Y %H:%M")
     return str(value)
+
+
+def _parse_dt(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        raw = str(value).strip()
+        if not raw:
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _email_end_time(value: Any) -> str:
+    parsed = _parse_dt(value)
+    if parsed is None:
+        return "n/a"
+    return escape(parsed.astimezone(ASSESS_TZ).strftime("%d %b %H:%M"))
+
+
+def _email_end_sort_key(item: dict[str, Any]) -> tuple[int, datetime]:
+    parsed = _parse_dt(item.get("end_time"))
+    if parsed is None:
+        return (1, datetime.max.replace(tzinfo=timezone.utc))
+    return (0, parsed.astimezone(timezone.utc))
 
 
 def _query_one(sql: str, params: tuple[Any, ...] = ()) -> dict[str, Any]:
@@ -721,56 +754,24 @@ def _query_all(sql: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
 
 def _heartbeat_metrics() -> dict[str, Any]:
     """Build read-only operator heartbeat metrics from normalized projections."""
-    listing_counts = _query_one(
-        """
-        SELECT
-            COUNT(*)::int AS total,
-            COUNT(*) FILTER (WHERE o.status = 'live')::int AS live,
-            COUNT(*) FILTER (WHERE o.status = 'sold')::int AS sold,
-            COUNT(*) FILTER (WHERE o.status = 'ended')::int AS ended,
-            COUNT(*) FILTER (WHERE o.status = 'stale')::int AS stale,
-            COUNT(*) FILTER (WHERE o.status = 'parse_failed')::int AS parse_failed,
-            COUNT(*) FILTER (WHERE o.status = 'stale' AND COALESCE(o.finalized, FALSE) = FALSE)::int AS stale_unfinalized,
-            COUNT(*) FILTER (WHERE o.final_price IS NOT NULL)::int AS final_prices,
-            COUNT(*) FILTER (WHERE a.model_key IS NULL OR a.model_key = '' OR LOWER(a.model_key) = 'unknown')::int AS missing_model_key
-        FROM listing_outcome_v AS o
-        JOIN listing_attribute_v AS a
-          ON a.listing_id = o.listing_id
-        """
+    shared_started = time.perf_counter()
+    metrics = build_operator_metrics(
+        include_model_key_inventory=True,
+        model_keys_per_market=HEARTBEAT_MODEL_KEYS_PER_MARKET,
+        backfill_daily_cap=5000,
+        backfill_safety_reserve=500,
+        backfill_max_per_day=1000,
+        include_vehicle_sources=False,
     )
-    comps = _query_one(
-        """
-        SELECT
-            COUNT(*)::int AS comp_keys,
-            COALESCE(SUM(samples), 0)::int AS comp_samples,
-            COALESCE(COUNT(*) FILTER (WHERE samples >= 3), 0)::int AS comp_keys_3plus,
-            MAX(computed_at) AS computed_at
-        FROM latest_comps
-        """
-    )
-    live_comp_coverage = _query_one(
-        """
-        SELECT
-            COUNT(*)::int AS live_total,
-            COUNT(*) FILTER (WHERE c.model_key IS NOT NULL)::int AS live_with_comps,
-            COUNT(*) FILTER (WHERE c.samples >= 3)::int AS live_with_3plus_comps,
-            COUNT(*) FILTER (WHERE a.model_key IS NULL OR a.model_key = '' OR LOWER(a.model_key) = 'unknown')::int AS live_unknown_model_key
-        FROM listing_outcome_v AS o
-        JOIN listing_attribute_v AS a
-          ON a.listing_id = o.listing_id
-        LEFT JOIN latest_comps c ON c.model_key = a.model_key
-        WHERE o.status = 'live'
-        """
-    )
-    api_today = _query_all(
-        """
-        SELECT service, call_count::int AS call_count
-        FROM api_usage
-        WHERE date = CURRENT_DATE
-        ORDER BY call_count DESC, service
-        """
-    )
-    api_total = sum(int(row.get("call_count") or 0) for row in api_today)
+    metric_timings = metrics.get("metric_timings")
+    if not isinstance(metric_timings, dict):
+        metric_timings = {}
+        metrics["metric_timings"] = metric_timings
+
+    def mark_shared(name: str, started: float) -> None:
+        metric_timings[name] = round(time.perf_counter() - started, 3)
+
+    t = time.perf_counter()
     source_freshness = _query_all(
         """
         SELECT
@@ -785,184 +786,213 @@ def _heartbeat_metrics() -> dict[str, Any]:
         LIMIT 8
         """
     )
-    high_risk_roi = _query_one(
-        """
-        SELECT
-            COUNT(*) FILTER (WHERE o.status = 'live' AND s.roi_estimate > 0.15)::int AS live_roi_gt_15,
-            COUNT(*) FILTER (WHERE o.status = 'live' AND s.roi_estimate > 1.0)::int AS live_roi_gt_100,
-            COUNT(*) FILTER (WHERE o.status = 'live' AND s.roi_estimate > 10.0)::int AS live_roi_gt_1000
-        FROM listing_outcome_v AS o
-        JOIN listing_score_v AS s
-          ON s.listing_id = o.listing_id
-        """
-    )
-    paper_table = _query_one(
-        "SELECT to_regclass('public.paper_trade_predictions') IS NOT NULL AS exists"
-    )
-    if paper_table.get("exists"):
-        with connection.cursor() as cur:
-            ensure_paper_trade_tables(cur)
-        connection.commit()
-        try:
-            paper_lessons = build_paper_lesson_report(limit=6)
-        except Exception as exc:
-            paper_lessons = {
-                "lesson_counts": {"report_error": 1},
-                "lessons": [
-                    {
-                        "source": "n/a",
-                        "title": "Paper-trading lesson report failed",
-                        "lesson_category": "report_error",
-                        "learning_hint": str(exc),
-                    }
-                ],
-            }
-        paper_trading = _query_one(
-            """
-            SELECT
-                COUNT(*)::int AS total_predictions,
-                COUNT(*) FILTER (WHERE decision_status = 'watching')::int AS watching,
-                COUNT(*) FILTER (
-                    WHERE decision_status = 'watching'
-                      AND end_time IS NOT NULL
-                      AND end_time <= CURRENT_TIMESTAMP
-                )::int AS watching_past_end,
-                COUNT(*) FILTER (
-                    WHERE outcome_checked_at::date = CURRENT_DATE
-                )::int AS checked_today,
-                COUNT(*) FILTER (
-                    WHERE decision_status = 'closed'
-                      AND observed_at::date = CURRENT_DATE
-                )::int AS closed_today,
-                COUNT(*) FILTER (WHERE decision_status = 'closed')::int AS closed,
-                COUNT(*) FILTER (WHERE observed_status = 'sold')::int AS sold,
-                COUNT(*) FILTER (
-                    WHERE observed_status = 'sold'
-                      AND observed_paper_profit > 0
-                )::int AS profitable_on_paper,
-                COUNT(*) FILTER (WHERE would_have_won IS TRUE)::int AS would_have_won,
-                COUNT(*) FILTER (
-                    WHERE outcome_reason = 'final_price_above_max_bid'
-                )::int AS outbid_above_ceiling,
-                AVG(observed_price_error) FILTER (
-                    WHERE observed_price_error IS NOT NULL
-                )::numeric AS avg_price_error,
-                AVG(observed_paper_roi) FILTER (
-                    WHERE observed_paper_roi IS NOT NULL
-                )::numeric AS avg_observed_roi
-            FROM paper_trade_predictions
-            """
-        )
-        paper_by_source = _query_all(
-            """
-            SELECT source, COUNT(*)::int AS predictions
-            FROM paper_trade_predictions
-            WHERE prediction_date = CURRENT_DATE
-            GROUP BY source
-            ORDER BY predictions DESC, source
-            LIMIT 8
-            """
-        )
-    else:
-        paper_trading = {
-            "total_predictions": 0,
-            "watching": 0,
-            "watching_past_end": 0,
-            "checked_today": 0,
-            "closed_today": 0,
-            "closed": 0,
-            "sold": 0,
-            "profitable_on_paper": 0,
-            "would_have_won": 0,
-            "outbid_above_ceiling": 0,
-            "avg_price_error": None,
-            "avg_observed_roi": None,
-        }
-        paper_by_source = []
-        paper_lessons = {"lesson_counts": {}, "lessons": []}
+    metrics["source_freshness"] = source_freshness
+    mark_shared("source_freshness", t)
 
+    t = time.perf_counter()
     try:
-        backfill_plan = build_backfill_plan(
-            daily_cap=5000,
-            safety_reserve=500,
-            max_backfill_per_day=1000,
-            candidate_detail_limit=3,
-            include_vehicle_sources=False,
+        market_discovery = run_market_discovery(
+            limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+            min_profit=50.0,
+            min_comps=MIN_CANDIDATE_COMPS,
+            include_future_unknown=True,
         )
-    except Exception as exc:
-        backfill_plan = {"error": str(exc)}
-
-    backfill_activity = _query_one(
-        """
-        SELECT
-            COUNT(*) FILTER (
-                WHERE backfill_checked_at::date = CURRENT_DATE
-            )::int AS checked_today,
-            COUNT(*) FILTER (
-                WHERE backfill_checked_at >= CURRENT_TIMESTAMP - interval '24 hours'
-            )::int AS checked_24h,
-            COUNT(*) FILTER (
-                WHERE backfill_checked_at::date = CURRENT_DATE
-                  AND finalized IS TRUE
-                  AND status IN ('sold', 'ended')
-            )::int AS finalized_today,
-            COUNT(*) FILTER (
-                WHERE backfill_checked_at::date = CURRENT_DATE
-                  AND status = 'sold'
-            )::int AS sold_today,
-            MAX(backfill_checked_at) AS latest_checked_at
-        FROM listing_backfill_audit_v
-        WHERE backfill_checked_at IS NOT NULL
-        """
-    )
-    backfill_reason_counts = _query_all(
-        """
-        SELECT
-            COALESCE(backfill_last_reason, 'unknown') AS reason,
-            COUNT(*)::int AS checks
-        FROM listing_backfill_audit_v
-        WHERE backfill_checked_at::date = CURRENT_DATE
-        GROUP BY COALESCE(backfill_last_reason, 'unknown')
-        ORDER BY checks DESC, reason
-        LIMIT 8
-        """
-    )
-    try:
-        backfill_worker_running = is_backfill_running()
-    except Exception:
-        backfill_worker_running = None
-
-    try:
-        market_discovery = run_market_discovery(limit=6, min_score=20.0)
     except Exception as exc:
         market_discovery = {"error": str(exc), "top_lanes": [], "status_counts": {}}
 
+    try:
+        market_discovery_punt = run_market_discovery(
+            limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+            min_profit=25.0,
+            min_comps=MIN_CANDIDATE_COMPS,
+            include_future_unknown=True,
+        )
+    except Exception as exc:
+        market_discovery_punt = {"error": str(exc), "potentials": [], "closest": []}
+    mark_shared("market_discovery_initial", t)
+
+    t = time.perf_counter()
+    if "error" not in market_discovery or "error" not in market_discovery_punt:
+        try:
+            candidate_refresh = _refresh_candidate_prices_for_email(
+                market_discovery,
+                market_discovery_punt,
+            )
+        except Exception as exc:
+            logger.warning("[heartbeat] candidate price refresh failed: %s", exc)
+            candidate_refresh = {"status": "error", "error": str(exc)}
+    else:
+        candidate_refresh = {
+            "status": "skipped",
+            "reason": "market_discovery_error",
+        }
+    metrics["candidate_price_refresh"] = candidate_refresh
+    mark_shared("candidate_price_refresh", t)
+
+    if int(candidate_refresh.get("refreshed") or 0) > 0:
+        t = time.perf_counter()
+        try:
+            market_discovery = run_market_discovery(
+                limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+                min_profit=50.0,
+                min_comps=MIN_CANDIDATE_COMPS,
+            )
+        except Exception as exc:
+            market_discovery = {"error": str(exc), "top_lanes": [], "status_counts": {}}
+        try:
+            market_discovery_punt = run_market_discovery(
+                limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+                min_profit=25.0,
+                min_comps=MIN_CANDIDATE_COMPS,
+            )
+        except Exception as exc:
+            market_discovery_punt = {"error": str(exc), "potentials": [], "closest": []}
+        mark_shared("market_discovery_after_refresh", t)
+
+    metrics["market_discovery"] = market_discovery
+    metrics["market_discovery_punt"] = market_discovery_punt
+
+    t = time.perf_counter()
+    try:
+        metrics["listing_favourites"] = list_favourites(limit=100)
+    except Exception as exc:
+        metrics["listing_favourites"] = {"error": str(exc)}
+    mark_shared("listing_favourites", t)
+
+    t = time.perf_counter()
     try:
         review_auctions = build_review_auction_digest(
             limit=HEARTBEAT_SLACK_AUCTION_DIGEST_LIMIT
         )
     except Exception as exc:
         review_auctions = {"error": str(exc), "items": [], "count": 0}
+    metrics["review_auctions"] = review_auctions
+    mark_shared("review_auctions", t)
+    metric_timings["total"] = round(time.perf_counter() - shared_started, 3)
+    return metrics
 
-    return {
-        "listing_counts": listing_counts,
-        "comps": comps,
-        "live_comp_coverage": live_comp_coverage,
-        "api_today": api_today,
-        "api_total": api_total,
-        "source_freshness": source_freshness,
-        "high_risk_roi": high_risk_roi,
-        "paper_trading": paper_trading,
-        "paper_by_source": paper_by_source,
-        "paper_lessons": paper_lessons,
-        "backfill_plan": backfill_plan,
-        "backfill_activity": backfill_activity,
-        "backfill_reason_counts": backfill_reason_counts,
-        "backfill_worker_running": backfill_worker_running,
-        "market_discovery": market_discovery,
-        "review_auctions": review_auctions,
+
+def _candidate_rows_for_refresh(*reports: dict[str, Any], limit: int) -> list[dict[str, Any]]:
+    """Collect unique rows worth spending a pre-email getItem call on."""
+
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    capped_limit = max(0, int(limit or 0))
+
+    def add_row(row: dict[str, Any]) -> bool:
+        external_id = str(row.get("external_id") or "").strip()
+        source = str(row.get("source") or "").strip()
+        if not external_id or not source:
+            return False
+        unique_key = f"{source}:{external_id}"
+        if unique_key in seen:
+            return False
+        seen.add(unique_key)
+        rows.append(row)
+        return bool(capped_limit and len(rows) >= capped_limit)
+
+    for report in reports:
+        if not isinstance(report, dict):
+            continue
+        potentials = report.get("potentials")
+        if isinstance(potentials, list):
+            for row in potentials:
+                if isinstance(row, dict) and add_row(row):
+                    return rows
+
+        thresholds = report.get("thresholds")
+        min_profit = 0.0
+        if isinstance(thresholds, dict):
+            try:
+                min_profit = float(thresholds.get("min_profit_gbp") or 0.0)
+            except (TypeError, ValueError):
+                min_profit = 0.0
+        closest = report.get("closest")
+        if isinstance(closest, list):
+            near_misses = useful_near_misses(
+                [row for row in closest if isinstance(row, dict)],
+                min_profit=min_profit,
+                limit=0,
+            )
+            for row in near_misses:
+                if add_row(dict(row)):
+                    return rows
+
+    return rows
+
+
+def _refresh_candidate_prices_for_email(*reports: dict[str, Any]) -> dict[str, Any]:
+    """
+    Refresh exact shortlisted live listings before they reach the email.
+
+    Discovery prices are allowed to be stale. Email candidates are not: this
+    calls Browse getItem only for the small candidate/near-miss shortlist, lets
+    the normal adapter upsert update price/bids/end time, and then callers rerun
+    the deterministic potential query.
+    """
+
+    rows = _candidate_rows_for_refresh(
+        *reports,
+        limit=HEARTBEAT_CANDIDATE_REFRESH_LIMIT,
+    )
+    if not rows:
+        return {
+            "status": "skipped",
+            "reason": "no_shortlist_rows",
+            "requested": 0,
+            "refreshed_sources": {},
+        }
+
+    adapter_by_source = {
+        getattr(adapter_cls, "DOMAIN", ""): adapter_cls
+        for adapter_cls in RETRIEVE_ADAPTERS.values()
     }
+    ids_by_source: dict[str, list[str]] = {}
+    skipped_sources: dict[str, int] = {}
+    for row in rows:
+        source = str(row.get("source") or "").strip()
+        external_id = str(row.get("external_id") or "").strip()
+        if source not in adapter_by_source:
+            skipped_sources[source] = skipped_sources.get(source, 0) + 1
+            continue
+        ids_by_source.setdefault(source, []).append(external_id)
 
+    if not ids_by_source:
+        return {
+            "status": "skipped",
+            "reason": "no_supported_sources",
+            "requested": len(rows),
+            "refreshed_sources": {},
+            "skipped_sources": skipped_sources,
+        }
+
+    token = get_auth().get_token()
+    refreshed_sources: dict[str, int] = {}
+    errors: dict[str, str] = {}
+    for source, external_ids in ids_by_source.items():
+        adapter_cls = adapter_by_source[source]
+        try:
+            adapter = adapter_cls()
+            adapter.refresh_items_price(token, external_ids)
+            refreshed_sources[source] = len(external_ids)
+        except Exception as exc:
+            logger.warning(
+                "[heartbeat] candidate price refresh failed for %s (%d ids): %s",
+                source,
+                len(external_ids),
+                exc,
+            )
+            errors[source] = str(exc)
+
+    status = "ok" if refreshed_sources else "error"
+    return {
+        "status": status,
+        "requested": len(rows),
+        "refreshed": sum(refreshed_sources.values()),
+        "refreshed_sources": refreshed_sources,
+        "skipped_sources": skipped_sources,
+        "errors": errors,
+    }
 
 def _status_badge(label: str, tone: str = "ok") -> str:
     colors = {
@@ -1044,6 +1074,204 @@ def _email_link(title: Any, url: Any, *, max_chars: int = 96) -> str:
     return f'<a href="{escape(clean_url)}" style="color:#0369a1;text-decoration:none;">{label}</a>'
 
 
+def _review_links_for_email(item: dict[str, Any]) -> str:
+    """Render local thumbs-up/down links for one email listing row."""
+
+    external_id = str(item.get("external_id") or "").strip()
+    if not external_id:
+        return "n/a"
+    up_url = review_url(
+        base_url=REVIEW_SERVER_URL,
+        action="up",
+        source=item.get("source"),
+        external_id=external_id,
+        title=item.get("title"),
+        url=item.get("url"),
+    )
+    down_url = review_url(
+        base_url=REVIEW_SERVER_URL,
+        action="down",
+        source=item.get("source"),
+        external_id=external_id,
+        title=item.get("title"),
+        url=item.get("url"),
+    )
+    link_style = "color:#0369a1;text-decoration:none;font-weight:700;"
+    down_style = "color:#b91c1c;text-decoration:none;font-weight:700;"
+    return (
+        f'<a href="{escape(up_url)}" style="{link_style}">Up</a>'
+        ' <span style="color:#94a3b8;">|</span> '
+        f'<a href="{escape(down_url)}" style="{down_style}">Down</a>'
+    )
+
+
+def _email_sale_type(value: Any) -> str:
+    raw = str(value or "").strip().lower().replace("_", "-")
+    if raw in {"auction", "bid"}:
+        return "Auction"
+    if raw in {"bin", "buy-now", "buy-it-now", "fixed-price", "fixedprice"}:
+        return "Buy Now"
+    if raw in {"both", "auction-bin", "auction+bin", "auction-fixed-price"}:
+        return "Auction + BIN"
+    return "n/a"
+
+
+def _potential_rows_for_email(
+    report: dict[str, Any],
+    *,
+    item_key: str = "potentials",
+    exclude_external_ids: set[str] | None = None,
+    limit: int = 8,
+    min_comps: int = MIN_CANDIDATE_COMPS,
+    empty_message: str = "No live candidates cleared this gate.",
+) -> tuple[list[list[str]], set[str]]:
+    """Render live potential or closest-miss rows for the heartbeat email."""
+
+    exclude_external_ids = exclude_external_ids or set()
+    used_external_ids: set[str] = set()
+    rows: list[list[str]] = []
+    if report.get("error"):
+        return [[escape("Report failed"), escape(str(report.get("error"))[:180]), "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]], used_external_ids
+
+    items = [
+        item
+        for item in (report.get(item_key) or [])
+        if isinstance(item, dict)
+    ]
+    items.sort(key=_email_end_sort_key)
+
+    for item in items:
+        if int(item.get("comp_samples") or 0) < min_comps:
+            continue
+        external_id = str(item.get("external_id") or "")
+        if external_id and external_id in exclude_external_ids:
+            continue
+        used_external_ids.add(external_id)
+        rows.append([
+            escape(str(item.get("source") or "")),
+            _email_link(item.get("title"), item.get("url")),
+            escape(_email_sale_type(item.get("sale_type"))),
+            _email_end_time(item.get("end_time")),
+            f"&pound;{float(item.get('current_price') or 0):.2f}",
+            f"&pound;{float(item.get('max_safe_buy') or 0):.2f}",
+            f"&pound;{float(item.get('expected_profit') or 0):.2f}",
+            f"&pound;{float(item.get('sold_median') or 0):.2f}",
+            escape(f"{int(item.get('comp_samples') or 0)} / {item.get('condition_grade') or 'n/a'}"),
+            _review_links_for_email(item),
+        ])
+        if limit and len(rows) >= limit:
+            break
+
+    if not rows:
+        rows = [["n/a", escape(empty_message), "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]]
+    return rows, used_external_ids
+
+
+def _favourite_rows_for_email(favourites: Any) -> list[list[str]]:
+    if isinstance(favourites, dict) and favourites.get("error"):
+        return [["n/a", escape(str(favourites.get("error"))[:180]), "n/a", "n/a", "n/a", "n/a"]]
+    if not isinstance(favourites, list) or not favourites:
+        return [["n/a", "No favourites yet.", "n/a", "n/a", "n/a", "n/a"]]
+
+    rows: list[list[str]] = []
+    for item in favourites:
+        if not isinstance(item, dict):
+            continue
+        try:
+            price = f"&pound;{float(item.get('price_current') or 0):.2f}"
+        except (TypeError, ValueError):
+            price = "n/a"
+        rows.append(
+            [
+                escape(str(item.get("source") or "")),
+                _email_link(item.get("title"), item.get("url")),
+                escape(str(item.get("status") or "unknown")),
+                price,
+                escape(str(item.get("model_key") or "n/a")),
+                _review_links_for_email(item),
+            ]
+        )
+    return rows or [["n/a", "No favourites yet.", "n/a", "n/a", "n/a", "n/a"]]
+
+
+def _market_label(source: Any) -> str:
+    label = str(source or "unknown").strip()
+    if label.startswith("ebay-"):
+        label = label[5:]
+    label = label.replace("-", " ").replace("_", " ").strip()
+    return label.title() if label else "Unknown"
+
+
+def _model_key_inventory_for_email(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        return (
+            '<p style="margin:0;color:#475569;font-size:13px;line-height:1.45;">'
+            'No clean model keys found yet.</p>'
+        )
+
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(str(row.get("source") or "unknown"), []).append(row)
+
+    cards = (
+        '<p style="margin:0 0 12px;color:#475569;font-size:13px;line-height:1.45;">'
+        'This is the usable model-key evidence only: confirmed final-price rows plus current live rows. '
+        'It does not include the unknown past-end backfill queue.</p>'
+    )
+    for source in sorted(grouped, key=_market_label):
+        source_rows = grouped[source]
+        first = source_rows[0]
+        total_keys = int(first.get("source_key_count") or len(source_rows))
+        shown_keys = len(source_rows)
+        listing_count = int(first.get("source_listing_count") or 0)
+        live_count = int(first.get("source_live_count") or 0)
+        final_price_count = int(first.get("source_final_price_count") or 0)
+        without_final_price_count = int(first.get("source_without_final_price_count") or 0)
+        hidden_count = max(total_keys - shown_keys, 0)
+
+        chips = ""
+        for key_row in source_rows:
+            key = str(key_row.get("model_key") or "").strip()
+            final_count = int(key_row.get("final_price_count") or 0)
+            live_for_key = int(key_row.get("live_count") or 0)
+            detail_parts = []
+            if final_count:
+                detail_parts.append(f"{_fmt_int(final_count)} final")
+            if live_for_key:
+                detail_parts.append(f"{_fmt_int(live_for_key)} live")
+            detail = f" <span style=\"color:#64748b;\">{' / '.join(detail_parts)}</span>" if detail_parts else ""
+            chips += (
+                '<span style="display:inline-block;margin:0 6px 7px 0;padding:6px 8px;'
+                'border:1px solid #cbd5e1;border-radius:999px;background:#f8fafc;'
+                'font-size:12px;line-height:1.2;color:#0f172a;font-family:Menlo,Consolas,monospace;">'
+                f'{escape(key)}{detail}</span>'
+            )
+        if hidden_count:
+            chips += (
+                '<span style="display:inline-block;margin:0 6px 7px 0;padding:6px 8px;'
+                'border:1px solid #fed7aa;border-radius:999px;background:#fff7ed;'
+                'font-size:12px;line-height:1.2;color:#9a3412;font-weight:700;">'
+                f'+{_fmt_int(hidden_count)} more</span>'
+            )
+
+        cards += (
+            '<div style="border:1px solid #dbeafe;border-radius:12px;background:#ffffff;'
+            'padding:14px;margin:10px 0;">'
+            '<div style="display:block;margin-bottom:10px;">'
+            f'<div style="font-size:15px;font-weight:800;color:#0f172a;">{escape(_market_label(source))}</div>'
+            f'<div style="font-size:12px;color:#64748b;margin-top:3px;">'
+            f'{_fmt_int(total_keys)} keys &middot; {_fmt_int(listing_count)} usable rows &middot; '
+            f'{_fmt_int(final_price_count)} final prices &middot; '
+            f'{_fmt_int(without_final_price_count)} without final price &middot; '
+            f'{_fmt_int(live_count)} live'
+            '</div></div>'
+            f'<div>{chips}</div>'
+            '</div>'
+        )
+
+    return cards
+
+
 def _pipeline_table(state: MainState) -> str:
     keys = [
         ("Ended", "ended_out"),
@@ -1053,7 +1281,6 @@ def _pipeline_table(state: MainState) -> str:
         ("Attributes", "attributes_out"),
         ("Hot", "hot_out"),
         ("ROI", "roi_out"),
-        ("Paper Trading", "paper_trading_out"),
         ("New", "new_out"),
         ("Project Mini", "project_mini_out"),
         ("Project MSX125", "project_msx125_out"),
@@ -1100,49 +1327,63 @@ def _slack_field(label: str, value: str) -> dict[str, str]:
 
 def _market_discovery_slack_summary(market: dict[str, Any]) -> tuple[str, str]:
     """
-    Build a safe Slack summary for read-only buy-signal lane output.
+    Build a safe Slack summary for read-only live-listing potential output.
 
-    The wording focuses on model-key quality, final-price coverage, and whether
-    any lane is reviewable. It never emits buy/bid/action labels.
+    This is plain maths: live listing price versus same-model confirmed sold
+    comps and max safe buy price. It never performs marketplace actions.
     """
 
     if market.get("error"):
-        return "Report failed", "Check local logs before using lane output."
+        return "Report failed", "Check local logs before using potential output."
 
-    counts = market.get("status_counts") or {}
-    top_lanes = market.get("top_lanes") or []
-    top_candidate = next(
-        (lane for lane in top_lanes if lane.get("status") == "buy_candidate"),
-        None,
-    )
-    top_gap = next(
-        (lane for lane in top_lanes if lane.get("status") == "data_gap"),
-        None,
-    )
+    summary = market.get("summary") or {}
+    potentials = market.get("potentials") or []
+    closest = market.get("closest") or []
     counts_text = (
-        f"{_fmt_int(counts.get('buy_candidate'))} buy candidates, "
-        f"{_fmt_int(counts.get('data_gap'))} data gaps, "
-        f"{_fmt_int(counts.get('parked'))} parked, "
-        f"{_fmt_int(counts.get('rejected'))} rejected"
+        f"{_fmt_int(summary.get('potentials'))} potentials, "
+        f"{_fmt_int(summary.get('checked'))} checked, "
+        f"{_fmt_int(summary.get('live_rows_with_comps'))} live rows with comps"
     )
 
-    if top_candidate:
+    if potentials:
+        top = potentials[0]
         top_text = (
-            f"Top buy candidate: {top_candidate.get('source')} / {top_candidate.get('model_key')} "
-            f"(score {_fmt_num(top_candidate.get('score'))}, "
-            f"spread £{_fmt_num(top_candidate.get('estimated_net_spread'))})"
+            f"Top potential: {top.get('model_key')} current £{_fmt_num(top.get('current_price'))}, "
+            f"max £{_fmt_num(top.get('max_safe_buy'))}, "
+            f"profit £{_fmt_num(top.get('expected_profit'))}"
         )
-    elif top_gap:
+    elif closest:
+        top = closest[0]
         top_text = (
-            f"Top data gap: {top_gap.get('source')} / {top_gap.get('model_key')} "
-            f"(score {_fmt_num(top_gap.get('score'))}, "
-            f"spread £{_fmt_num(top_gap.get('estimated_net_spread'))})"
+            f"Closest row: {top.get('model_key')} current £{_fmt_num(top.get('current_price'))}, "
+            f"max £{_fmt_num(top.get('max_safe_buy'))}, "
+            f"gap £{_fmt_num(top.get('price_gap_to_max_buy'))}"
         )
     else:
-        top_text = "No buy candidate above threshold."
+        top_text = "No live row with clean model key and comps."
 
-    next_step = "Next: improve model keys and confirmed final-price coverage before loosening gates."
-    return counts_text, f"{top_text}\n{next_step}"
+    return counts_text, top_text
+
+
+def _heartbeat_timing_summary(metrics: dict[str, Any]) -> str:
+    timings = metrics.get("metric_timings") or {}
+    if not isinstance(timings, dict) or not timings:
+        return "n/a"
+
+    total = float(timings.get("total") or 0.0)
+    slow = sorted(
+        (
+            (name, float(seconds))
+            for name, seconds in timings.items()
+            if name != "total"
+        ),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+    if not slow:
+        return f"{total:.1f}s total"
+    name, seconds = slow[0]
+    return f"{total:.1f}s total; slowest {name} {seconds:.1f}s"
 
 
 def _pipeline_slack_summary(state: MainState) -> str:
@@ -1159,7 +1400,6 @@ def _pipeline_slack_summary(state: MainState) -> str:
         ("Comps", "comps_out"),
         ("Attributes", "attributes_out"),
         ("ROI", "roi_out"),
-        ("Paper", "paper_trading_out"),
         ("New", "new_out"),
         ("Mini", "project_mini_out"),
         ("MSX125", "project_msx125_out"),
@@ -1183,10 +1423,11 @@ def _build_heartbeat_slack_message(
     counts = metrics["listing_counts"]
     comps = metrics["comps"]
     coverage = metrics["live_comp_coverage"]
-    paper = metrics["paper_trading"]
     market = metrics.get("market_discovery") or {}
     review_auctions = metrics.get("review_auctions") or {}
     api_total = int(metrics["api_total"] or 0)
+    api_accounting = metrics.get("api_accounting") or {}
+    api_summary = _api_bucket_summary(api_accounting, long=True)
     blocked = state.get("blocked_services") or []
     scheduler = state.get("scheduler_status_out") or _heartbeat_scheduler_status(now)
     scheduler_status = str(scheduler.get("status") or "unknown").title()
@@ -1207,10 +1448,10 @@ def _build_heartbeat_slack_message(
         f"GhostFrog listing heartbeat: {status}. "
         f"Scheduler {scheduler_status.lower()}: {scheduler_message}. "
         f"{_fmt_int(counts.get('live'))} live listings, "
-        f"{_fmt_int(paper.get('watching'))} candidate checks watching, "
-        f"{_fmt_int(api_total)} API calls today."
+        f"{_fmt_int(api_total)} local API calls today."
     )
     market_counts_text, market_next_text = _market_discovery_slack_summary(market)
+    timing_text = _heartbeat_timing_summary(metrics)
 
     blocks: list[dict[str, Any]] = [
         {
@@ -1224,7 +1465,7 @@ def _build_heartbeat_slack_message(
             "type": "section",
             "fields": [
                 _slack_field("Live listings", _fmt_int(counts.get("live"))),
-                _slack_field("API calls today", _fmt_int(api_total)),
+                _slack_field("API buckets today", api_summary),
                 _slack_field(
                     "Confirmed comp keys",
                     f"{_fmt_int(comps.get('comp_keys'))} ({_fmt_int(comps.get('comp_samples'))} samples)",
@@ -1234,14 +1475,7 @@ def _build_heartbeat_slack_message(
                     f"{_fmt_pct(coverage_pct)} ({_fmt_int(live_with_3plus)}/{_fmt_int(live_total)})",
                 ),
                 _slack_field("Scheduler", f"{scheduler_status}: {scheduler_message}"),
-                _slack_field(
-                    "Paper trades",
-                    f"{_fmt_int(paper.get('watching'))} watching / {_fmt_int(paper.get('closed'))} closed",
-                ),
-                _slack_field(
-                    "Paper outcomes",
-                    f"{_fmt_int(paper.get('sold'))} sold / {_fmt_int(paper.get('profitable_on_paper'))} profitable",
-                ),
+                _slack_field("Metrics timing", timing_text),
             ],
         },
         {
@@ -1283,218 +1517,66 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
     comps = metrics["comps"]
     coverage = metrics["live_comp_coverage"]
     api_total = int(metrics["api_total"] or 0)
+    api_accounting = metrics.get("api_accounting") or {}
+    api_bucket_summary = _api_bucket_summary(api_accounting)
     blocked = state.get("blocked_services") or []
-    backfill = metrics.get("backfill_plan") or {}
     backfill_activity = metrics.get("backfill_activity") or {}
-    backfill_reasons = metrics.get("backfill_reason_counts") or []
-    backfill_trigger_out = state.get("backfill_trigger_out") or {}
-    backfill_worker_running = metrics.get("backfill_worker_running")
-    review_auctions = metrics.get("review_auctions") or {}
-    api_budget = (backfill.get("api_budget") or {}) if isinstance(backfill, dict) else {}
     roi = metrics["high_risk_roi"]
-    paper = metrics["paper_trading"]
+    serious_report = metrics.get("market_discovery") or {}
+    punt_report = metrics.get("market_discovery_punt") or {}
+    model_key_inventory = metrics.get("model_key_inventory") or []
+    favourites = metrics.get("listing_favourites") or []
 
-    stale_unfinalized = int(counts.get("stale_unfinalized") or 0)
+    unknown_unfinalized = int(counts.get("unknown_unfinalized") or 0)
     live_total = int(coverage.get("live_total") or 0)
     live_with_3plus = int(coverage.get("live_with_3plus_comps") or 0)
     coverage_pct = (live_with_3plus / live_total * 100.0) if live_total else 0.0
 
     health_tone = "ok" if not blocked else "bad"
     health_label = "Healthy" if not blocked else "Blocked"
-    if stale_unfinalized > 0 or coverage_pct < 25:
+    if unknown_unfinalized > 0 or coverage_pct < 25:
         health_tone = "warn" if not blocked else "bad"
         health_label = "Needs attention" if not blocked else "Blocked"
 
-    api_rows = [
-        [
-            escape(str(row.get("service") or "")),
-            escape(_fmt_int(row.get("call_count"))),
-            escape(_fmt_pct((int(row.get("call_count") or 0) / 5000) * 100)),
-        ]
-        for row in metrics["api_today"][:8]
-    ]
-    source_rows = [
-        [
-            escape(str(row.get("domain") or "n/a")),
-            escape(_fmt_dt(row.get("last_scraped_at"))),
-            escape(
-                "n/a"
-                if row.get("age_seconds") is None
-                else f"{int((row.get('age_seconds') or 0) / 60):,} min"
-            ),
-        ]
-        for row in metrics["source_freshness"]
-    ]
-    listing_rows = [
-        [escape("All tracked listings"), escape(_fmt_int(counts.get("total")))],
-        [escape("Live listings"), escape(_fmt_int(counts.get("live")))],
-        [escape("Sold with confirmed final_price"), escape(_fmt_int(counts.get("sold")))],
-        [escape("Ended without final_price"), escape(_fmt_int(counts.get("ended")))],
-        [escape("Stale listings"), escape(_fmt_int(counts.get("stale")))],
-        [escape("Stale and not finalized"), escape(_fmt_int(stale_unfinalized))],
-        [escape("Rows with final_price"), escape(_fmt_int(counts.get("final_prices")))],
-        [escape("Unknown or missing model_key"), escape(_fmt_int(counts.get("missing_model_key")))],
-    ]
-    backfill_source_rows = []
-    if isinstance(backfill, dict):
-        for row in (backfill.get("stale_backfill_source_summary") or [])[:8]:
-            backfill_source_rows.append([
-                escape(str(row.get("source") or "")),
-                escape(_fmt_int(row.get("model_keys_needing_comps"))),
-                escape(_fmt_int(row.get("live_listings_needing_comps"))),
-                escape(_fmt_int(row.get("stale_backfill_pool"))),
-                escape(_fmt_dt(row.get("newest_stale"))),
-            ])
-    if not backfill_source_rows:
-        backfill_source_rows = [["n/a", "0", "0", "0", "n/a"]]
-    unknown_model_rows = []
-    if isinstance(backfill, dict):
-        for row in (backfill.get("unknown_model_key_work") or [])[:8]:
-            unknown_model_rows.append([
-                escape(str(row.get("source") or "")),
-                escape(_fmt_int(row.get("live_unknown_model_key_count"))),
-            ])
-    if not unknown_model_rows:
-        unknown_model_rows = [["n/a", "0"]]
-    candidate_rows = []
-    if isinstance(backfill, dict):
-        for row in backfill.get("recommended_stale_candidate_preview") or []:
-            candidate_rows.append([
-                escape(str(row.get("source") or "")),
-                escape(str(row.get("model_key") or "")),
-                escape(str(row.get("title") or "")[:95]),
-                f"&pound;{float(row.get('price_current') or 0):.2f}",
-            ])
-    if not candidate_rows:
-        candidate_rows = [["n/a", "n/a", escape("No safe preview candidates or planner failed."), "n/a"]]
-
-    live_review_rows = []
-    for item in (review_auctions.get("items") or [])[:6]:
-        notes = ", ".join(item.get("risk_notes") or ["manual review required"])
-        live_review_rows.append([
-            escape(str(item.get("source") or "")),
-            _email_link(item.get("title"), item.get("url")),
-            f"&pound;{float(item.get('current_price') or 0):.2f}",
-            f"&pound;{float(item.get('estimated_profit') or 0):.2f}",
-            escape(_fmt_int(item.get("comp_samples"))),
-            escape(str(item.get("ends") or "n/a")),
-            escape(notes[:140]),
-        ])
-    if not live_review_rows:
-        live_review_rows = [[
-            "n/a",
-            escape("No fresh profit-evidence rows right now."),
-            "n/a",
-            "n/a",
-            "0",
-            "n/a",
-            escape("Keep collecting; the digest only shows recently seen live listings."),
-        ]]
-
-    scout_rows = []
-    for scout in (review_auctions.get("scout_items") or [])[:6]:
-        samples = scout.get("comp_samples")
-        scout_rows.append([
-            escape(str(scout.get("source") or "")),
-            _email_link(scout.get("title"), scout.get("url")),
-            f"&pound;{float(scout.get('current_price') or 0):.2f}",
-            escape("no comps" if samples is None else f"{int(samples or 0)} comps"),
-            escape(str(scout.get("ends") or "n/a")),
-            escape(str(scout.get("reason") or "manual scout")[:120]),
-        ])
-    if not scout_rows:
-        scout_rows = [[
-            "n/a",
-            escape("No fresh scout rows right now."),
-            "n/a",
-            "n/a",
-            "n/a",
-            escape("Scout rows require recent live evidence too."),
-        ]]
-
-    paper_rows = [
-        [escape("Total predictions"), escape(_fmt_int(paper.get("total_predictions")))],
-        [escape("Watching"), escape(_fmt_int(paper.get("watching")))],
-        [escape("Watching past end time"), escape(_fmt_int(paper.get("watching_past_end")))],
-        [escape("Outcome checks today"), escape(_fmt_int(paper.get("checked_today")))],
-        [escape("Closed"), escape(_fmt_int(paper.get("closed")))],
-        [escape("Closed today"), escape(_fmt_int(paper.get("closed_today")))],
-        [escape("Sold with observed final price"), escape(_fmt_int(paper.get("sold")))],
-        [escape("Would have won under max bid"), escape(_fmt_int(paper.get("would_have_won")))],
-        [escape("Closed above max bid"), escape(_fmt_int(paper.get("outbid_above_ceiling")))],
-        [escape("Profitable on paper"), escape(_fmt_int(paper.get("profitable_on_paper")))],
-        [escape("Average purchase vs max bid"), escape("n/a" if paper.get("avg_price_error") is None else f"GBP {float(paper.get('avg_price_error') or 0):.2f}")],
-        [escape("Average observed ROI"), escape("n/a" if paper.get("avg_observed_roi") is None else _fmt_pct(float(paper.get("avg_observed_roi") or 0) * 100))],
-    ]
-    paper_source_rows = [
-        [escape(str(row.get("source") or "")), escape(_fmt_int(row.get("predictions")))]
-        for row in metrics.get("paper_by_source", [])
-    ]
-    if not paper_source_rows:
-        paper_source_rows = [["n/a", "0"]]
-    paper_lesson_report = metrics.get("paper_lessons") or {}
-    paper_lesson_counts = paper_lesson_report.get("lesson_counts") or {}
-    paper_lesson_rows = [
-        [
-            escape(str(lesson.get("source") or "")),
-            escape(str(lesson.get("lesson_category") or "")),
-            escape(str(lesson.get("title") or "")[:72]),
-            escape(str(lesson.get("learning_hint") or "")[:140]),
-        ]
-        for lesson in (paper_lesson_report.get("lessons") or [])[:6]
-    ]
-    if not paper_lesson_rows:
-        paper_lesson_rows = [[
-            "n/a",
-            "waiting",
-            escape("No candidate-check lessons yet"),
-            escape("The loop needs closed checks before it can produce miss evidence."),
-        ]]
-    paper_lesson_count_rows = [
-        [escape(str(category)), escape(_fmt_int(count))]
-        for category, count in sorted(paper_lesson_counts.items())
-    ]
-    if not paper_lesson_count_rows:
-        paper_lesson_count_rows = [["waiting", "0"]]
-
-    normal_calls = int(api_budget.get("planned_normal_calls") or 0)
-    spare_calls = int(api_budget.get("theoretical_spare") or 0)
-    recommended_backfill = int(api_budget.get("recommended_backfill_calls") or 0)
-    daily_cap = int(api_budget.get("daily_cap") or 5000)
-    reserve = int(api_budget.get("safety_reserve") or 500)
-    today_calls = int(api_budget.get("today_calls") or api_total)
-    avg_calls = int(api_budget.get("avg_total_7d") or 0)
-    max_calls = int(api_budget.get("max_total_7d") or 0)
-    excluded_sources = ", ".join((backfill.get("excluded_backfill_sources") or [])[:6]) if isinstance(backfill, dict) else ""
-    trigger_status = str(backfill_trigger_out.get("status") or "not run")
-    worker_text = (
-        "running"
-        if backfill_worker_running is True
-        else "not running"
-        if backfill_worker_running is False
-        else "unknown"
+    serious_rows, serious_ids = _potential_rows_for_email(
+        serious_report,
+        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
     )
-    backfill_activity_rows = [
-        [escape("Heartbeat trigger status"), escape(trigger_status)],
-        [escape("Worker lock status"), escape(worker_text)],
-        [escape("Rows checked today"), escape(_fmt_int(backfill_activity.get("checked_today")))],
-        [escape("Rows checked in last 24h"), escape(_fmt_int(backfill_activity.get("checked_24h")))],
-        [escape("Rows finalized today"), escape(_fmt_int(backfill_activity.get("finalized_today")))],
-        [escape("Sold rows confirmed today"), escape(_fmt_int(backfill_activity.get("sold_today")))],
-        [escape("Latest backfill check"), escape(_fmt_dt(backfill_activity.get("latest_checked_at")))],
-        [escape("Remaining local daily budget"), escape(_fmt_int(backfill_trigger_out.get("remaining_budget")))],
-    ]
-    backfill_reason_rows = [
-        [escape(str(row.get("reason") or "unknown")), escape(_fmt_int(row.get("checks")))]
-        for row in backfill_reasons
-    ]
-    if not backfill_reason_rows:
-        backfill_reason_rows = [["n/a", "0"]]
+    serious_near_misses = useful_near_misses(
+        serious_report.get("closest") if isinstance(serious_report.get("closest"), list) else [],
+        min_profit=50.0,
+        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+    )
+    serious_miss_rows, _serious_miss_ids = _potential_rows_for_email(
+        {"closest": serious_near_misses},
+        item_key="closest",
+        exclude_external_ids=serious_ids,
+        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+        empty_message="No actionable near misses at or below max buy for the GBP 50 gate.",
+    )
+    punt_rows, _punt_ids = _potential_rows_for_email(
+        punt_report,
+        exclude_external_ids=serious_ids,
+        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+    )
+    punt_near_misses = useful_near_misses(
+        punt_report.get("closest") if isinstance(punt_report.get("closest"), list) else [],
+        min_profit=25.0,
+        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+    )
+    punt_miss_rows, _punt_miss_ids = _potential_rows_for_email(
+        {"closest": punt_near_misses},
+        item_key="closest",
+        exclude_external_ids=serious_ids.union(_punt_ids),
+        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+        empty_message="No actionable near misses at or below max buy for the GBP 25 gate.",
+    )
+    favourite_rows = _favourite_rows_for_email(favourites)
 
     lead = (
         "Pipeline is running from live PostgreSQL data. Backfill is incremental; "
         "Buy Desk readiness depends on active-niche comp quality, model-key repair, "
-        "and guardrails, not the full stale backlog."
+        "and guardrails, not the full unknown listing queue."
     )
     if blocked:
         lead = f"Blocked services: {', '.join(blocked)}."
@@ -1518,84 +1600,26 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
         {_metric_card("Live listings", _fmt_int(counts.get("live")), f"{_fmt_int(counts.get('total'))} total tracked", "neutral")}
         {_metric_card("Confirmed comps", _fmt_int(comps.get("comp_keys")), f"{_fmt_int(comps.get('comp_samples'))} final-price samples", "good")}
         {_metric_card("Live comp coverage", _fmt_pct(coverage_pct), f"{_fmt_int(live_with_3plus)} of {_fmt_int(live_total)} have 3+ comps", "warn" if coverage_pct < 25 else "good")}
-        {_metric_card("API today", _fmt_int(api_total), f"{_fmt_int(normal_calls)} planned normal / {_fmt_int(spare_calls)} spare", "neutral")}
+        {_metric_card("API today", _fmt_int(api_total), api_bucket_summary, "neutral")}
       </tr></table>
       <table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr>
-        {_metric_card("Paper trades", _fmt_int(paper.get("total_predictions")), f"{_fmt_int(paper.get('watching'))} watching / {_fmt_int(paper.get('closed'))} closed", "neutral")}
-        {_metric_card("Paper sold", _fmt_int(paper.get("sold")), f"{_fmt_int(paper.get('profitable_on_paper'))} profitable on paper", "good" if int(paper.get("profitable_on_paper") or 0) else "neutral")}
-        {_metric_card("Avg price error", "n/a" if paper.get("avg_price_error") is None else f"GBP {float(paper.get('avg_price_error') or 0):.0f}", "Actual final price minus predicted resale", "neutral")}
+        {_metric_card("Final prices", _fmt_int(counts.get("final_prices")), "confirmed sold evidence rows", "good")}
+        {_metric_card("Unknown queue", _fmt_int(unknown_unfinalized), "past-end rows for Trading resolution", "warn" if unknown_unfinalized else "good")}
+        {_metric_card("Backfill today", _fmt_int(backfill_activity.get("checked_today")), f"{_fmt_int(backfill_activity.get('sold_today'))} sold confirmed", "neutral")}
         {_metric_card("Current ROI rows", _fmt_int(roi.get("live_roi_gt_15")), f"{_fmt_int(roi.get('live_roi_gt_100'))} above 100% ROI", "warn" if int(roi.get("live_roi_gt_100") or 0) else "neutral")}
       </tr></table>
 
-      {_section("What Matters Right Now", f'''
-        <ul style="margin:0;padding-left:20px;color:#334155;font-size:14px;line-height:1.6;">
-          <li><strong>Live data:</strong> review rows below require recent live evidence, a future end time, and fresh local observation before they appear.</li>
-          <li><strong>Backfill budget:</strong> planner recommends {_fmt_int(recommended_backfill)} stale finalization calls/day right now, with a 500-call reserve; the full stale backlog is not a launch blocker.</li>
-          <li><strong>Backfill activity:</strong> trigger is <code>{escape(trigger_status)}</code>, worker is <code>{escape(worker_text)}</code>, latest check {_fmt_dt(backfill_activity.get("latest_checked_at"))}, {_fmt_int(backfill_activity.get("checked_today"))} rows checked today.</li>
-          <li><strong>Stale backlog:</strong> {_fmt_int(stale_unfinalized)} unfinalized stale rows need controlled resolution.</li>
-          <li><strong>Comps:</strong> now based only on confirmed <code>final_price</code>; {_fmt_int(comps.get("comp_keys_3plus"))} model keys have 3+ samples; latest recompute {_fmt_dt(comps.get("computed_at"))}.</li>
-          <li><strong>Model-key repair:</strong> {_fmt_int(coverage.get("live_unknown_model_key"))} live listings still have unknown model keys.</li>
-          <li><strong>ROI caution:</strong> stored ROI still has {_fmt_int(roi.get("live_roi_gt_1000"))} live rows above 1000%; treat ROI as provisional until recompute and guardrails.</li>
-          <li><strong>Candidate checks:</strong> {_fmt_int(paper.get("total_predictions"))} review snapshots are now persisted; {_fmt_int(paper.get("watching"))} are still watching for an observed outcome.</li>
-        </ul>
-      ''')}
+      {_section("GBP 50 Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Review"], serious_rows))}
 
-      {_section("Candidate Check Loop", f'''
-        <p style="margin:0 0 12px;color:#334155;font-size:14px;line-height:1.55;">
-          These are review-only snapshots of what the system would have considered. No bids or purchases are made.
-          Closed predictions compare the observed final price against the predicted resale estimate.
-        </p>
-        {_table(["Metric", "Value"], paper_rows)}
-        <div style="height:12px;"></div>
-        {_table(["Today's source", "Predictions"], paper_source_rows)}
-        <div style="height:12px;"></div>
-        {_table(["Lesson category", "Count"], paper_lesson_count_rows)}
-        <div style="height:12px;"></div>
-        {_table(["Source", "Lesson", "Listing", "Learning hint"], paper_lesson_rows)}
-      ''')}
+      {_section("GBP 25 Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Review"], punt_rows))}
 
-      {_section("Fresh Live Review Data", f'''
-        <p style="margin:0 0 12px;color:#334155;font-size:14px;line-height:1.55;">
-          These rows come from the same fresh-live digest as Slack: local status must still be live-like,
-          end time must be in the future, and <code>last_seen_at</code> must be inside the configured freshness window.
-          They are inspection prompts only.
-        </p>
-        {_table(["Source", "Listing", "Current", "Est. profit", "Comps", "Ends", "Notes"], live_review_rows)}
-        <div style="height:12px;"></div>
-        {_table(["Scout source", "Listing", "Current", "Comp state", "Ends", "Reason"], scout_rows)}
-      ''')}
+      {_section("GBP 50 Closest Misses", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Review"], serious_miss_rows))}
 
-      {_section("Backfill Position", f'''
-        <p style="margin:0 0 12px;color:#334155;font-size:14px;line-height:1.55;">
-          Today has used <strong>{_fmt_int(today_calls)}</strong> API calls. The planner protects a daily cap of <strong>{_fmt_int(daily_cap)}</strong>,
-          keeps <strong>{_fmt_int(reserve)}</strong> calls in reserve, and uses the worst of today, 7-day average ({_fmt_int(avg_calls)}),
-          and 7-day max ({_fmt_int(max_calls)}) to avoid spending the whole allowance too early.
-          Vehicle/parts-heavy sources are excluded for now: <strong>{escape(excluded_sources or "none")}</strong>.
-        </p>
-        {_table(["Activity", "Value"], backfill_activity_rows)}
-        <div style="height:12px;"></div>
-        {_table(["Today's backfill reason", "Checks"], backfill_reason_rows)}
-        <div style="height:12px;"></div>
-        {_table(["Source", "Keys needing comps", "Live listings", "Stale pool", "Newest stale"], backfill_source_rows)}
-      ''')}
+      {_section("GBP 25 Closest Misses", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Review"], punt_miss_rows))}
 
-      {_section("Listing Store", _table(["Metric", "Count"], listing_rows))}
+      {_section("Favourites", _table(["Source", "Listing", "Status", "Current", "Model key", "Review"], favourite_rows))}
 
-      {_section("Model-Key Work", _table(["Source", "Live unknown model keys"], unknown_model_rows))}
-
-      {_section("Pipeline Run", _pipeline_table(state))}
-
-      {_section("API Usage Today", _table(["Service", "Calls", "Of 5k cap"], api_rows or [["none", "0", "0%"]]))}
-
-      {_section("Backfill Preview", _table(["Source", "Model key", "Candidate", "Last price"], candidate_rows))}
-
-      {_section("Oldest Enabled Sources", _table(["Source", "Last scraped", "Age"], source_rows))}
-
-      <div style="background:#0f172a;color:#cbd5e1;border-radius:14px;padding:16px 18px;margin-top:16px;font-size:13px;line-height:1.5;">
-        <strong style="color:#ffffff;">Footer:</strong>
-        Python/LangGraph remains the source of truth. No bidding, buying, relisting, or marketplace writes are performed by this heartbeat.
-        Backups run weekly; final-price backfill runs as a separately locked, budget-capped background worker.
-      </div>
+      {_section("Model Keys By Market", _model_key_inventory_for_email(model_key_inventory))}
     </div>
   </div>
 </body>
@@ -1621,7 +1645,28 @@ def hourly_status_email(state: MainState) -> MainState:
             }
             return state
 
-    metrics = _heartbeat_metrics()
+    result = send_heartbeat_email_now(state=state, record_sent=True, now=now)
+    state["heartbeat_email_out"] = result
+    if result.get("status") == "sent":
+        logger.info("[main] hourly heartbeat email sent to %s", ", ".join(result.get("sent_to") or []))
+    else:
+        logger.warning("[main] hourly heartbeat email failed: %s", result.get("error"))
+
+    return state
+
+
+def send_heartbeat_email_now(
+    *,
+    state: MainState | None = None,
+    recipients: Sequence[str] | None = None,
+    record_sent: bool = True,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Send the current heartbeat email immediately, bypassing hourly throttle."""
+
+    state = state or {}
+    now = now or datetime.now(timezone.utc)
+    metrics = _metrics_for_heartbeat(state)
     blocked = state.get("blocked_services") or []
     subject_status = "blocked" if blocked else "heartbeat"
     subject = (
@@ -1629,29 +1674,29 @@ def hourly_status_email(state: MainState) -> MainState:
         f"{metrics.get('api_total', 0):,} API calls today"
     )
     body = _build_heartbeat_email_html(state, metrics, now)
+    target_recipients = [email.strip() for email in (recipients or HEARTBEAT_EMAIL_RECIPIENTS) if email.strip()]
 
     sent_to: list[str] = []
     try:
-        for recipient in HEARTBEAT_EMAIL_RECIPIENTS:
+        for recipient in target_recipients:
             send_email(subject=subject, body=body, to_addr=recipient, is_html=True)
             sent_to.append(recipient)
 
-        _set_last_heartbeat_email_sent(now)
-        state["heartbeat_email_out"] = {
+        if record_sent:
+            _set_last_heartbeat_email_sent(now)
+        return {
             "status": "sent",
             "sent_to": sent_to,
             "sent_at": now.isoformat(),
+            "subject": subject,
         }
-        logger.info("[main] hourly heartbeat email sent to %s", ", ".join(sent_to))
     except Exception as exc:
-        state["heartbeat_email_out"] = {
+        return {
             "status": "failed",
             "error": str(exc),
             "sent_to": sent_to,
+            "subject": subject,
         }
-        logger.warning("[main] hourly heartbeat email failed: %s", exc)
-
-    return state
 
 
 def hourly_status_slack(state: MainState) -> MainState:
@@ -1688,7 +1733,7 @@ def hourly_status_slack(state: MainState) -> MainState:
             }
             return state
 
-    metrics = _heartbeat_metrics()
+    metrics = _metrics_for_heartbeat(state)
     text, blocks = _build_heartbeat_slack_message(state, metrics, now)
     result = send_slack_message(text=text, blocks=blocks)
 
@@ -1732,6 +1777,7 @@ def build_graph():
             services=[
                 "ebay_base_fetch_items_by_id_v1",
                 "ebay_base_fetch_category_items_v1",
+                "ebay_base_seller_items_v1",
             ],
         ),
     )
@@ -1740,7 +1786,7 @@ def build_graph():
         run_subgraph(
             "pph",
             build_pph,
-            services=[],
+            services=["ebay_base_fetch_items_by_id_v1"],
         ),
     )
     g.add_node(
@@ -1748,7 +1794,7 @@ def build_graph():
         run_subgraph(
             "comps",
             build_comps,
-            services=["ebay_base_fetch_items_by_id_v1"],
+            services=[],
         ),
     )
     g.add_node(
@@ -1756,10 +1802,7 @@ def build_graph():
         run_subgraph(
             "attributes",
             build_attributes,
-            services=[
-                "ebay_attributes_v1",
-                "ebay_base_fetch_items_by_id_v1",
-            ],
+            services=["ebay_attributes_v1"],
         ),
     )
     g.add_node(
@@ -1775,14 +1818,6 @@ def build_graph():
         run_subgraph(
             "roi",
             build_roi,
-            services=[],
-        ),
-    )
-    g.add_node(
-        "paper_trading",
-        run_subgraph(
-            "paper_trading",
-            build_paper_trading,
             services=[],
         ),
     )
@@ -1827,8 +1862,7 @@ def build_graph():
     g.add_edge("comps", "attributes")
     g.add_edge("attributes", "hot")
     g.add_edge("hot", "roi")
-    g.add_edge("roi", "paper_trading")
-    g.add_edge("paper_trading", "new")
+    g.add_edge("roi", "new")
     g.add_edge("new", "project_mini")
     g.add_edge("project_mini", "project_msx125")
 

@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 EBAY_TRADING_ENDPOINT = "https://api.ebay.com/ws/api.dll"
 EBAY_SITE_ID = "3"  # UK (keep as per your old implementation)
 EBAY_COMPAT_LEVEL = "967"
+INACCESSIBLE_TRADING_ERROR_CODES = {"17", "1505", "21920397"}
 
 
 # ----------------------------
@@ -124,6 +125,18 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
         short_msg = _xml_text(root, "./ns:Errors/ns:ShortMessage", ns) or ""
         long_msg = _xml_text(root, "./ns:Errors/ns:LongMessage", ns) or ""
         code = _xml_text(root, "./ns:Errors/ns:ErrorCode", ns) or ""
+
+        # Handle inaccessible/not-found items explicitly so callers can delete
+        # local junk rows instead of retrying an unrecoverable response.
+        if code in INACCESSIBLE_TRADING_ERROR_CODES:
+            logger.info(
+                "[listing.ended] Trading item inaccessible; deleting local listing ack=%s code=%s short=%s",
+                ack,
+                code,
+                short_msg,
+            )
+            return {"code": code}
+
         logger.warning(
             "[listing.ended] Trading error ack=%s code=%s short=%s long=%s",
             ack,
@@ -131,11 +144,6 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
             short_msg,
             long_msg,
         )
-
-        # Handle inaccessible/not-found items explicitly so callers can
-        # finalize them instead of retrying an unrecoverable response.
-        if code in ("17", "1505", "21920397"):
-            return {"code": code}
 
         return None
 
@@ -355,9 +363,9 @@ def node_process_next_candidate(state: EndedState) -> EndedState:
             _mark_parse_failed(auction_id)
             return _bump(state, idx_inc=1, processed_inc=1, errors_inc=1)
 
-        # Item not found / already gone => finalize as ended (old behaviour)
-        if parsed.get("code") in ("17", "1505", "21920397"):
-            _finalize_not_found(auction_id)
+        # Item not found / already gone => remove the local junk row.
+        if parsed.get("code") in INACCESSIBLE_TRADING_ERROR_CODES:
+            _delete_inaccessible_listing(auction_id, str(external_id))
             return _bump(state, idx_inc=1, processed_inc=1)
 
         ended = bool(parsed.get("ended"))
@@ -417,17 +425,25 @@ def _mark_parse_failed(auction_id: int) -> None:
         conn.commit()
 
 
-def _finalize_not_found(auction_id: int) -> None:
+def _delete_inaccessible_listing(auction_id: int, external_id: str) -> None:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                UPDATE auction_listings
-                SET finalized = TRUE,
-                    status = 'ended'
-                WHERE id = %s
+                DELETE FROM auction_price_history
+                WHERE external_id = %s
                 """,
-                (auction_id,),
+                (external_id,),
+            )
+            cur.execute(
+                """
+                DELETE FROM auction_listings
+                WHERE id = %s
+                  AND external_id = %s
+                  AND COALESCE(finalized, FALSE) = FALSE
+                  AND final_price IS NULL
+                """,
+                (auction_id, external_id),
             )
         conn.commit()
 

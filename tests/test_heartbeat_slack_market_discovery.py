@@ -17,29 +17,22 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
                 "live_total": 42,
                 "live_with_3plus_comps": 10,
             },
-            "paper_trading": {
-                "watching": 3,
-                "closed": 2,
-                "sold": 1,
-                "profitable_on_paper": 0,
-            },
             "api_total": 123,
             "market_discovery": {
-                "status_counts": {
-                    "data_gap": 5,
-                    "parked": 97,
-                    "rejected": 45,
-                    "buy_candidate": 0,
+                "summary": {
+                    "potentials": 1,
+                    "checked": 12,
+                    "live_rows_with_comps": 20,
                 },
-                "top_lanes": [
+                "potentials": [
                     {
-                        "source": "ebay-apple",
                         "model_key": "apple-macbook-pro-13in-intel-16gb-512gb_b",
-                        "status": "data_gap",
-                        "score": 61.92,
-                        "estimated_net_spread": 47.64,
+                        "current_price": 120.0,
+                        "max_safe_buy": 190.0,
+                        "expected_profit": 70.0,
                     }
                 ],
+                "closest": [],
             },
         }
 
@@ -54,12 +47,13 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
         rendered = f"{text}\n{blocks}"
 
         self.assertIn("Buy signals", rendered)
-        self.assertIn("0 buy candidates, 5 data gaps, 97 parked, 45 rejected", rendered)
+        self.assertIn("1 potentials, 12 checked, 20 live rows with comps", rendered)
         self.assertIn("apple-macbook-pro-13in-intel-16gb-512gb_b", rendered)
-        self.assertIn("improve model keys and confirmed final-price coverage", rendered)
+        self.assertIn("profit", rendered)
         self.assertNotIn("BUY", rendered)
         self.assertNotIn("BID", rendered)
         self.assertNotIn("ACTIONABLE", rendered)
+        self.assertNotIn("Paper", rendered)
 
     def test_scheduler_status_is_in_hourly_slack_message(self):
         metrics = self._base_metrics()

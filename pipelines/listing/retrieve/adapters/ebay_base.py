@@ -7,10 +7,11 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Set, Tuple
 from collections import deque
 from urllib.parse import quote_plus
-from psycopg2.extras import execute_values
+from psycopg2.extras import Json, execute_values
 import requests
 from utils.logger import get_logger
 from utils.model_key import normalise_model
+from utils.condition import _derive_condition_grade
 from utils.db_schema import (
     resolve_source_id,
     resolve_source_field,
@@ -63,6 +64,44 @@ def _iso_z(dt: datetime) -> str:
     return dt.replace(microsecond=0, tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _browse_description_attrs(raw: dict[str, Any]) -> dict[str, Any]:
+    """
+    Extract useful seller-visible text from Browse getItem responses.
+
+    Item specifics are handled by the attributes pipeline. This only preserves
+    description/condition text that can reveal damage hidden behind a clean
+    title, e.g. "screen is damaged" or "selling for parts".
+    """
+    attrs: dict[str, Any] = {}
+    for key in (
+        "condition",
+        "conditionDescription",
+        "shortDescription",
+        "subtitle",
+    ):
+        value = raw.get(key)
+        if value:
+            attrs[f"Browse {key}"] = value
+    return attrs
+
+
+def _sale_type_from_buying_options(
+    buying_options: list[Any],
+    *,
+    fallback: str | None = None,
+) -> str:
+    options = {str(opt or "").strip().upper() for opt in buying_options}
+    has_auction = "AUCTION" in options
+    has_bin = "FIXED_PRICE" in options
+    if has_auction and has_bin:
+        return "both"
+    if has_auction:
+        return "auction"
+    if has_bin:
+        return "bin"
+    return str(fallback or "")
+
+
 def is_configurable_item(raw: dict[str, Any]) -> bool:
     """
     Detect multi-variation / configurable-style listings so we can skip them entirely.
@@ -95,6 +134,77 @@ def is_configurable_item(raw: dict[str, Any]) -> bool:
 def get_item_id(raw: dict[str, Any]) -> str:
     iid = raw.get("itemId") or raw.get("item_id") or raw.get("legacyItemId")
     return str(iid) if iid is not None else "unknown"
+
+
+def _browse_item_unavailable_reason(raw: dict[str, Any]) -> str | None:
+    """Return a reason when Browse says the item is no longer buyable."""
+
+    end_time = _parse_iso_utc(raw.get("itemEndDate"))
+    if end_time and end_time <= datetime.now(timezone.utc):
+        return "browse_item_ended"
+
+    def _status(value: Any) -> str:
+        return str(value or "").strip().upper()
+
+    def _qty(value: Any) -> int | None:
+        if value is None:
+            return None
+        try:
+            return int(float(str(value)))
+        except (TypeError, ValueError):
+            return None
+
+    def _first_present(mapping: dict[str, Any], keys: tuple[str, ...]) -> Any:
+        for key in keys:
+            if key in mapping and mapping[key] is not None:
+                return mapping[key]
+        return None
+
+    unavailable_statuses = {"OUT_OF_STOCK", "SOLD_OUT", "ENDED", "UNAVAILABLE"}
+    available_statuses = {"IN_STOCK", "LIMITED_QUANTITY", "AVAILABLE"}
+
+    top_level_status = _status(
+        raw.get("availabilityStatus")
+        or raw.get("availability")
+        or raw.get("estimatedAvailabilityStatus")
+    )
+    if top_level_status in unavailable_statuses:
+        return "browse_out_of_stock"
+    if top_level_status in available_statuses:
+        return None
+
+    availabilities = raw.get("estimatedAvailabilities") or []
+    if isinstance(availabilities, dict):
+        availabilities = [availabilities]
+    if not isinstance(availabilities, list):
+        return None
+
+    unavailable_signals = 0
+    meaningful_signals = 0
+    for availability in availabilities:
+        if not isinstance(availability, dict):
+            continue
+        status = _status(
+            availability.get("estimatedAvailabilityStatus")
+            or availability.get("availabilityStatus")
+        )
+        qty = _qty(
+            _first_present(
+                availability,
+                ("estimatedAvailableQuantity", "availableQuantity", "quantity"),
+            )
+        )
+        if status in available_statuses or (qty is not None and qty > 0):
+            return None
+        if status in unavailable_statuses or qty == 0:
+            unavailable_signals += 1
+            meaningful_signals += 1
+        elif status:
+            meaningful_signals += 1
+
+    if meaningful_signals and unavailable_signals == meaningful_signals:
+        return "browse_out_of_stock"
+    return None
 
 
 # ----------------------------------------------------------------------
@@ -289,11 +399,11 @@ class EbayAdapterBase:
             logger.error(f"[{self.DOMAIN}] EBAY_API_BASE missing in env")
             return []
 
-        listing_filter = None
+        buying_option = None
         if sale_type == "bin":
-            listing_filter = "FIXED_PRICE"
+            buying_option = "FIXED_PRICE"
         elif sale_type == "auction":
-            listing_filter = "AUCTION"
+            buying_option = "AUCTION"
 
         qs = [
             f"q={quote_plus(self.SEARCH_QUERY or DEFAULT_Q)}",
@@ -301,8 +411,8 @@ class EbayAdapterBase:
             f"limit={limit}",
             "sort=endingSoon",
         ]
-        if listing_filter:
-            qs.append(f"filter=listingType:{listing_filter}")
+        if buying_option:
+            qs.append(f"filter=buyingOptions:{{{buying_option}}}")
 
         url = f"{base}/buy/browse/v1/item_summary/search?" + "&".join(qs)
 
@@ -452,10 +562,10 @@ class EbayAdapterBase:
 
         return all_items
 
-    def _mark_404_listings_stale(self, external_ids: Set[str]) -> None:
+    def _mark_404_listings_unknown(self, external_ids: Set[str]) -> None:
         """
-        For listings that returned 404 from getItem, mark them as stale in DB
-        so they stop being treated as live targets.
+        For listings that returned 404 from getItem, mark them as unknown in DB
+        so Trading can decide whether they are live, sold, ended, or deleted.
         """
         if not external_ids:
             return
@@ -468,24 +578,67 @@ class EbayAdapterBase:
         try:
             with conn, conn.cursor() as cur:
                 ensure_utc_session(cur)
-                # Mark as stale and set end_time if it's NULL
                 cur.execute(
                     """
                     UPDATE auction_listings
-                    SET status   = 'stale',
-                        end_time = COALESCE(end_time, (now() AT TIME ZONE 'utc'))
+                    SET status   = 'unknown',
+                        end_time = (now() AT TIME ZONE 'utc')
                     WHERE external_id = ANY(%s)
                     """,
                     (ids_list,),
                 )
             logger.info(
-                "[%s] marked %d listings as stale due to 404 from getItem",
+                "[%s] marked %d listings as unknown due to 404 from getItem",
                 self.DOMAIN,
                 len(ids_list),
             )
         except Exception as e:
             logger.warning(
-                "[%s] failed to mark 404 listings stale (ids=%s): %s",
+                "[%s] failed to mark 404 listings unknown (ids=%s): %s",
+                self.DOMAIN,
+                ids_list,
+                e,
+            )
+
+    def _mark_unavailable_listings_unknown(
+            self,
+            external_ids: Set[str],
+            *,
+            reason: str = "browse_unavailable",
+    ) -> None:
+        """
+        Remove Browse-confirmed ended/out-of-stock rows from live candidate flow.
+
+        We do not mark them sold here. Trading/final-price backfill owns the
+        final outcome; this only prevents dead rows from reaching the email.
+        """
+        if not external_ids:
+            return
+
+        conn = get_connection()
+        ids_list = list(external_ids)
+
+        try:
+            with conn, conn.cursor() as cur:
+                ensure_utc_session(cur)
+                cur.execute(
+                    """
+                    UPDATE auction_listings
+                    SET status   = 'unknown',
+                        end_time = (now() AT TIME ZONE 'utc')
+                    WHERE external_id = ANY(%s)
+                    """,
+                    (ids_list,),
+                )
+            logger.info(
+                "[%s] marked %d listings unknown after getItem %s",
+                self.DOMAIN,
+                len(ids_list),
+                reason,
+            )
+        except Exception as e:
+            logger.warning(
+                "[%s] failed to mark unavailable listings unknown (ids=%s): %s",
                 self.DOMAIN,
                 ids_list,
                 e,
@@ -564,13 +717,24 @@ class EbayAdapterBase:
             all_items.append(item)
             time.sleep(0.05)
 
-        # After we’re done, mark any 404’d listings as stale in DB
+        # After we are done, mark any 404'd listings as unknown in DB.
         if not_found_ids:
-            self._mark_404_listings_stale(not_found_ids)
+            self._mark_404_listings_unknown(not_found_ids)
 
         return all_items
 
     def _normalize_item(self, raw: dict[str, Any], sale_type: str):
+        unavailable_reason = _browse_item_unavailable_reason(raw)
+        if unavailable_reason:
+            logger.info(
+                "[%s] skipping unavailable listing itemId=%s reason=%s title=%r",
+                self.DOMAIN,
+                get_item_id(raw),
+                unavailable_reason,
+                raw.get("title"),
+            )
+            return None
+
         if is_configurable_item(raw):
             logger.info(
                 "[%s] skipping configurable/multi-variation listing itemId=%s title=%r",
@@ -583,7 +747,9 @@ class EbayAdapterBase:
         item_id = raw.get("itemId")
 
         title = raw.get("title") or ""
+        requested_sale_type = str(sale_type or "")
         buying_opts = raw.get("buyingOptions") or []
+        sale_type = _sale_type_from_buying_options(buying_opts, fallback=requested_sale_type)
         seller_info = raw.get("seller") or {}
         seller_username = seller_info.get("username")
 
@@ -603,9 +769,9 @@ class EbayAdapterBase:
         except Exception:
             bids_count = 0
 
-        if sale_type == "bin" and ("AUCTION" in buying_opts):
+        if requested_sale_type == "bin" and sale_type == "auction":
             return None
-        if sale_type == "auction" and "AUCTION" not in buying_opts:
+        if requested_sale_type == "auction" and sale_type == "bin":
             return None
 
         title_lower = title.lower()
@@ -622,7 +788,7 @@ class EbayAdapterBase:
         price_bid_current_int: Optional[int] = None
         price_current_int: Optional[int] = None
 
-        if sale_type == "auction":
+        if sale_type in {"auction", "both"}:
             price_bid_current_int = _to_int(bid_value)
             if price_bid_current_int is not None:
                 price_current_int = price_bid_current_int
@@ -650,6 +816,10 @@ class EbayAdapterBase:
             "status": "live",
             "seller_username": (seller_username or "").strip()[:255],
         }
+        browse_attrs = _browse_description_attrs(raw)
+        if browse_attrs:
+            row["raw_attrs"] = browse_attrs
+            row["condition_grade"] = _derive_condition_grade(browse_attrs, title)
 
         ph = (item_id, price_current_int or 0, bids_count)
         return row, ph
@@ -661,6 +831,8 @@ class EbayAdapterBase:
         sale_types = (
             self.SALE_TYPE if isinstance(self.SALE_TYPE, (list, tuple)) else [self.SALE_TYPE]
         )
+        sale_types = [str(s) for s in sale_types if s]
+        unavailable_ids: Set[str] = set()
 
         # SELLER MODE
         if self.FETCH_MODE == "seller":
@@ -677,6 +849,19 @@ class EbayAdapterBase:
 
                 added = 0
                 for raw in items:
+                    unavailable_reason = _browse_item_unavailable_reason(raw)
+                    if unavailable_reason:
+                        item_id = get_item_id(raw)
+                        if item_id != "unknown":
+                            unavailable_ids.add(item_id)
+                        logger.info(
+                            "[%s] seller fetch: marking ID %s non-live (%s)",
+                            self.DOMAIN,
+                            item_id,
+                            unavailable_reason,
+                        )
+                        continue
+
                     norm = self._normalize_item(raw, sale_type)
                     if not norm:
                         continue
@@ -707,6 +892,9 @@ class EbayAdapterBase:
                 )
 
             self.flush_batch()
+            self._mark_disallowed_live_sale_types(sale_types)
+            if unavailable_ids:
+                self._mark_unavailable_listings_unknown(unavailable_ids)
             return
 
         # CATEGORY MODE
@@ -720,6 +908,19 @@ class EbayAdapterBase:
 
                 added = 0
                 for raw in items:
+                    unavailable_reason = _browse_item_unavailable_reason(raw)
+                    if unavailable_reason:
+                        item_id = get_item_id(raw)
+                        if item_id != "unknown":
+                            unavailable_ids.add(item_id)
+                        logger.info(
+                            "[%s] category fetch: marking ID %s non-live (%s)",
+                            self.DOMAIN,
+                            item_id,
+                            unavailable_reason,
+                        )
+                        continue
+
                     norm = self._normalize_item(raw, sale_type)
                     if not norm:
                         continue
@@ -738,6 +939,51 @@ class EbayAdapterBase:
                 time.sleep(self.CATEGORY_PAUSE_SECONDS)
 
         self.flush_batch()
+        self._mark_disallowed_live_sale_types(sale_types)
+        if unavailable_ids:
+            self._mark_unavailable_listings_unknown(unavailable_ids)
+
+    def _mark_disallowed_live_sale_types(self, allowed_sale_types: list[str]) -> None:
+        """
+        Keep full source scrapes aligned with their configured live market.
+
+        If an adapter is switched from BIN+auction to auction-only, previously
+        seen BIN rows should stop appearing as live candidates immediately after
+        the next successful scrape. They are not ended; they are simply outside
+        the source's current live collection contract.
+        """
+        allowed_set = {s for s in allowed_sale_types if s}
+        if {"auction", "bin"} & allowed_set:
+            allowed_set.add("both")
+        allowed = tuple(sorted(allowed_set))
+        if not allowed:
+            return
+
+        conn = get_connection()
+        with conn, conn.cursor() as cur:
+            ensure_utc_session(cur)
+            cur.execute(
+                """
+                UPDATE auction_listings
+                SET status = 'unknown'
+                WHERE source = %s
+                  AND status = 'live'
+                  AND (
+                        sale_type IS NULL
+                        OR sale_type <> ALL(%s)
+                  )
+                """,
+                (self._source_name, list(allowed)),
+            )
+            changed = cur.rowcount
+
+        if changed:
+            logger.info(
+                "[%s] marked %d live rows unknown because sale_type is outside %s",
+                self.DOMAIN,
+                changed,
+                ", ".join(allowed),
+            )
 
     # ------------------------------------------------------------------
     # Public entry: targeted price refresh (PPH)
@@ -765,6 +1011,7 @@ class EbayAdapterBase:
             return
 
         allowed_ids: Set[str] = {str(i) for i in external_ids if i}
+        unavailable_ids: Set[str] = set()
         added = 0
 
         for raw in items:
@@ -772,25 +1019,32 @@ class EbayAdapterBase:
             if item_id not in allowed_ids:
                 continue
 
-            buying_opts = raw.get("buyingOptions") or []
+            unavailable_reason = _browse_item_unavailable_reason(raw)
+            if unavailable_reason:
+                unavailable_ids.add(item_id)
+                logger.info(
+                    "[%s] refresh_items_price: marking ID %s non-live (%s)",
+                    self.DOMAIN,
+                    item_id,
+                    unavailable_reason,
+                )
+                continue
 
-            # Derive sale_type from live buying options if we can
-            if "AUCTION" in buying_opts:
-                sale_type = "auction"
-            elif "FIXED_PRICE" in buying_opts:
-                sale_type = "bin"
-            else:
-                # Fallback: use adapter's configured SALE_TYPE
-                st = self.SALE_TYPE
-                if isinstance(st, (list, tuple)):
-                    if "auction" in st:
-                        sale_type = "auction"
-                    elif "bin" in st:
-                        sale_type = "bin"
-                    else:
-                        sale_type = str(st[0])
-                else:
-                    sale_type = str(st)
+            buying_opts = raw.get("buyingOptions") or []
+            st = self.SALE_TYPE
+            fallback_sale_type = (
+                "auction"
+                if isinstance(st, (list, tuple)) and "auction" in st
+                else "bin"
+                if isinstance(st, (list, tuple)) and "bin" in st
+                else str(st[0])
+                if isinstance(st, (list, tuple)) and st
+                else str(st)
+            )
+            sale_type = _sale_type_from_buying_options(
+                buying_opts,
+                fallback=fallback_sale_type,
+            )
 
             norm = self._normalize_item(raw, sale_type)
             if not norm:
@@ -814,6 +1068,8 @@ class EbayAdapterBase:
         )
 
         self.flush_batch()
+        if unavailable_ids:
+            self._mark_unavailable_listings_unknown(unavailable_ids)
 
 
 def ensure_utc_session(cur):
@@ -860,13 +1116,13 @@ def bulk_upsert_auction_listings(rows: list[dict]):
     # Consistent "seen alive" timestamp for this batch
     now = datetime.now(timezone.utc)
 
-    # How long before a "live" listing is treated as stale/ended if we stop seeing it.
-    # Default: 180 minutes (3 hours), override with GF_LISTING_STALE_MINUTES if needed.
+    # How long before a live listing becomes unknown if we stop seeing it.
+    # Default: 180 minutes (3 hours), override with GF_LISTING_UNKNOWN_MINUTES if needed.
     try:
-        stale_minutes = int(os.getenv("GF_LISTING_STALE_MINUTES", "180"))
+        unknown_minutes = int(os.getenv("GF_LISTING_UNKNOWN_MINUTES", "180"))
     except Exception:
-        stale_minutes = 180
-    stale_cutoff = now - timedelta(minutes=stale_minutes)
+        unknown_minutes = 180
+    unknown_cutoff = now - timedelta(minutes=unknown_minutes)
 
     for r in rows:
         # If end_time is missing → fabricate 1 day future end
@@ -887,6 +1143,8 @@ def bulk_upsert_auction_listings(rows: list[dict]):
         "notes",
         "source_id",
         "model_key",
+        "raw_attrs",
+        "condition_grade",
         "time_left_s",
         "status",
         "last_seen_at",
@@ -899,6 +1157,12 @@ def bulk_upsert_auction_listings(rows: list[dict]):
             if c == "last_seen_at":
                 # Always set "seen alive" to this batch timestamp
                 row_vals.append(now)
+            elif c == "raw_attrs":
+                raw_attrs = r.get(c)
+                if isinstance(raw_attrs, (dict, list)):
+                    row_vals.append(Json(raw_attrs))
+                else:
+                    row_vals.append(raw_attrs)
             else:
                 row_vals.append(r.get(c))
         values.append(tuple(row_vals))
@@ -919,6 +1183,14 @@ def bulk_upsert_auction_listings(rows: list[dict]):
             notes         = EXCLUDED.notes,
             source_id     = EXCLUDED.source_id,
             model_key     = COALESCE(EXCLUDED.model_key,     auction_listings.model_key),
+            raw_attrs     = CASE
+                              WHEN EXCLUDED.raw_attrs IS NULL THEN auction_listings.raw_attrs
+                              WHEN auction_listings.raw_attrs IS NULL
+                                OR auction_listings.raw_attrs = 'false'::jsonb
+                                THEN EXCLUDED.raw_attrs
+                              ELSE auction_listings.raw_attrs || EXCLUDED.raw_attrs
+                            END,
+            condition_grade = COALESCE(EXCLUDED.condition_grade, auction_listings.condition_grade),
             time_left_s   = COALESCE(EXCLUDED.time_left_s,   auction_listings.time_left_s),
             status        = COALESCE(EXCLUDED.status,        auction_listings.status),
             last_seen_at  = EXCLUDED.last_seen_at
@@ -931,15 +1203,20 @@ def bulk_upsert_auction_listings(rows: list[dict]):
         # 1) Upsert this batch – everything in here is "seen alive" right now
         execute_values(cur, sql, values, page_size=250)
 
-        # 2) Any listing that *used* to be live but hasn't been seen for a while
-        #    is almost certainly ended (BIN hit, auction ended, cancelled, etc).
-        #    We mark it as 'stale' so ROI / alerts can ignore it.
+        # 2) If a live listing has not been seen recently *and its known end
+        #    time has passed*, we no longer know its state. Future-dated rows
+        #    must stay live: eBay search pagination is not stable enough to
+        #    treat "not seen in this broad scrape" as "not live".
         cur.execute(
             """
             UPDATE auction_listings
-            SET status = 'stale'
+            SET status = 'unknown'
             WHERE status = 'live'
               AND last_seen_at < %s
+              AND (
+                    end_time IS NULL
+                    OR end_time <= (now() AT TIME ZONE 'utc')
+              )
             """,
-            (stale_cutoff,),
+            (unknown_cutoff,),
         )

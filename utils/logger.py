@@ -4,8 +4,8 @@ import sys
 from pathlib import Path
 
 # Optional: put logs in a dedicated file
-LOG_DIR = Path(os.getenv("GF_LOG_DIR") or Path(__file__).resolve().parent.parent.parent / "logs")
-LOG_DIR.mkdir(exist_ok=True)
+LOG_DIR = Path(os.getenv("GF_LOG_DIR") or Path(__file__).resolve().parent.parent / "logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "agent.log"
 
 # Configure root logger

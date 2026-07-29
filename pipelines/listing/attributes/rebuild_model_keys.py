@@ -5,6 +5,7 @@ import json  # needed for raw_attrs parsing
 from psycopg2.extras import RealDictCursor
 from utils.db_schema import get_connection
 from pipelines.listing.attributes.mk import normalise_model
+from utils.condition import _derive_condition_grade
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -71,6 +72,7 @@ def rebuild_model_keys(
 
     updated_total = 0
     changed_total = 0
+    condition_changed_total = 0
     to_unknown_total = 0
     from_unknown_total = 0
     source_filter = source.strip().lower() if source else None
@@ -95,7 +97,7 @@ def rebuild_model_keys(
         params.append(limit)
         cur.execute(
             f"""
-            SELECT id, title, raw_attrs, source, model_key
+            SELECT id, title, raw_attrs, source, model_key, condition_grade
               FROM auction_listings
               {where_sql}
              ORDER BY id
@@ -111,6 +113,7 @@ def rebuild_model_keys(
             attrs_raw = _parse_raw_attrs(row.get("raw_attrs"))
             attrs = _normalise_attrs(attrs_raw)
             key = normalise_model(title=title, attrs=attrs, source=listing_source) or UNKNOWN_KEY
+            condition_grade = _derive_condition_grade(attrs or {}, title)
 
             old_key = str(row.get("model_key") or UNKNOWN_KEY).lower()
             if key != old_key:
@@ -119,11 +122,14 @@ def rebuild_model_keys(
                     to_unknown_total += 1
                 if old_key == UNKNOWN_KEY and key != UNKNOWN_KEY:
                     from_unknown_total += 1
+            old_condition = str(row.get("condition_grade") or "").upper()
+            if condition_grade != old_condition:
+                condition_changed_total += 1
 
             if not dry_run:
                 cur.execute(
-                    "UPDATE auction_listings SET model_key = %s WHERE id = %s",
-                    (key, row["id"]),
+                    "UPDATE auction_listings SET model_key = %s, condition_grade = %s WHERE id = %s",
+                    (key, condition_grade, row["id"]),
                 )
             updated_total += 1
 
@@ -134,9 +140,10 @@ def rebuild_model_keys(
 
     logger.info(
         "[rebuild_model_keys] batch complete — scanned %d rows, changed %d "
-        "(to_unknown=%d, from_unknown=%d, limit=%d, only_missing=%s, source=%s, dry_run=%s)",
+        "(condition_changed=%d, to_unknown=%d, from_unknown=%d, limit=%d, only_missing=%s, source=%s, dry_run=%s)",
         updated_total,
         changed_total,
+        condition_changed_total,
         to_unknown_total,
         from_unknown_total,
         limit,
@@ -147,6 +154,7 @@ def rebuild_model_keys(
     return {
         "scanned": updated_total,
         "changed": changed_total,
+        "condition_changed": condition_changed_total,
         "to_unknown": to_unknown_total,
         "from_unknown": from_unknown_total,
     }

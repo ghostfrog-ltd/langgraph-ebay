@@ -37,7 +37,7 @@ def reset_db_and_get_count() -> int:
             (auction_listings_before,) = cur.fetchone()
             logger.info("[reset] auction_listings_before = %s", auction_listings_before)
 
-            # 2) Reset model_key and stale ROI fields on all listings
+            # 2) Reset model_key and old ROI fields on all listings
             logger.info("[reset] Nulling auction_listings.model_key, roi_estimate, and max_bid ...")
             cur.execute(
                 """
@@ -94,14 +94,15 @@ def reset_db_and_get_count() -> int:
             cur.execute(
                 """
                 CREATE MATERIALIZED VIEW latest_comps AS
-                SELECT DISTINCT ON (model_key)
+                SELECT DISTINCT ON (model_key, condition_grade)
                        model_key,
+                       condition_grade,
                        median_final_price,
                        mean_final_price,
                        samples,
                        computed_at
                   FROM comps
-                 ORDER BY model_key, computed_at DESC;
+                 ORDER BY model_key, condition_grade, computed_at DESC;
                 """
             )
 
@@ -135,9 +136,10 @@ def recompute_comps_from_auction_listings(window_days: int = COMPS_WINDOW_DAYS) 
             # Insert fresh comps
             cur.execute(
                 """
-                INSERT INTO comps (model_key, median_final_price, mean_final_price, samples, computed_at)
+                INSERT INTO comps (model_key, condition_grade, median_final_price, mean_final_price, samples, computed_at)
                 SELECT
                     model_key,
+                    COALESCE(condition_grade, 'B') AS condition_grade,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (
                         ORDER BY final_price
                     )::numeric AS median_final_price,
@@ -149,7 +151,7 @@ def recompute_comps_from_auction_listings(window_days: int = COMPS_WINDOW_DAYS) 
                   AND end_time >= (now() AT TIME ZONE 'utc' - (%s || ' days')::interval)
                   AND model_key IS NOT NULL
                   AND LOWER(model_key) <> 'unknown'
-                GROUP BY model_key;
+                GROUP BY model_key, COALESCE(condition_grade, 'B');
                 """,
                 (str(window_days),),
             )

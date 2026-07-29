@@ -814,7 +814,7 @@ def _update_roi_estimates(opps: List[Opportunity]) -> None:
             schema.ensure_utc_session(cur)
             cleared = _clear_active_roi_estimates(cur)
             if cleared:
-                logger.info("[listing.roi] cleared stale ROI/max_bid for %d active listings", cleared)
+                logger.info("[listing.roi] cleared old ROI/max_bid for %d active listings", cleared)
 
             if not opps:
                 conn.commit()
