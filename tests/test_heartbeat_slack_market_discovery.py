@@ -26,14 +26,62 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
                 },
                 "potentials": [
                     {
+                        "source": "ebay-apple",
+                        "external_id": "v1|206446095377|0",
+                        "title": "Apple MacBook Air M2 16GB 512GB",
+                        "url": "https://example.test/macbook-air",
+                        "sale_type": "auction",
+                        "end_time": "2026-05-28T18:30:00+00:00",
                         "model_key": "apple-macbook-pro-13in-intel-16gb-512gb_b",
                         "current_price": 120.0,
                         "max_safe_buy": 190.0,
                         "expected_profit": 70.0,
+                        "sold_median": 250.0,
+                        "comp_samples": 15,
+                        "condition_grade": "B",
+                    }
+                ],
+                "closest": [
+                    {
+                        "source": "ebay-tools",
+                        "external_id": "v1|111111111111|0",
+                        "title": "Mafell A 12 Drill",
+                        "url": "https://example.test/mafell",
+                        "current_price": 160.0,
+                        "max_safe_buy": 170.0,
+                        "expected_profit": 45.0,
+                        "sold_median": 230.0,
+                        "comp_samples": 15,
+                    }
+                ],
+            },
+            "market_discovery_punt": {
+                "potentials": [
+                    {
+                        "source": "ebay-consoles",
+                        "external_id": "v1|222222222222|0",
+                        "title": "Nintendo Switch Console",
+                        "url": "https://example.test/switch",
+                        "current_price": 90.0,
+                        "max_safe_buy": 120.0,
+                        "expected_profit": 30.0,
+                        "sold_median": 165.0,
+                        "comp_samples": 15,
                     }
                 ],
                 "closest": [],
             },
+            "listing_favourites": [
+                {
+                    "source": "ebay-apple",
+                    "external_id": "v1|333333333333|0",
+                    "title": "Favourite iPad Pro",
+                    "url": "https://example.test/ipad",
+                    "status": "live",
+                    "price_current": 199.0,
+                    "model_key": "apple-ipad-pro-favourite",
+                }
+            ],
         }
 
     def test_market_discovery_summary_is_observer_only(self):
@@ -48,7 +96,20 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
 
         self.assertIn("Buy signals", rendered)
         self.assertIn("1 potentials, 12 checked, 20 live rows with comps", rendered)
-        self.assertIn("apple-macbook-pro-13in-intel-16gb-512gb_b", rendered)
+        self.assertIn("GBP 50 Profit Candidates", rendered)
+        self.assertIn("Apple MacBook Air M2", rendered)
+        self.assertIn("Current £120.00 | max £190.00 | profit £70.00", rendered)
+        self.assertIn("review: `up v1|206446095377|0` / `down v1|206446095377|0`", rendered)
+        self.assertIn("GBP 25 Profit Candidates", rendered)
+        self.assertIn("Nintendo Switch Console", rendered)
+        self.assertIn("GBP 50 Closest Misses", rendered)
+        self.assertIn("Mafell A 12 Drill", rendered)
+        self.assertIn("Favourites", rendered)
+        self.assertIn("Favourite iPad Pro", rendered)
+        self.assertIn("review: `up v1|333333333333|0` / `down v1|333333333333|0`", rendered)
+        self.assertNotIn("apple-macbook-pro-13in-intel-16gb-512gb_b", rendered)
+        self.assertNotIn("apple-ipad-pro-favourite", rendered)
+        self.assertNotIn("model_key", rendered)
         self.assertIn("profit", rendered)
         self.assertNotIn("BUY", rendered)
         self.assertNotIn("BID", rendered)

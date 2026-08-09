@@ -223,13 +223,13 @@ class ModelKeyRepairTests(unittest.TestCase):
 
         self.assertEqual(grade, "D")
 
-    def test_screen_damage_is_condition_d(self):
+    def test_screen_damage_is_condition_c(self):
         grade = _derive_condition_grade(
             {},
             'Apple MacBook Pro A2485 16 inch M1 PRO 16GB RAM 512GB SSD Screen Damage',
         )
 
-        self.assertEqual(grade, "D")
+        self.assertEqual(grade, "C")
 
     def test_used_fair_is_condition_c(self):
         grade = _derive_condition_grade(
@@ -486,6 +486,24 @@ class ModelKeyRepairTests(unittest.TestCase):
         )
 
         self.assertEqual(key, "unknown")
+
+    def test_switch_replacement_battery_does_not_become_console_key(self):
+        key = normalise_model(
+            title="BATTERY FOR NINTENDO SWITCH CONSOLE HAC-003 REPLACEMENT - NEW",
+            attrs={},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "unknown")
+
+    def test_console_title_only_can_still_get_model_key(self):
+        key = normalise_model(
+            title="Nintendo Switch 32GB Console Only - Neon Blue/Red",
+            attrs={},
+            source="ebay-consoles",
+        )
+
+        self.assertEqual(key, "nintendo-switch-base")
 
     def test_playstation_one_title_does_not_use_ps3_attribute_key(self):
         key = normalise_model(
@@ -881,6 +899,269 @@ class ModelKeyRepairTests(unittest.TestCase):
         )
 
         self.assertEqual(key, "seiko-seiko5-auto-watchonly_b")
+
+    def test_gpu_rtx_4070_variants_do_not_merge(self):
+        self.assertEqual(
+            normalise_model("NVIDIA GeForce RTX 4070 12GB Graphics Card", {}, "ebay-graphics-cards"),
+            "nvidia-rtx-4070-12gb",
+        )
+        self.assertEqual(
+            normalise_model("MSI RTX 4070 Ti 12GB Gaming X Trio", {}, "ebay-graphics-cards"),
+            "nvidia-rtx-4070-ti-12gb",
+        )
+        self.assertEqual(
+            normalise_model("RTX 4070 Ti Super 16GB Graphics Card", {}, "ebay-graphics-cards"),
+            "nvidia-rtx-4070-ti-super-16gb",
+        )
+
+    def test_gpu_rtx_3080_vram_variants_do_not_merge(self):
+        self.assertEqual(
+            normalise_model("NVIDIA RTX 3080 10GB Founders Edition", {}, "ebay-graphics-cards"),
+            "nvidia-rtx-3080-10gb",
+        )
+        self.assertEqual(
+            normalise_model("NVIDIA RTX 3080 12GB Graphics Card", {}, "ebay-graphics-cards"),
+            "nvidia-rtx-3080-12gb",
+        )
+        self.assertEqual(
+            normalise_model("NVIDIA RTX 3080 Graphics Card", {}, "ebay-graphics-cards"),
+            "unknown",
+        )
+
+    def test_gpu_amd_xt_and_xtx_do_not_merge(self):
+        self.assertEqual(
+            normalise_model("AMD Radeon RX 7900 XT 20GB", {}, "ebay-graphics-cards"),
+            "amd-radeon-rx-7900-xt-20gb",
+        )
+        self.assertEqual(
+            normalise_model("Sapphire Radeon RX 7900 XTX 24GB", {}, "ebay-graphics-cards"),
+            "amd-radeon-rx-7900-xtx-24gb",
+        )
+
+    def test_gpu_junk_is_unknown(self):
+        self.assertEqual(
+            normalise_model("RTX 4070 Ti Super Empty Box Only", {}, "ebay-graphics-cards"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("RTX 4090 Water Block Cooler Only", {}, "ebay-graphics-cards"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("RTX 3060 Laptop GPU MXM", {}, "ebay-graphics-cards"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("MSI GeForce GTX 2080 AERO 8GB Graphics Card", {}, "ebay-graphics-cards"),
+            "unknown",
+        )
+
+    def test_workstation_gpu_keys_are_supported(self):
+        self.assertEqual(
+            normalise_model("NVIDIA Quadro RTX 5000 16GB Graphics Card", {}, "ebay-graphics-cards"),
+            "nvidia-quadro-rtx-5000-16gb",
+        )
+        self.assertEqual(
+            normalise_model("NVIDIA RTX A4000 Graphics Card", {}, "ebay-graphics-cards"),
+            "nvidia-rtx-a4000-16gb",
+        )
+        self.assertEqual(
+            normalise_model("NVIDIA RTX 5000 Ada 32GB Workstation GPU", {}, "ebay-graphics-cards"),
+            "nvidia-rtx-5000-ada-32gb",
+        )
+        self.assertEqual(
+            normalise_model("AMD Radeon Pro W7900 48GB", {}, "ebay-graphics-cards"),
+            "amd-radeon-pro-w7900-48gb",
+        )
+
+    def test_workstation_gpu_junk_is_unknown(self):
+        self.assertEqual(
+            normalise_model("NVIDIA RTX A4000 Laptop GPU", {}, "ebay-graphics-cards"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("NVIDIA RTX A5000 SXM Module", {}, "ebay-graphics-cards"),
+            "unknown",
+        )
+
+    def test_cpu_suffixes_do_not_merge(self):
+        self.assertEqual(
+            normalise_model("AMD Ryzen 7 7800X3D Processor", {}, "ebay-cpus"),
+            "amd-ryzen-7-7800x3d",
+        )
+        self.assertEqual(
+            normalise_model("AMD Ryzen 7 7800X Processor", {}, "ebay-cpus"),
+            "amd-ryzen-7-7800x",
+        )
+        self.assertEqual(
+            normalise_model("Intel Core i7-14700K CPU", {}, "ebay-cpus"),
+            "intel-core-i7-14700k",
+        )
+        self.assertEqual(
+            normalise_model("Intel Core i7-14700KF CPU", {}, "ebay-cpus"),
+            "intel-core-i7-14700kf",
+        )
+
+    def test_cpu_junk_is_unknown(self):
+        self.assertEqual(
+            normalise_model("Intel i7 14700K Empty Box Only", {}, "ebay-cpus"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("AMD Ryzen 7 7800X3D Stock Cooler Only", {}, "ebay-cpus"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("ASUS Motherboard Compatible With Ryzen 7 7800X3D", {}, "ebay-cpus"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("AMD Ryzen 5 7600X Bent Pins", {}, "ebay-cpus"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("Intel Core i7-4790K LGA1150 CPU", {}, "ebay-cpus"),
+            "unknown",
+        )
+
+    def test_camera_lens_model_keys(self):
+        self.assertEqual(
+            normalise_model("Sony FE 85mm F1.4 GM Lens", {}, "ebay-camera-lenses"),
+            "sony-fe-85mm-f14-gm",
+        )
+        self.assertEqual(
+            normalise_model("Canon RF 85mm F1.2 L USM Lens", {}, "ebay-camera-lenses"),
+            "canon-rf-85mm-f12-l",
+        )
+        self.assertEqual(
+            normalise_model("Nikon Z 70-200mm F2.8 S Lens", {}, "ebay-camera-lenses"),
+            "nikon-z-70-200mm-f28-s",
+        )
+        self.assertEqual(
+            normalise_model("Sigma 85mm F1.4 DG DN Art Sony E Mount", {}, "ebay-camera-lenses"),
+            "sigma-85mm-f14-dg-dn-art",
+        )
+
+    def test_camera_lens_accessory_is_unknown(self):
+        self.assertEqual(
+            normalise_model("Sony FE 85mm F1.4 GM Lens Hood Only", {}, "ebay-camera-lenses"),
+            "unknown",
+        )
+
+    def test_industrial_automation_part_keys(self):
+        self.assertEqual(
+            normalise_model(
+                "Siemens SIMATIC S7-1500 CPU 6ES7 511-1AK02-0AB0",
+                {},
+                "ebay-industrial-automation",
+            ),
+            "siemens-6es7-511-1ak02-0ab0",
+        )
+        self.assertEqual(
+            normalise_model(
+                "Allen Bradley PanelView Plus 2711P-T10C22D9P",
+                {},
+                "ebay-industrial-automation",
+            ),
+            "allen-bradley-2711p-t10c22d9p",
+        )
+        self.assertEqual(
+            normalise_model("Beckhoff CX5130 Industrial PC PLC", {}, "ebay-industrial-automation"),
+            "beckhoff-cx5130",
+        )
+
+    def test_industrial_automation_junk_is_unknown(self):
+        self.assertEqual(
+            normalise_model("Siemens S7 PLC Manual Book", {}, "ebay-industrial-automation"),
+            "unknown",
+        )
+
+    def test_pokemon_model_key_keeps_condition_out_of_key(self):
+        key = normalise_model(
+            "Bulbasaur 166/165 Sv2a: Pokemon Card 151 Art Rare Holo (Japanese)",
+            {
+                "Franchise": "Pokemon TCG",
+                "Set": "SV2a: Pokemon Card 151",
+                "Card Number": "166/165",
+                "Language": "Japanese",
+                "Condition": "Used",
+            },
+            "ebay-pokemon",
+        )
+
+        self.assertEqual(key, "pokemon-sv2apokemoncard151-166-165-holo_ja")
+        self.assertNotRegex(key, r"_[a-d](-[a-d])?$")
+
+    def test_pokemon_professional_grade_stays_in_key(self):
+        key = normalise_model(
+            "Pikachu Promo PSA 10 Pokemon Card",
+            {
+                "Franchise": "Pokemon TCG",
+                "Set": "Promo Cards",
+                "Card Name": "Pikachu",
+                "Features": "Promo",
+                "Language": "English",
+                "Professional Grader": "PSA",
+                "Condition": "Graded",
+            },
+            "ebay-pokemon",
+        )
+
+        self.assertEqual(key, "pokemon-promocards-pikachu-promo_en-psa10")
+
+    def test_pokemon_mojibake_franchise_normalises_to_ascii(self):
+        key = normalise_model(
+            "Charizard 4/102 Holo PokÃ©mon TCG",
+            {"Franchise": "PokÃ©mon TCG", "Card Number": "4/102", "Language": "English"},
+            "ebay-pokemon",
+        )
+
+        self.assertEqual(key, "pokemon-004-102-holo_en")
+
+    def test_pokemon_change_does_not_touch_apple_dispatch(self):
+        key = normalise_model(
+            "iPhone 11 64GB White Unlocked",
+            {"brand": "Apple", "model_name": "Apple iPhone 11", "storage_gb": 64},
+            "ebay-apple",
+        )
+
+        self.assertEqual(key, "apple-iphone-11-64gb")
+
+    def test_motherboard_exact_names_do_not_merge(self):
+        self.assertEqual(
+            normalise_model("MSI MAG B650 Tomahawk WiFi AM5 Motherboard", {}, "ebay-motherboards"),
+            "msi-mag-b650-tomahawk-wifi",
+        )
+        self.assertEqual(
+            normalise_model("MSI MAG B650M Mortar WiFi AM5 Motherboard", {}, "ebay-motherboards"),
+            "msi-mag-b650m-mortar-wifi",
+        )
+        self.assertEqual(
+            normalise_model("ASUS ROG Strix B650E-F Gaming WiFi Motherboard", {}, "ebay-motherboards"),
+            "asus-rog-strix-b650e-f-wifi",
+        )
+        self.assertEqual(
+            normalise_model("Gigabyte B650 Aorus Elite AX V2 Motherboard", {}, "ebay-motherboards"),
+            "gigabyte-b650-aorus-elite-ax-v2",
+        )
+
+    def test_motherboard_junk_or_broad_keys_are_unknown(self):
+        self.assertEqual(
+            normalise_model("ASUS Z790 Motherboard", {}, "ebay-motherboards"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("MSI MAG B650 Tomahawk WiFi Motherboard CPU RAM Bundle", {}, "ebay-motherboards"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("ASUS ROG Strix B650E-F Empty Box Only", {}, "ebay-motherboards"),
+            "unknown",
+        )
+        self.assertEqual(
+            normalise_model("MSI ROG STRIX Z790-F GAMING WIFI Intel i7 Bundle", {}, "ebay-motherboards"),
+            "unknown",
+        )
 
 
 if __name__ == "__main__":

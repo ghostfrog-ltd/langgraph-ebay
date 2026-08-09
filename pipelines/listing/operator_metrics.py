@@ -157,6 +157,18 @@ def build_operator_metrics(
             COUNT(*) FILTER (WHERE status = 'unknown')::int AS unknown,
             COUNT(*) FILTER (WHERE status = 'parse_failed')::int AS parse_failed,
             COUNT(*) FILTER (WHERE status = 'unknown' AND COALESCE(finalized, FALSE) = FALSE)::int AS unknown_unfinalized,
+            COUNT(*) FILTER (
+                WHERE status = 'unknown'
+                  AND COALESCE(finalized, FALSE) = FALSE
+                  AND end_time IS NOT NULL
+                  AND end_time <= (now() AT TIME ZONE 'utc') - interval '1 day'
+            )::int AS unknown_backfill_due,
+            COUNT(*) FILTER (
+                WHERE status = 'unknown'
+                  AND COALESCE(finalized, FALSE) = FALSE
+                  AND end_time IS NOT NULL
+                  AND end_time > (now() AT TIME ZONE 'utc') - interval '1 day'
+            )::int AS unknown_not_due,
             COUNT(*) FILTER (WHERE final_price IS NOT NULL AND final_price > 0)::int AS final_prices,
             COUNT(*) FILTER (
                 WHERE final_price IS NOT NULL

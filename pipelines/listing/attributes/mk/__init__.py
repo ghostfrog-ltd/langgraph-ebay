@@ -16,6 +16,13 @@ from .headphones import headphones_model_key
 from .nc750 import honda_nc750_model_key
 from .msx125 import honda_msx125_model_key
 from .mini_cooper import mini_cooper_model_key
+from .components import (
+    camera_lens_model_key,
+    cpu_model_key,
+    graphics_card_model_key,
+    industrial_automation_model_key,
+    motherboard_model_key,
+)
 
 
 def _with_normalised_aliases(attrs: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -79,6 +86,11 @@ def normalise_model(
       - ebay-watches       -> watches
       - ebay-actioncams    -> cameras / drones
       - ebay-tools         -> tools
+      - ebay-graphics-cards -> desktop GPUs
+      - ebay-cpus          -> desktop CPUs
+      - ebay-motherboards  -> desktop motherboards
+      - ebay-camera-lenses -> camera lenses
+      - ebay-industrial-automation -> industrial automation part numbers
 
     `attrs`:
       - For structured sources (MotoMine, Trading, etc.) pass the raw attributes dict.
@@ -159,6 +171,31 @@ def normalise_model(
     if source == "ebay-mini-cooper":
         return _canonicalise_key(
             mini_cooper_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-graphics-cards":
+        return _canonicalise_key(
+            graphics_card_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-cpus":
+        return _canonicalise_key(
+            cpu_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-motherboards":
+        return _canonicalise_key(
+            motherboard_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-camera-lenses":
+        return _canonicalise_key(
+            camera_lens_model_key(attrs=safe_attrs, title=title)
+        )
+
+    if source == "ebay-industrial-automation":
+        return _canonicalise_key(
+            industrial_automation_model_key(attrs=safe_attrs, title=title)
         )
 
     # Unknown source → no classification

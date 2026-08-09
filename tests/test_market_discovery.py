@@ -11,9 +11,11 @@ from pipelines.listing.market_discovery.graph import (
 class _QueryCursor:
     def __init__(self):
         self.sql = ""
+        self.params = None
 
-    def execute(self, sql):
+    def execute(self, sql, params=None):
         self.sql = sql
+        self.params = params
 
     def fetchall(self):
         return []
@@ -66,6 +68,14 @@ class ListingPotentialTests(unittest.TestCase):
         self.assertIn("a.status = 'live'", cur.sql)
         self.assertIn("a.status = 'unknown'", cur.sql)
         self.assertIn("a.end_time >", cur.sql)
+
+    def test_candidate_query_can_filter_to_one_source(self):
+        cur = _QueryCursor()
+
+        _fetch_live_listing_comp_rows(cur, source="ebay-pokemon")
+
+        self.assertIn("AND a.source = %s", cur.sql)
+        self.assertEqual(cur.params, ["ebay-pokemon"])
 
     def test_build_potentials_returns_rows_that_clear_thresholds(self):
         rows = [

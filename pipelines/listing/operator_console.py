@@ -55,6 +55,12 @@ COMMANDS: tuple[ConsoleCommand, ...] = (
         "ebay potentials --min-profit 35 --limit 20",
     ),
     ConsoleCommand(
+        "explain",
+        "Show the sold comps behind one listing's profit estimate.",
+        "read-only",
+        "ebay explain 168181595699",
+    ),
+    ConsoleCommand(
         "stats",
         "Show model-key, final-price, comp, and live coverage counts.",
         "read-only",
@@ -192,6 +198,18 @@ COMMANDS: tuple[ConsoleCommand, ...] = (
         "read-only",
         "ebay reviews",
     ),
+    ConsoleCommand(
+        "slack-review-once",
+        "Poll Slack once for up/down review commands.",
+        "reads Slack + writes local DB",
+        "ebay slack-review-once",
+    ),
+    ConsoleCommand(
+        "slack-review-loop",
+        "Continuously poll Slack for up/down review commands.",
+        "reads Slack + writes local DB",
+        "ebay slack-review-loop",
+    ),
 )
 
 
@@ -217,6 +235,7 @@ def command_menu() -> str:
             "  ebay serious",
             "  ebay punt",
             "  ebay stats",
+            "  ebay explain 168181595699",
             "  ebay api-health",
             "  ebay api-health --live-ebay",
             "  ebay potentials --min-profit 35 --min-comps 15 --limit 20",
@@ -232,6 +251,7 @@ def command_menu() -> str:
             "  ebay heartbeat-email",
             "  ebay review-server",
             "  ebay review-down 168181595699",
+            "  ebay slack-review-once",
             "  ebay favourites",
             "  ebay reviews",
             "",
@@ -424,7 +444,10 @@ def build_stats() -> dict[str, Any]:
         "comp_buckets_3plus": _metric_int(comps, "comp_keys_3plus"),
         "live_listings": live_total,
         "unknown_listings": _metric_int(counts, "unknown"),
-        "unknown_queue": _metric_int(counts, "unknown_unfinalized"),
+        "unknown_queue": _metric_int(
+            counts,
+            "unknown_backfill_due" if counts.get("unknown_backfill_due") is not None else "unknown_unfinalized",
+        ),
         "live_with_known_key": max(live_total - live_unknown_keys, 0),
         "live_with_same_grade_comps": _metric_int(coverage, "live_with_comps"),
         "live_with_3plus_same_grade_comps": _metric_int(coverage, "live_with_3plus_comps"),
@@ -746,6 +769,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--min-roi", type=_non_negative_float, default=0.0)
     p.add_argument("--json", action="store_true", help="Print raw JSON instead of the operator list.")
 
+    p = sub.add_parser("explain", help="Show the sold comps behind one listing's profit estimate.")
+    p.add_argument("item", help="eBay item URL, Browse ID, or bare numeric item ID.")
+    p.add_argument("--limit", type=_positive_int, default=25)
+    p.add_argument("--all", action="store_true", help="Show every matching sold comp row.")
+
     p = sub.add_parser("stats", help="Show model-key/final-price/comp coverage counts.")
     p.add_argument("--json", action="store_true", help="Print raw JSON instead of text.")
 
@@ -825,6 +853,16 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("reviews", help="Show latest local review actions.")
     p.add_argument("--limit", type=_positive_int, default=50)
     p.add_argument("--json", action="store_true")
+
+    p = sub.add_parser("slack-review-once", help="Poll Slack once for up/down review commands.")
+    p.add_argument("--limit", type=_positive_int, default=50)
+    p.add_argument("--no-reply", action="store_true", help="Do not reply to processed Slack messages.")
+
+    p = sub.add_parser("slack-review-loop", help="Continuously poll Slack for up/down review commands.")
+    p.add_argument("--limit", type=_positive_int, default=50)
+    p.add_argument("--poll-seconds", type=_positive_int, default=60)
+    p.add_argument("--no-reply", action="store_true", help="Do not reply to processed Slack messages.")
+
     sub.add_parser("commands", help="Print the command menu.")
     return parser
 
@@ -855,6 +893,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             min_roi=args.min_roi,
             as_json=bool(args.json),
         )
+
+    if args.command == "explain":
+        from pipelines.listing.explain import explain_listing
+
+        print(explain_listing(args.item, limit=args.limit, show_all=bool(args.all)))
+        return 0
 
     if args.command == "stats":
         return run_stats(as_json=bool(args.json))
@@ -980,6 +1024,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         else:
             print("Latest review actions")
             _print_review_rows(rows)
+        return 0
+
+    if args.command == "slack-review-once":
+        from pipelines.listing.slack_review_commands import process_slack_review_commands_once
+
+        result = process_slack_review_commands_once(limit=args.limit, reply=not args.no_reply)
+        print(json.dumps(result.as_dict(), indent=2, default=str))
+        return 0 if result.status in {"ok", "skipped"} else 1
+
+    if args.command == "slack-review-loop":
+        from pipelines.listing.slack_review_commands import run_slack_review_command_loop
+
+        run_slack_review_command_loop(
+            poll_seconds=args.poll_seconds,
+            limit=args.limit,
+            reply=not args.no_reply,
+        )
         return 0
 
     parser.print_help()

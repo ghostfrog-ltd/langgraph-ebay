@@ -10,7 +10,7 @@ from urllib.parse import quote_plus
 from psycopg2.extras import Json, execute_values
 import requests
 from utils.logger import get_logger
-from utils.model_key import normalise_model
+from pipelines.listing.attributes.mk import normalise_model
 from utils.condition import _derive_condition_grade
 from utils.db_schema import (
     resolve_source_id,
@@ -218,6 +218,8 @@ class EbayAdapterBase:
     FETCH_MODE: str = "category"
     SALE_TYPE: str | List[str] = "bin"
     SEARCH_QUERY: Optional[str] = None
+    SEARCH_QUERIES: List[str] = []
+    SEARCH_QUERIES_BY_CATEGORY: Dict[int | None, List[str]] = {}
     RETRO_KEYWORDS: List[str] = []
     MODERN_KEYWORDS: List[str] = []
 
@@ -304,7 +306,14 @@ class EbayAdapterBase:
     '''
 
     def _model_key_for(self, title: str) -> Optional[str]:
-        return None
+        try:
+            mk = normalise_model(title=title, attrs={}, source=self.DOMAIN)
+        except Exception as exc:
+            logger.warning("[%s] model-key classification failed for %r: %s", self.DOMAIN, title, exc)
+            return None
+        if not mk or mk == "unknown":
+            return None
+        return mk
 
     def _is_relevant(self, row: dict[str, Any]) -> bool:
         return True
@@ -405,47 +414,68 @@ class EbayAdapterBase:
         elif sale_type == "auction":
             buying_option = "AUCTION"
 
-        qs = [
-            f"q={quote_plus(self.SEARCH_QUERY or DEFAULT_Q)}",
-            f"category_ids={category_id}",
-            f"limit={limit}",
-            "sort=endingSoon",
-        ]
-        if buying_option:
-            qs.append(f"filter=buyingOptions:{{{buying_option}}}")
+        queries_by_category = getattr(self, "SEARCH_QUERIES_BY_CATEGORY", {}) or {}
+        queries = list(queries_by_category.get(category_id) or getattr(self, "SEARCH_QUERIES", []) or [])
+        if not queries:
+            queries = [self.SEARCH_QUERY or DEFAULT_Q]
 
-        url = f"{base}/buy/browse/v1/item_summary/search?" + "&".join(qs)
+        all_items: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
 
-        t_api_start = perf_counter()
-        try:
-            r = requests.get(url, headers=self._build_headers(token), timeout=10)
-        except Exception as e:
-            logger.warning(f"[{self.DOMAIN}] API request failed cat={category_id} ({sale_type}): {e}")
-            return []
+        for query in queries:
+            qs = [
+                f"q={quote_plus(query or DEFAULT_Q)}",
+                f"limit={limit}",
+                "sort=endingSoon",
+            ]
+            if category_id:
+                qs.append(f"category_ids={category_id}")
+            if buying_option:
+                qs.append(f"filter=buyingOptions:{{{buying_option}}}")
 
-        self._hist_api.append(perf_counter() - t_api_start)
-        if r.status_code != 200:
-            logger.warning(
-                f"[{self.DOMAIN}] API cat={category_id} ({sale_type}) status {r.status_code}: {r.text[:200]}"
-            )
-            return []
+            url = f"{base}/buy/browse/v1/item_summary/search?" + "&".join(qs)
 
-        increment_api_usage("ebay_base_fetch_category_items_v1")
+            t_api_start = perf_counter()
+            try:
+                r = requests.get(url, headers=self._build_headers(token), timeout=10)
+            except Exception as e:
+                logger.warning(
+                    f"[{self.DOMAIN}] API request failed cat={category_id} query={query!r} ({sale_type}): {e}"
+                )
+                continue
 
-        try:
-            payload = r.json()
-        except Exception as e:
-            logger.warning(f"[{self.DOMAIN}] bad JSON cat={category_id} ({sale_type}): {e}")
-            return []
+            self._hist_api.append(perf_counter() - t_api_start)
+            if r.status_code != 200:
+                logger.warning(
+                    f"[{self.DOMAIN}] API cat={category_id} query={query!r} ({sale_type}) status {r.status_code}: {r.text[:200]}"
+                )
+                continue
 
-        items = payload.get("itemSummaries") or payload.get("item_summary") or []
-        if not isinstance(items, list):
-            logger.warning(
-                f"[{self.DOMAIN}] unexpected payload for cat={category_id} ({sale_type})"
-            )
-            return []
+            increment_api_usage("ebay_base_fetch_category_items_v1")
 
-        return items
+            try:
+                payload = r.json()
+            except Exception as e:
+                logger.warning(
+                    f"[{self.DOMAIN}] bad JSON cat={category_id} query={query!r} ({sale_type}): {e}"
+                )
+                continue
+
+            items = payload.get("itemSummaries") or payload.get("item_summary") or []
+            if not isinstance(items, list):
+                logger.warning(
+                    f"[{self.DOMAIN}] unexpected payload for cat={category_id} query={query!r} ({sale_type})"
+                )
+                continue
+
+            for item in items:
+                item_id = get_item_id(item)
+                if not item_id or item_id in seen_ids:
+                    continue
+                seen_ids.add(item_id)
+                all_items.append(item)
+
+        return all_items
 
     def _fetch_seller_items(
             self,
@@ -1124,11 +1154,6 @@ def bulk_upsert_auction_listings(rows: list[dict]):
         unknown_minutes = 180
     unknown_cutoff = now - timedelta(minutes=unknown_minutes)
 
-    for r in rows:
-        # If end_time is missing → fabricate 1 day future end
-        if not r.get("end_time"):
-            r["end_time"] = now + timedelta(days=1)
-
     cols = [
         "source",
         "external_id",
@@ -1151,6 +1176,7 @@ def bulk_upsert_auction_listings(rows: list[dict]):
     ]
 
     values: list[tuple] = []
+    batch_sources = sorted({str(r.get("source") or "") for r in rows if r.get("source")})
     for r in rows:
         row_vals: list[Any] = []
         for c in cols:
@@ -1203,20 +1229,25 @@ def bulk_upsert_auction_listings(rows: list[dict]):
         # 1) Upsert this batch – everything in here is "seen alive" right now
         execute_values(cur, sql, values, page_size=250)
 
-        # 2) If a live listing has not been seen recently *and its known end
-        #    time has passed*, we no longer know its state. Future-dated rows
-        #    must stay live: eBay search pagination is not stable enough to
-        #    treat "not seen in this broad scrape" as "not live".
-        cur.execute(
-            """
-            UPDATE auction_listings
-            SET status = 'unknown'
-            WHERE status = 'live'
-              AND last_seen_at < %s
-              AND (
-                    end_time IS NULL
-                    OR end_time <= (now() AT TIME ZONE 'utc')
-              )
-            """,
-            (unknown_cutoff,),
-        )
+        # 2) If a source stops seeing an old live listing whose end time has
+        #    passed, move it to unknown so final-price backfill can resolve it.
+        #    Do not demote future-dated rows; they may simply be missed by a
+        #    narrow seeded search and can still be active on eBay.
+        if batch_sources:
+            cur.execute(
+                """
+                UPDATE auction_listings
+                SET status = 'unknown'
+                WHERE status = 'live'
+                  AND source = ANY(%s)
+                  AND (
+                        last_seen_at IS NULL
+                        OR last_seen_at < %s
+                  )
+                  AND (
+                        end_time IS NULL
+                        OR end_time <= (now() AT TIME ZONE 'utc')
+                  )
+                """,
+                (batch_sources, unknown_cutoff),
+            )

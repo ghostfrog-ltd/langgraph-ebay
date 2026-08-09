@@ -92,6 +92,23 @@ class ConditionGuardrailTests(unittest.TestCase):
             )
         )
 
+    def test_switch_replacement_battery_is_not_investible_console(self):
+        title = "BATTERY FOR NINTENDO SWITCH CONSOLE HAC-003 REPLACEMENT - NEW"
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                title,
+                source="ebay-consoles",
+                model_key="nintendo-switch-base",
+            )
+        )
+        self.assertFalse(
+            has_investible_product_identity(
+                title,
+                source="ebay-consoles",
+                model_key="nintendo-switch-base",
+            )
+        )
+
     def test_playstation_console_is_not_accessory(self):
         self.assertFalse(
             looks_like_partial_or_accessory_listing(
@@ -307,7 +324,83 @@ class ConditionGuardrailTests(unittest.TestCase):
                 model_key="apple-macbook-air-13in-m1-8gb-256gb",
             )
         )
-        self.assertEqual(_derive_condition_grade(attrs, title), "D")
+        self.assertEqual(_derive_condition_grade(attrs, title), "C")
+
+    def test_working_iphone_with_visible_damage_is_condition_c(self):
+        title = "iPhone 15 pro max. 256gb"
+        attrs = {
+            "Seller notes": (
+                "Used on Vodafone but believed to be unlocked now phone is restored "
+                "to factory settings. As per pictures there is damage to phone "
+                "which does not affect usage and is fully working. Battery health "
+                "at 86%. Comes with original box."
+            )
+        }
+
+        self.assertEqual(_derive_condition_grade(attrs, title), "C")
+
+    def test_physical_damage_caps_any_listing_at_condition_c(self):
+        examples = [
+            (
+                "Sony PS5 Disc Edition 825GB Console",
+                {"Seller notes": "Cracked casing but tested and fully working."},
+            ),
+            (
+                "GoPro HERO12 Black Action Camera",
+                {"Seller notes": "Smashed rear glass, camera is otherwise fully working."},
+            ),
+            (
+                "BMW 1 Series 2014",
+                {"Seller notes": "Dent in rear panel, starts and drives."},
+            ),
+        ]
+
+        for title, attrs in examples:
+            with self.subTest(title=title):
+                self.assertEqual(_derive_condition_grade(attrs, title), "C")
+
+    def test_fully_working_with_cosmetic_marks_stays_condition_b(self):
+        self.assertEqual(
+            _derive_condition_grade(
+                {"Seller notes": "Fully working with cosmetic marks from normal use."},
+                "Sony PS5 Disc Edition 825GB Console",
+            ),
+            "B",
+        )
+
+    def test_functional_fault_or_risk_is_condition_d_for_any_listing(self):
+        examples = [
+            (
+                "iPhone 15 Pro Max 256GB",
+                {"Seller notes": "Fully working except Face ID does not work."},
+            ),
+            (
+                "Sony PS5 Disc Edition 825GB Console",
+                {"Seller notes": "Works except HDMI fault."},
+            ),
+            (
+                "Xbox Wireless Controller",
+                {"Seller notes": "Tested but has stick drift."},
+            ),
+            (
+                "GoPro HERO12 Black Action Camera",
+                {"Seller notes": "Untested from house clearance."},
+            ),
+        ]
+
+        for title, attrs in examples:
+            with self.subTest(title=title):
+                self.assertEqual(_derive_condition_grade(attrs, title), "D")
+
+    def test_contradictory_functional_wording_requires_manual_review(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Sony PS5 Disc Edition 825GB Console",
+                {"Seller notes": "Fully working but has an intermittent HDMI fault."},
+                source="ebay-consoles",
+                model_key="sony-playstation-5-disc-825gb",
+            )
+        )
 
     def test_macbook_screen_for_listing_is_device_part(self):
         self.assertTrue(
@@ -657,6 +750,83 @@ class ConditionGuardrailTests(unittest.TestCase):
                 "PORSCHE 911 992 Front Right Bumper Air Inlet Trim 992807764A041",
                 source="ebay-motors",
                 model_key="vehicle-porsche-911-2018",
+            )
+        )
+
+    def test_clean_gpu_key_is_investible_identity(self):
+        self.assertTrue(
+            has_investible_product_identity(
+                "MSI RTX 4070 Ti Super 16GB Graphics Card",
+                source="ebay-graphics-cards",
+                model_key="nvidia-rtx-4070-ti-super-16gb",
+            )
+        )
+
+    def test_gpu_accessory_is_not_investible_identity(self):
+        self.assertFalse(
+            has_investible_product_identity(
+                "RTX 4090 Water Block Cooler Only",
+                source="ebay-graphics-cards",
+                model_key="nvidia-rtx-4090-24gb",
+            )
+        )
+
+    def test_clean_cpu_key_is_investible_identity(self):
+        self.assertTrue(
+            has_investible_product_identity(
+                "Intel Core i7-14700KF Desktop CPU",
+                source="ebay-cpus",
+                model_key="intel-core-i7-14700kf",
+            )
+        )
+
+    def test_cpu_cooler_only_is_not_investible_identity(self):
+        self.assertFalse(
+            has_investible_product_identity(
+                "AMD Ryzen 7 7800X3D Stock Cooler Only",
+                source="ebay-cpus",
+                model_key="amd-ryzen-7-7800x3d",
+            )
+        )
+
+    def test_motherboards_are_collection_only_for_now(self):
+        self.assertFalse(
+            has_investible_product_identity(
+                "MSI MAG B650 Tomahawk WiFi AM5 Motherboard",
+                source="ebay-motherboards",
+                model_key="msi-mag-b650-tomahawk-wifi",
+            )
+        )
+
+    def test_camera_lenses_are_collection_only_for_now(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Sony FE 85mm F1.4 GM Lens Hood Only",
+                source="ebay-camera-lenses",
+                model_key="sony-fe-85mm-f14-gm",
+            )
+        )
+        self.assertFalse(
+            has_investible_product_identity(
+                "Sony FE 85mm F1.4 GM Lens",
+                source="ebay-camera-lenses",
+                model_key="sony-fe-85mm-f14-gm",
+            )
+        )
+
+    def test_industrial_automation_is_collection_only_for_now(self):
+        self.assertTrue(
+            looks_like_partial_or_accessory_listing(
+                "Siemens S7 PLC Manual Book",
+                source="ebay-industrial-automation",
+                model_key="siemens-6es7-511-1ak02-0ab0",
+            )
+        )
+        self.assertFalse(
+            has_investible_product_identity(
+                "Siemens SIMATIC S7-1500 CPU 6ES7 511-1AK02-0AB0",
+                source="ebay-industrial-automation",
+                model_key="siemens-6es7-511-1ak02-0ab0",
             )
         )
 

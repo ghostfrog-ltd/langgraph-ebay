@@ -101,6 +101,30 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
 
         self.assertEqual(parsed, {"code": "17"})
 
+    def test_trading_parser_preserves_usage_limit_error_code(self):
+        parsed = _parse_trading_get_item(
+            """<?xml version="1.0" encoding="UTF-8"?>
+            <GetItemResponse xmlns="urn:ebay:apis:eBLBaseComponents">
+              <Ack>Failure</Ack>
+              <Errors>
+                <ShortMessage>Call usage limit has been reached.</ShortMessage>
+                <LongMessage>Your application has exceeded usage limit on this call.</LongMessage>
+                <ErrorCode>518</ErrorCode>
+              </Errors>
+            </GetItemResponse>
+            """
+        )
+
+        self.assertEqual(parsed["code"], "518")
+        self.assertIn("usage limit", parsed["short_message"].lower())
+
+    def test_unknown_trading_error_is_not_restored_as_live(self):
+        outcome = self._classify({"code": "999"})
+
+        self.assertEqual(outcome.action, "skip")
+        self.assertEqual(outcome.new_status, "error")
+        self.assertEqual(outcome.reason, "trading_error_999")
+
     def test_trading_parser_treats_quantity_sold_as_fixed_price_sale(self):
         parsed = _parse_trading_get_item(
             """<?xml version="1.0" encoding="UTF-8"?>
@@ -212,6 +236,57 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
         self.assertEqual(captured_outcomes[1].new_status, "sold")
         self.assertIn("skip:error:trading_api_timeout", summary["counts"])
         self.assertIn("finalize:sold:ended_with_bids", summary["counts"])
+
+    def test_backfill_usage_limit_stops_batch(self):
+        candidates = [
+            {
+                "id": 1,
+                "external_id": "v1|111111111111|0",
+                "source": "ebay-apple",
+                "model_key": "apple-iphone-15-128gb",
+                "title": "Usage limit row",
+            },
+            {
+                "id": 2,
+                "external_id": "v1|222222222222|0",
+                "source": "ebay-apple",
+                "model_key": "apple-iphone-15-128gb",
+                "title": "Should not be called",
+            },
+        ]
+        captured_outcomes = []
+
+        def fake_apply(outcomes):
+            captured_outcomes.extend(outcomes)
+            return 0
+
+        with patch(
+            "pipelines.listing.point_zero.backfill_apply.backfill_checks_today",
+            return_value=0,
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._load_candidates_from_plan",
+            return_value=(candidates, {"api_budget": {}}),
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply.increment_api_usage",
+        ) as usage, patch(
+            "pipelines.listing.point_zero.backfill_apply._call_trading_get_item",
+            return_value=SimpleNamespace(text="<xml/>"),
+        ) as trading_call, patch(
+            "pipelines.listing.point_zero.backfill_apply._parse_trading_get_item",
+            return_value={"code": "518", "short_message": "Call usage limit has been reached."},
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._apply_outcomes",
+            side_effect=fake_apply,
+        ):
+            summary = run_backfill(limit=2, apply=True, daily_backfill_budget=10)
+
+        self.assertEqual(summary["status"], "stopped")
+        self.assertEqual(summary["stop_reason"], "trading_usage_limit_518")
+        self.assertEqual(summary["outcome_count"], 1)
+        self.assertEqual(usage.call_count, 1)
+        self.assertEqual(trading_call.call_count, 1)
+        self.assertEqual(captured_outcomes[0].reason, "trading_usage_limit_518")
+        self.assertIn("skip:error:trading_usage_limit_518", summary["counts"])
 
 
 if __name__ == "__main__":

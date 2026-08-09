@@ -123,6 +123,7 @@ def _fetch_live_listing_comp_rows(
     cur,
     *,
     include_future_unknown: bool = False,
+    source: str | None = None,
 ) -> list[dict[str, Any]]:
     status_predicate = "a.status = 'live'"
     if include_future_unknown:
@@ -136,6 +137,12 @@ def _fetch_live_listing_comp_rows(
             )
           )
         """
+
+    source_predicate = ""
+    params: list[Any] = []
+    if source:
+        source_predicate = "AND a.source = %s"
+        params.append(source)
 
     cur.execute(
         f"""
@@ -157,6 +164,7 @@ def _fetch_live_listing_comp_rows(
           ON lc.model_key = a.model_key
          AND lc.condition_grade = COALESCE(a.condition_grade, 'B')
         WHERE {status_predicate}
+          {source_predicate}
           AND a.price_current IS NOT NULL
           AND a.price_current > 0
           AND a.model_key IS NOT NULL
@@ -176,7 +184,8 @@ def _fetch_live_listing_comp_rows(
               WHERE review.external_id = a.external_id
                 AND review.action = 'down'
           )
-        """
+        """,
+        params,
     )
     return [dict(row) for row in cur.fetchall()]
 
@@ -277,6 +286,7 @@ def run(
     min_roi: float = MIN_ROI,
     min_comps: int = MIN_CANDIDATE_COMPS,
     include_future_unknown: bool = False,
+    source: str | None = None,
 ) -> dict[str, Any]:
     """
     Run the read-only potentials query.
@@ -291,6 +301,7 @@ def run(
             rows = _fetch_live_listing_comp_rows(
                 cur,
                 include_future_unknown=include_future_unknown,
+                source=source,
             )
     finally:
         conn.close()
@@ -311,6 +322,7 @@ def run(
             "min_profit_gbp": min_profit,
             "min_roi": min_roi,
             "min_comps": min_comps,
+            "source": source,
             "fee_rate": FEE_RATE,
             "outbound_shipping_gbp": OUTBOUND_SHIP_GBP,
             "inbound_shipping_gbp": INBOUND_SHIP_GBP,

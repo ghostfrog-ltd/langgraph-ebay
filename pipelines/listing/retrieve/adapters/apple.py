@@ -17,6 +17,35 @@ class Adapter(EbayAdapterBase):
     ]
 
     SALE_TYPE = ["auction"]
+    SEARCH_QUERY = "apple"
+    SEARCH_QUERIES = [
+        "apple",
+    ]
+    SEARCH_QUERIES_BY_CATEGORY = {
+        111422: [
+            "apple macbook",
+            "MacBook Pro M1 Max 64GB",
+            "MacBook Pro M2 Max 96GB",
+            "MacBook Pro M3 Max 4TB",
+            "MacBook Pro M4 Max 128GB",
+            "MacBook Pro 64GB",
+            "MacBook Pro 96GB",
+            "MacBook Pro 128GB",
+            "MacBook Pro 2TB",
+            "MacBook Pro 4TB",
+            "MacBook Pro 8TB",
+        ],
+        179: [
+            "apple desktop",
+            "Mac Studio M1 Ultra",
+            "Mac Studio M2 Ultra",
+            "Mac Studio M3 Ultra",
+            "Mac Studio Max",
+            "Mac Studio Ultra",
+            "Mac Pro M2 Ultra",
+            "Mac Pro Apple Silicon",
+        ],
+    }
 
     def _is_relevant(self, row: dict[str, Any]) -> bool:
         """

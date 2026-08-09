@@ -88,7 +88,7 @@ HEARTBEAT_EMAIL_RECIPIENTS = [
     email.strip()
     for email in os.getenv(
         "GF_HEARTBEAT_EMAIL_RECIPIENTS",
-        "garyconstable80@gmail.com,info@ghostfrog.co.uk",
+        "garyconstable80@gmail.com,info@ghostfrog.co.uk,sarahmatthews2001@yahoo.co.uk",
     ).split(",")
     if email.strip()
 ]
@@ -99,6 +99,7 @@ HEARTBEAT_SLACK_INTERVAL = timedelta(
 HEARTBEAT_SLACK_AUCTION_DIGEST_LIMIT = int(
     os.getenv("GF_HEARTBEAT_SLACK_AUCTION_DIGEST_LIMIT", "4")
 )
+HEARTBEAT_SLACK_REPORT_LIMIT = int(os.getenv("GF_HEARTBEAT_SLACK_REPORT_LIMIT", "6"))
 HEARTBEAT_LAUNCHD_LABEL = os.getenv(
     "GF_HEARTBEAT_LAUNCHD_LABEL",
     "com.ghostfrog.langgraph-ebay.python-heartbeat",
@@ -109,6 +110,8 @@ HEARTBEAT_EMAIL_REPORT_LIMIT = 0
 HEARTBEAT_CANDIDATE_REFRESH_LIMIT = int(
     os.getenv("GF_HEARTBEAT_CANDIDATE_REFRESH_LIMIT", str(HEARTBEAT_EMAIL_REPORT_LIMIT))
 )
+HEARTBEAT_POKEMON_PROFIT_GBP = float(os.getenv("GF_HEARTBEAT_POKEMON_PROFIT_GBP", "20"))
+HEARTBEAT_POKEMON_MIN_COMPS = int(os.getenv("GF_HEARTBEAT_POKEMON_MIN_COMPS", "3"))
 REVIEW_SERVER_URL = os.getenv("GF_REVIEW_SERVER_URL", "http://127.0.0.1:8765")
 
 
@@ -809,14 +812,29 @@ def _heartbeat_metrics() -> dict[str, Any]:
         )
     except Exception as exc:
         market_discovery_punt = {"error": str(exc), "potentials": [], "closest": []}
+    try:
+        market_discovery_pokemon = run_market_discovery(
+            limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+            min_profit=HEARTBEAT_POKEMON_PROFIT_GBP,
+            min_comps=HEARTBEAT_POKEMON_MIN_COMPS,
+            include_future_unknown=True,
+            source="ebay-pokemon",
+        )
+    except Exception as exc:
+        market_discovery_pokemon = {"error": str(exc), "potentials": [], "closest": []}
     mark_shared("market_discovery_initial", t)
 
     t = time.perf_counter()
-    if "error" not in market_discovery or "error" not in market_discovery_punt:
+    if (
+        "error" not in market_discovery
+        or "error" not in market_discovery_punt
+        or "error" not in market_discovery_pokemon
+    ):
         try:
             candidate_refresh = _refresh_candidate_prices_for_email(
                 market_discovery,
                 market_discovery_punt,
+                market_discovery_pokemon,
             )
         except Exception as exc:
             logger.warning("[heartbeat] candidate price refresh failed: %s", exc)
@@ -847,10 +865,20 @@ def _heartbeat_metrics() -> dict[str, Any]:
             )
         except Exception as exc:
             market_discovery_punt = {"error": str(exc), "potentials": [], "closest": []}
+        try:
+            market_discovery_pokemon = run_market_discovery(
+                limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+                min_profit=HEARTBEAT_POKEMON_PROFIT_GBP,
+                min_comps=HEARTBEAT_POKEMON_MIN_COMPS,
+                source="ebay-pokemon",
+            )
+        except Exception as exc:
+            market_discovery_pokemon = {"error": str(exc), "potentials": [], "closest": []}
         mark_shared("market_discovery_after_refresh", t)
 
     metrics["market_discovery"] = market_discovery
     metrics["market_discovery_punt"] = market_discovery_punt
+    metrics["market_discovery_pokemon"] = market_discovery_pokemon
 
     t = time.perf_counter()
     try:
@@ -1061,6 +1089,36 @@ def _table(headers: list[str], rows: list[list[str]]) -> str:
     )
 
 
+def _listing_column_explainer() -> str:
+    items = [
+        ("Type", "Auction, Buy Now, or Auction + BIN."),
+        ("Ends", "eBay end time in UK time. Soonest-ending rows are shown first."),
+        ("Current", "Latest price we have after the email candidate refresh."),
+        ("Max buy", "Highest safe buy price after resale costs and target profit."),
+        ("Profit", "Expected profit if bought at the current price: sold median minus costs minus current price."),
+        ("Sold median", "Median final sold price from same model key and condition-grade comps."),
+        ("Comps / grade", "Number of sold comps used, plus the condition grade used for matching."),
+        ("Next", "Manual suggestion: bid/watch/buy-now/avoid, plus suggested BIN relist price."),
+        ("Review", "Up keeps it in favourites; Down suppresses it from future candidate lists."),
+    ]
+    cards = ""
+    for label, detail in items:
+        cards += (
+            '<div style="display:inline-block;width:30%;min-width:190px;vertical-align:top;'
+            'margin:0 10px 10px 0;padding:9px 10px;border:1px solid #dbeafe;'
+            'border-radius:10px;background:#f8fafc;">'
+            f'<div style="font-size:12px;font-weight:800;color:#0f172a;margin-bottom:3px;">{escape(label)}</div>'
+            f'<div style="font-size:12px;line-height:1.35;color:#475569;">{escape(detail)}</div>'
+            '</div>'
+        )
+    return (
+        '<p style="margin:0 0 12px;color:#475569;font-size:13px;line-height:1.45;">'
+        'These are read-only buy signals. The system does not bid, buy, or relist anything; '
+        'it only shows the maths so you can open eBay and decide.</p>'
+        f'<div>{cards}</div>'
+    )
+
+
 def _email_link(title: Any, url: Any, *, max_chars: int = 96) -> str:
     """Render a safe HTML link for marketplace rows in operator email."""
 
@@ -1116,6 +1174,63 @@ def _email_sale_type(value: Any) -> str:
     return "n/a"
 
 
+def _as_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _suggested_relist_bin_price(sold_median: Any) -> str:
+    median = _as_float(sold_median)
+    if median <= 0:
+        return "n/a"
+    return f"&pound;{round(median * 0.95):.0f}"
+
+
+def _hours_until_end(value: Any) -> float | None:
+    if isinstance(value, datetime):
+        end = value
+    else:
+        raw = str(value or "").strip()
+        if not raw:
+            return None
+        try:
+            end = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+    return (end.astimezone(timezone.utc) - datetime.now(timezone.utc)).total_seconds() / 3600.0
+
+
+def _next_action_for_email(item: dict[str, Any]) -> str:
+    sale_type = _email_sale_type(item.get("sale_type"))
+    current = _as_float(item.get("current_price"))
+    max_buy = _as_float(item.get("max_safe_buy"))
+    relist_price = _suggested_relist_bin_price(item.get("sold_median"))
+
+    if max_buy <= 0 or current > max_buy:
+        return "Avoid"
+
+    max_text = f"&pound;{max_buy:.2f}"
+    relist_text = f"relist BIN {relist_price}" if relist_price != "n/a" else "relist BIN n/a"
+    hours_left = _hours_until_end(item.get("end_time"))
+
+    if sale_type == "Auction":
+        if hours_left is not None and hours_left > 24 and current < (max_buy * 0.35):
+            return f"Watch; bid late to {max_text}; {relist_text}"
+        return f"Bid to {max_text}; {relist_text}"
+
+    if sale_type == "Buy Now":
+        return f"Buy now if <= {max_text}; {relist_text}"
+
+    if sale_type == "Auction + BIN":
+        return f"Bid/BIN if <= {max_text}; {relist_text}"
+
+    return f"Buy if <= {max_text}; {relist_text}"
+
+
 def _potential_rows_for_email(
     report: dict[str, Any],
     *,
@@ -1131,7 +1246,7 @@ def _potential_rows_for_email(
     used_external_ids: set[str] = set()
     rows: list[list[str]] = []
     if report.get("error"):
-        return [[escape("Report failed"), escape(str(report.get("error"))[:180]), "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]], used_external_ids
+        return [[escape("Report failed"), escape(str(report.get("error"))[:180]), "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]], used_external_ids
 
     items = [
         item
@@ -1157,13 +1272,14 @@ def _potential_rows_for_email(
             f"&pound;{float(item.get('expected_profit') or 0):.2f}",
             f"&pound;{float(item.get('sold_median') or 0):.2f}",
             escape(f"{int(item.get('comp_samples') or 0)} / {item.get('condition_grade') or 'n/a'}"),
+            _next_action_for_email(item),
             _review_links_for_email(item),
         ])
         if limit and len(rows) >= limit:
             break
 
     if not rows:
-        rows = [["n/a", escape(empty_message), "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]]
+        rows = [["n/a", escape(empty_message), "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]]
     return rows, used_external_ids
 
 
@@ -1348,14 +1464,16 @@ def _market_discovery_slack_summary(market: dict[str, Any]) -> tuple[str, str]:
     if potentials:
         top = potentials[0]
         top_text = (
-            f"Top potential: {top.get('model_key')} current £{_fmt_num(top.get('current_price'))}, "
+            f"Top potential: {_short_slack_title(top.get('title') or top.get('source') or 'listing')} "
+            f"current £{_fmt_num(top.get('current_price'))}, "
             f"max £{_fmt_num(top.get('max_safe_buy'))}, "
             f"profit £{_fmt_num(top.get('expected_profit'))}"
         )
     elif closest:
         top = closest[0]
         top_text = (
-            f"Closest row: {top.get('model_key')} current £{_fmt_num(top.get('current_price'))}, "
+            f"Closest row: {_short_slack_title(top.get('title') or top.get('source') or 'listing')} "
+            f"current £{_fmt_num(top.get('current_price'))}, "
             f"max £{_fmt_num(top.get('max_safe_buy'))}, "
             f"gap £{_fmt_num(top.get('price_gap_to_max_buy'))}"
         )
@@ -1363,6 +1481,130 @@ def _market_discovery_slack_summary(market: dict[str, Any]) -> tuple[str, str]:
         top_text = "No live row with clean model key and comps."
 
     return counts_text, top_text
+
+
+def _slack_escape(value: Any) -> str:
+    return str(value or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _short_slack_title(value: Any, *, limit: int = 82) -> str:
+    cleaned = " ".join(str(value or "").split())
+    if len(cleaned) <= limit:
+        return cleaned or "Untitled listing"
+    return f"{cleaned[: limit - 3].rstrip()}..."
+
+
+def _slack_listing_link(title: Any, url: Any) -> str:
+    label = _slack_escape(_short_slack_title(title))
+    clean_url = str(url or "").strip()
+    if not clean_url:
+        return label
+    return f"<{clean_url}|{label}>"
+
+
+def _slack_review_commands(item: dict[str, Any]) -> str:
+    external_id = str(item.get("external_id") or "").strip()
+    if not external_id:
+        return "review: n/a"
+    return f"review: `up {external_id}` / `down {external_id}`"
+
+
+def _slack_listing_price_line(item: dict[str, Any], *, favourite: bool = False) -> str:
+    if favourite:
+        price = item.get("price_current")
+        status = _slack_escape(item.get("status") or "unknown")
+        return f"   Current £{_fmt_num(price)} | status {status} | {_slack_review_commands(item)}"
+
+    parts = [
+        f"Current £{_fmt_num(item.get('current_price'))}",
+        f"max £{_fmt_num(item.get('max_safe_buy'))}",
+        f"profit £{_fmt_num(item.get('expected_profit'))}",
+        f"sold £{_fmt_num(item.get('sold_median'))}",
+        f"comps {_fmt_int(item.get('comp_samples'))}",
+    ]
+    sale_type = _email_sale_type(item.get("sale_type"))
+    if sale_type != "n/a":
+        parts.append(sale_type)
+    ends = _email_end_time(item.get("end_time"))
+    if ends != "n/a":
+        parts.append(f"ends {ends}")
+    return f"   {' | '.join(parts)} | {_slack_review_commands(item)}"
+
+
+def _slack_rows_from_report(
+    report: dict[str, Any],
+    *,
+    item_key: str = "potentials",
+    exclude_external_ids: set[str] | None = None,
+    limit: int = HEARTBEAT_SLACK_REPORT_LIMIT,
+    min_comps: int = MIN_CANDIDATE_COMPS,
+) -> tuple[list[str], set[str]]:
+    exclude_external_ids = exclude_external_ids or set()
+    used_external_ids: set[str] = set()
+    if report.get("error"):
+        return ["Report failed; check local logs before relying on this section."], used_external_ids
+
+    rows: list[str] = []
+    items = [
+        item
+        for item in (report.get(item_key) or [])
+        if isinstance(item, dict)
+    ]
+    items.sort(key=_email_end_sort_key)
+    for index, item in enumerate(items, start=1):
+        if int(item.get("comp_samples") or 0) < min_comps:
+            continue
+        external_id = str(item.get("external_id") or "")
+        if external_id and external_id in exclude_external_ids:
+            continue
+        used_external_ids.add(external_id)
+        source = _slack_escape(_market_label(item.get("source")))
+        rows.append(
+            "\n".join(
+                [
+                    f"{len(rows) + 1}. `{source}` {_slack_listing_link(item.get('title'), item.get('url'))}",
+                    _slack_listing_price_line(item),
+                ]
+            )
+        )
+        if limit and len(rows) >= limit:
+            break
+    return rows, used_external_ids
+
+
+def _slack_favourite_rows(favourites: Any, *, limit: int = HEARTBEAT_SLACK_REPORT_LIMIT) -> list[str]:
+    if isinstance(favourites, dict) and favourites.get("error"):
+        return [f"Favourites unavailable: {_slack_escape(str(favourites.get('error'))[:180])}"]
+    if not isinstance(favourites, list) or not favourites:
+        return ["No favourites yet."]
+
+    rows: list[str] = []
+    for item in favourites:
+        if not isinstance(item, dict):
+            continue
+        source = _slack_escape(_market_label(item.get("source")))
+        rows.append(
+            "\n".join(
+                [
+                    f"{len(rows) + 1}. `{source}` {_slack_listing_link(item.get('title'), item.get('url'))}",
+                    _slack_listing_price_line(item, favourite=True),
+                ]
+            )
+        )
+        if limit and len(rows) >= limit:
+            break
+    return rows or ["No favourites yet."]
+
+
+def _slack_listing_section(title: str, rows: list[str], empty_message: str) -> dict[str, Any]:
+    body = "\n\n".join(rows) if rows else empty_message
+    return {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": f"*{title}*\n{body}",
+        },
+    }
 
 
 def _heartbeat_timing_summary(metrics: dict[str, Any]) -> str:
@@ -1424,6 +1666,8 @@ def _build_heartbeat_slack_message(
     comps = metrics["comps"]
     coverage = metrics["live_comp_coverage"]
     market = metrics.get("market_discovery") or {}
+    punt_report = metrics.get("market_discovery_punt") or {}
+    favourites = metrics.get("listing_favourites") or []
     review_auctions = metrics.get("review_auctions") or {}
     api_total = int(metrics["api_total"] or 0)
     api_accounting = metrics.get("api_accounting") or {}
@@ -1452,6 +1696,41 @@ def _build_heartbeat_slack_message(
     )
     market_counts_text, market_next_text = _market_discovery_slack_summary(market)
     timing_text = _heartbeat_timing_summary(metrics)
+    serious_rows, serious_ids = _slack_rows_from_report(
+        market,
+        limit=HEARTBEAT_SLACK_REPORT_LIMIT,
+    )
+    serious_near_misses = useful_near_misses(
+        market.get("closest") if isinstance(market.get("closest"), list) else [],
+        min_profit=50.0,
+        limit=HEARTBEAT_SLACK_REPORT_LIMIT,
+    )
+    serious_miss_rows, _serious_miss_ids = _slack_rows_from_report(
+        {"closest": serious_near_misses},
+        item_key="closest",
+        exclude_external_ids=serious_ids,
+        limit=HEARTBEAT_SLACK_REPORT_LIMIT,
+    )
+    punt_rows, punt_ids = _slack_rows_from_report(
+        punt_report,
+        exclude_external_ids=serious_ids,
+        limit=HEARTBEAT_SLACK_REPORT_LIMIT,
+    )
+    punt_near_misses = useful_near_misses(
+        punt_report.get("closest") if isinstance(punt_report.get("closest"), list) else [],
+        min_profit=25.0,
+        limit=HEARTBEAT_SLACK_REPORT_LIMIT,
+    )
+    punt_miss_rows, _punt_miss_ids = _slack_rows_from_report(
+        {"closest": punt_near_misses},
+        item_key="closest",
+        exclude_external_ids=serious_ids.union(punt_ids),
+        limit=HEARTBEAT_SLACK_REPORT_LIMIT,
+    )
+    favourite_rows = _slack_favourite_rows(
+        favourites,
+        limit=HEARTBEAT_SLACK_REPORT_LIMIT,
+    )
 
     blocks: list[dict[str, Any]] = [
         {
@@ -1485,6 +1764,31 @@ def _build_heartbeat_slack_message(
                 _slack_field("Data next", market_next_text),
             ],
         },
+        _slack_listing_section(
+            "GBP 50 Profit Candidates",
+            serious_rows,
+            "No live candidates cleared the GBP 50 gate.",
+        ),
+        _slack_listing_section(
+            "GBP 25 Profit Candidates",
+            punt_rows,
+            "No live candidates cleared the GBP 25 gate.",
+        ),
+        _slack_listing_section(
+            "GBP 50 Closest Misses",
+            serious_miss_rows,
+            "No actionable near misses at or below max buy for the GBP 50 gate.",
+        ),
+        _slack_listing_section(
+            "GBP 25 Closest Misses",
+            punt_miss_rows,
+            "No actionable near misses at or below max buy for the GBP 25 gate.",
+        ),
+        _slack_listing_section(
+            "Favourites",
+            favourite_rows,
+            "No favourites yet.",
+        ),
         {
             "type": "section",
             "text": {
@@ -1524,17 +1828,23 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
     roi = metrics["high_risk_roi"]
     serious_report = metrics.get("market_discovery") or {}
     punt_report = metrics.get("market_discovery_punt") or {}
+    pokemon_report = metrics.get("market_discovery_pokemon") or {}
     model_key_inventory = metrics.get("model_key_inventory") or []
     favourites = metrics.get("listing_favourites") or []
 
     unknown_unfinalized = int(counts.get("unknown_unfinalized") or 0)
+    unknown_backfill_due = (
+        int(counts.get("unknown_backfill_due"))
+        if counts.get("unknown_backfill_due") is not None
+        else unknown_unfinalized
+    )
     live_total = int(coverage.get("live_total") or 0)
     live_with_3plus = int(coverage.get("live_with_3plus_comps") or 0)
     coverage_pct = (live_with_3plus / live_total * 100.0) if live_total else 0.0
 
     health_tone = "ok" if not blocked else "bad"
     health_label = "Healthy" if not blocked else "Blocked"
-    if unknown_unfinalized > 0 or coverage_pct < 25:
+    if unknown_backfill_due > 0 or coverage_pct < 25:
         health_tone = "warn" if not blocked else "bad"
         health_label = "Needs attention" if not blocked else "Blocked"
 
@@ -1558,6 +1868,15 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
         punt_report,
         exclude_external_ids=serious_ids,
         limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+    )
+    pokemon_rows, _pokemon_ids = _potential_rows_for_email(
+        pokemon_report,
+        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
+        min_comps=HEARTBEAT_POKEMON_MIN_COMPS,
+        empty_message=(
+            "No live Pokemon candidates cleared the GBP "
+            f"{HEARTBEAT_POKEMON_PROFIT_GBP:.0f} gate."
+        ),
     )
     punt_near_misses = useful_near_misses(
         punt_report.get("closest") if isinstance(punt_report.get("closest"), list) else [],
@@ -1604,18 +1923,22 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
       </tr></table>
       <table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr>
         {_metric_card("Final prices", _fmt_int(counts.get("final_prices")), "confirmed sold evidence rows", "good")}
-        {_metric_card("Unknown queue", _fmt_int(unknown_unfinalized), "past-end rows for Trading resolution", "warn" if unknown_unfinalized else "good")}
+        {_metric_card("Unknown queue", _fmt_int(unknown_backfill_due), "past-end rows for Trading resolution", "warn" if unknown_backfill_due else "good")}
         {_metric_card("Backfill today", _fmt_int(backfill_activity.get("checked_today")), f"{_fmt_int(backfill_activity.get('sold_today'))} sold confirmed", "neutral")}
         {_metric_card("Current ROI rows", _fmt_int(roi.get("live_roi_gt_15")), f"{_fmt_int(roi.get('live_roi_gt_100'))} above 100% ROI", "warn" if int(roi.get("live_roi_gt_100") or 0) else "neutral")}
       </tr></table>
 
-      {_section("GBP 50 Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Review"], serious_rows))}
+      {_section("How To Read Listing Rows", _listing_column_explainer())}
 
-      {_section("GBP 25 Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Review"], punt_rows))}
+      {_section("GBP 50 Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], serious_rows))}
 
-      {_section("GBP 50 Closest Misses", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Review"], serious_miss_rows))}
+      {_section("GBP 25 Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], punt_rows))}
 
-      {_section("GBP 25 Closest Misses", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Review"], punt_miss_rows))}
+      {_section(f"Pokemon GBP {HEARTBEAT_POKEMON_PROFIT_GBP:.0f} Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], pokemon_rows))}
+
+      {_section("GBP 50 Closest Misses", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], serious_miss_rows))}
+
+      {_section("GBP 25 Closest Misses", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], punt_miss_rows))}
 
       {_section("Favourites", _table(["Source", "Listing", "Status", "Current", "Model key", "Review"], favourite_rows))}
 

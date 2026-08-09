@@ -88,6 +88,10 @@ def _is_accessory_or_part(text: str) -> bool:
             "joystick",
             "hdmi port",
             "power supply",
+            "battery for",
+            "battery replacement",
+            "replacement battery",
+            "hac-003",
             "charging cable",
             "skin sticker",
             "guide button",
@@ -292,9 +296,6 @@ def _switch_key(text: str) -> str:
 
 
 def console_or_game_model_key(attrs: Mapping[str, Any], title: str) -> Optional[str]:
-    if not attrs:
-        return UNKNOWN_KEY
-
     title_text = _as_text(title)
     text = _blob(attrs, title)
     if _is_accessory_or_part(text) or _looks_like_game_only(text, attrs):

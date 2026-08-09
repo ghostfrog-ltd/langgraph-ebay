@@ -20,6 +20,7 @@ EBAY_TRADING_ENDPOINT = "https://api.ebay.com/ws/api.dll"
 EBAY_SITE_ID = "3"  # UK (keep as per your old implementation)
 EBAY_COMPAT_LEVEL = "967"
 INACCESSIBLE_TRADING_ERROR_CODES = {"17", "1505", "21920397"}
+TRADING_USAGE_LIMIT_ERROR_CODES = {"518"}
 
 
 # ----------------------------
@@ -107,8 +108,7 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
     """
     Parse Trading GetItem XML.
     Returns:
-      - {"code": "<errcode>"} for inaccessible/not-found style errors
-        (17/1505/21920397)
+      - {"code": "<errcode>", ...} for Trading API errors
       - None for other failures
       - dict with snapshot fields for success
     """
@@ -145,6 +145,13 @@ def _parse_trading_get_item(xml: str) -> Optional[dict]:
             long_msg,
         )
 
+        if code:
+            return {
+                "code": code,
+                "ack": ack,
+                "short_message": short_msg,
+                "long_message": long_msg,
+            }
         return None
 
     item_node = root.find(".//ns:Item", ns)
@@ -305,6 +312,7 @@ class EndedState(TypedDict, total=False):
     applied: int
     skipped: int
     errors: int
+    stop_reason: str
 
 
 def node_select_candidates(state: EndedState) -> EndedState:
@@ -367,6 +375,24 @@ def node_process_next_candidate(state: EndedState) -> EndedState:
         if parsed.get("code") in INACCESSIBLE_TRADING_ERROR_CODES:
             _delete_inaccessible_listing(auction_id, str(external_id))
             return _bump(state, idx_inc=1, processed_inc=1)
+        if parsed.get("code") in TRADING_USAGE_LIMIT_ERROR_CODES:
+            logger.warning(
+                "[listing.ended] Trading usage limit reached code=%s; stopping ended loop",
+                parsed.get("code"),
+            )
+            return {
+                **_bump(state, processed_inc=1, errors_inc=1),
+                "idx": len(candidates),
+                "stop_reason": f"trading_usage_limit_{parsed.get('code')}",
+            }
+        if parsed.get("code"):
+            logger.error(
+                "[listing.ended] Trading error code=%s auction_id=%s external_id=%s; leaving row unchanged",
+                parsed.get("code"),
+                auction_id,
+                external_id,
+            )
+            return _bump(state, idx_inc=1, processed_inc=1, errors_inc=1)
 
         ended = bool(parsed.get("ended"))
         ebay_end_time = parsed.get("ebay_end_time")

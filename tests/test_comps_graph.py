@@ -100,6 +100,15 @@ class CompsGraphTests(unittest.TestCase):
     def test_apple_collection_defaults_to_auction_feed(self):
         self.assertEqual(AppleAdapter.SALE_TYPE, ["auction"])
 
+    def test_base_adapter_uses_source_specific_model_keys(self):
+        adapter = object.__new__(EbayAdapterBase)
+        adapter.DOMAIN = "ebay-apple"
+
+        self.assertEqual(
+            adapter._model_key_for("Apple iPhone 14 128GB Purple Unlocked"),
+            "apple-iphone-14-128gb",
+        )
+
     def test_auction_only_source_clears_old_live_bin_rows(self):
         adapter = object.__new__(EbayAdapterBase)
         adapter.DOMAIN = "ebay-apple"
@@ -142,7 +151,7 @@ class CompsGraphTests(unittest.TestCase):
                 "buyingOptions": ["AUCTION", "FIXED_PRICE"],
                 "currentBidPrice": {"value": "101.00"},
                 "price": {"value": "299.00"},
-                "itemEndDate": "2026-07-30T12:00:00Z",
+                "itemEndDate": "2026-08-30T12:00:00Z",
             },
             "auction",
         )
@@ -174,7 +183,7 @@ class CompsGraphTests(unittest.TestCase):
         self.assertIn("filter=buyingOptions:{AUCTION}", seen_urls[0])
         self.assertNotIn("listingType", seen_urls[0])
 
-    def test_unseen_live_cleanup_keeps_future_dated_rows_live(self):
+    def test_unseen_live_cleanup_marks_not_seen_rows_unknown(self):
         fake_conn = _FakeConnection()
         row = {
             "source": "ebay-apple",
@@ -201,9 +210,13 @@ class CompsGraphTests(unittest.TestCase):
         ]
         self.assertEqual(len(update_calls), 1)
         cleanup_sql = update_calls[0][0]
+        cleanup_params = update_calls[0][1]
+        self.assertIn("source = ANY(%s)", cleanup_sql)
+        self.assertIn("last_seen_at IS NULL", cleanup_sql)
         self.assertIn("last_seen_at < %s", cleanup_sql)
         self.assertIn("end_time IS NULL", cleanup_sql)
         self.assertIn("end_time <=", cleanup_sql)
+        self.assertEqual(cleanup_params[0], ["ebay-apple"])
 
     def test_getitem_404_unknown_sets_end_time_to_now(self):
         adapter = object.__new__(EbayAdapterBase)
@@ -340,7 +353,7 @@ class CompsGraphTests(unittest.TestCase):
 
         self.assertEqual(len(captured_rows), 1)
         row = captured_rows[0]
-        self.assertEqual(row["condition_grade"], "D")
+        self.assertEqual(row["condition_grade"], "C")
         self.assertIn("screen is damaged", row["raw_attrs"]["Browse conditionDescription"])
 
     def test_category_fetch_marks_unavailable_rows_unknown(self):

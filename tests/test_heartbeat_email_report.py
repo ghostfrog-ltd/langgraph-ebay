@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pipelines.listing.main import (
     _build_heartbeat_email_html,
     _candidate_rows_for_refresh,
+    _next_action_for_email,
     _potential_rows_for_email,
 )
 
@@ -144,6 +145,56 @@ class HeartbeatEmailReportTests(unittest.TestCase):
         self.assertIn("Auction", rendered)
         self.assertIn("Buy Now", rendered)
         self.assertIn("Auction + BIN", rendered)
+
+    def test_email_potential_rows_show_next_action(self):
+        report = {
+            "potentials": [
+                {
+                    "source": "ebay-apple",
+                    "external_id": "v1|auction|0",
+                    "title": "Auction candidate",
+                    "url": "https://example.test/auction",
+                    "sale_type": "auction",
+                    "current_price": 100,
+                    "max_safe_buy": 150,
+                    "expected_profit": 50,
+                    "sold_median": 200,
+                    "comp_samples": 15,
+                    "condition_grade": "B",
+                },
+                {
+                    "source": "ebay-samsung",
+                    "external_id": "v1|bin|0",
+                    "title": "Buy now candidate",
+                    "url": "https://example.test/bin",
+                    "sale_type": "bin",
+                    "current_price": 100,
+                    "max_safe_buy": 150,
+                    "expected_profit": 50,
+                    "sold_median": 200,
+                    "comp_samples": 15,
+                    "condition_grade": "B",
+                },
+            ]
+        }
+
+        rows, _used_ids = _potential_rows_for_email(report, limit=0)
+        rendered = "\n".join(" ".join(row) for row in rows)
+
+        self.assertIn("Bid to &pound;150.00; relist BIN &pound;190", rendered)
+        self.assertIn("Buy now if <= &pound;150.00; relist BIN &pound;190", rendered)
+
+    def test_email_next_action_avoids_rows_above_max_buy(self):
+        action = _next_action_for_email(
+            {
+                "sale_type": "auction",
+                "current_price": 160,
+                "max_safe_buy": 150,
+                "sold_median": 200,
+            }
+        )
+
+        self.assertEqual(action, "Avoid")
 
     def test_email_potential_rows_enforce_candidate_comp_floor(self):
         report = {
@@ -363,6 +414,37 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     }
                 ],
             },
+            "market_discovery_pokemon": {
+                "potentials": [
+                    {
+                        "source": "ebay-pokemon",
+                        "title": "Pokemon TCG Test Card PSA 10",
+                        "url": "https://example.test/item/pokemon",
+                        "external_id": "v1|pokemon|0",
+                        "sale_type": "bin",
+                        "current_price": 40,
+                        "max_safe_buy": 46,
+                        "expected_profit": 22,
+                        "sold_median": 88,
+                        "comp_samples": 3,
+                        "condition_grade": "B",
+                    },
+                    {
+                        "source": "ebay-pokemon",
+                        "title": "Pokemon TCG Thin Comp",
+                        "url": "https://example.test/item/pokemon-thin",
+                        "external_id": "v1|pokemon-thin|0",
+                        "sale_type": "bin",
+                        "current_price": 40,
+                        "max_safe_buy": 45,
+                        "expected_profit": 22,
+                        "sold_median": 88,
+                        "comp_samples": 2,
+                        "condition_grade": "B",
+                    },
+                ],
+                "closest": [],
+            },
             "model_key_inventory": [
                 {
                     "source": "ebay-apple",
@@ -434,18 +516,25 @@ class HeartbeatEmailReportTests(unittest.TestCase):
         )
 
         self.assertIn("Pipeline is running from live PostgreSQL data", html)
+        self.assertIn("How To Read Listing Rows", html)
+        self.assertIn("Expected profit if bought at the current price", html)
+        self.assertIn("Highest safe buy price after resale costs and target profit", html)
         self.assertIn("GBP 50 Profit Candidates", html)
         self.assertIn("GBP 25 Profit Candidates", html)
+        self.assertIn("Pokemon GBP 20 Profit Candidates", html)
         self.assertIn("Review", html)
         self.assertIn("Type", html)
         self.assertIn("action=up", html)
         self.assertIn("action=down", html)
         self.assertIn("Apple MacBook Air", html)
         self.assertIn("Mafell A 12", html)
+        self.assertIn("Pokemon TCG Test Card PSA 10", html)
+        self.assertNotIn("Pokemon TCG Thin Comp", html)
         self.assertIn("Auction", html)
         self.assertIn("Auction + BIN", html)
         self.assertIn("&pound;75.00", html)
         self.assertIn("&pound;32.00", html)
+        self.assertIn("&pound;22.00", html)
         self.assertIn("GBP 50 Closest Misses", html)
         self.assertIn("GBP 25 Closest Misses", html)
         self.assertIn("No actionable near misses at or below max buy", html)
@@ -469,7 +558,15 @@ class HeartbeatEmailReportTests(unittest.TestCase):
         self.assertIn("apple-iphone-13-128gb", html)
         self.assertIn("mafell-a12-drill", html)
         self.assertLess(
+            html.index("How To Read Listing Rows"),
+            html.index("GBP 50 Profit Candidates"),
+        )
+        self.assertLess(
             html.index("GBP 25 Profit Candidates"),
+            html.index("Pokemon GBP 20 Profit Candidates"),
+        )
+        self.assertLess(
+            html.index("Pokemon GBP 20 Profit Candidates"),
             html.index("GBP 50 Closest Misses"),
         )
         self.assertLess(

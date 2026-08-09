@@ -33,6 +33,11 @@ from pipelines.listing.retrieve.adapters.headphones import Adapter as Headphones
 from pipelines.listing.retrieve.adapters.hondaNc750 import Adapter as Nc750Adapter
 from pipelines.listing.retrieve.adapters.honda_msx125 import Adapter as Msx125Adapter
 from pipelines.listing.retrieve.adapters.mini_cooper import Adapter as MiniCooperAdapter
+from pipelines.listing.retrieve.adapters.graphics_cards import Adapter as GraphicsCardsAdapter
+from pipelines.listing.retrieve.adapters.cpus import Adapter as CpusAdapter
+from pipelines.listing.retrieve.adapters.motherboards import Adapter as MotherboardsAdapter
+from pipelines.listing.retrieve.adapters.camera_lenses import Adapter as CameraLensesAdapter
+from pipelines.listing.retrieve.adapters.industrial_automation import Adapter as IndustrialAutomationAdapter
 
 logger = get_logger(__name__)
 
@@ -53,6 +58,11 @@ DOMAIN_ADAPTERS: Dict[str, Any] = {
     Nc750Adapter.DOMAIN: Nc750Adapter,
     Msx125Adapter.DOMAIN: Msx125Adapter,
     MiniCooperAdapter.DOMAIN: MiniCooperAdapter,
+    GraphicsCardsAdapter.DOMAIN: GraphicsCardsAdapter,
+    CpusAdapter.DOMAIN: CpusAdapter,
+    MotherboardsAdapter.DOMAIN: MotherboardsAdapter,
+    CameraLensesAdapter.DOMAIN: CameraLensesAdapter,
+    IndustrialAutomationAdapter.DOMAIN: IndustrialAutomationAdapter,
 }
 
 

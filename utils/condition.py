@@ -12,6 +12,207 @@ def _as_text(val: Any) -> str:
     return str(val).strip().lower()
 
 
+def _listing_blob(title: str, attrs: Optional[Mapping[str, Any]] = None, model_key: Optional[str] = None) -> str:
+    parts = [_as_text(title)]
+    for _, value in (attrs or {}).items():
+        if isinstance(value, (list, tuple, set)):
+            parts.extend(_as_text(x) for x in value)
+        else:
+            parts.append(_as_text(value))
+    parts.append(_as_text(model_key))
+    return " ".join(part for part in parts if part).strip()
+
+
+FUNCTIONAL_FAULT_TERMS = (
+    "faulty",
+    "not working",
+    "non working",
+    "non-working",
+    "no power",
+    "won't power",
+    "wont power",
+    "won't turn on",
+    "wont turn on",
+    "does not turn on",
+    "doesn't turn on",
+    "no display",
+    "no video",
+    "no sound",
+    "dead",
+    "powers on then off",
+    "boot loop",
+    "does not charge",
+    "won't charge",
+    "wont charge",
+    "overheating",
+    "water damaged",
+    "liquid damaged",
+    "liquid damage",
+    "water damage",
+    "screen issue",
+    "screen issues",
+    "screen fault",
+    "display fault",
+    "display issue",
+    "faulty battery",
+    "bad battery",
+    "battery issue",
+    "battery fault",
+    "charging port issue",
+    "charging fault",
+    "screen flickers",
+    "broken lcd",
+    "broken display",
+    "broken screen",
+    "spares and repairs",
+    "blue screen",
+    "blue screened",
+    "disc drive fault",
+    "for spares",
+    "for parts",
+    "spares or repairs",
+    "spares & repairs",
+    "repair only",
+    "needs repair",
+    "for repair",
+    "parts only",
+    "parts or repair",
+    "parts & repair",
+    "untested",
+    "not tested",
+    "unable to test",
+    "not fully tested",
+    "sold as seen",
+    "as is",
+    "as-is",
+    "lens error",
+    "lens fault",
+    "gimbal error",
+    "gimbal fault",
+    "motor overload",
+    "crash damage",
+    "crashed",
+    "drift issue",
+    "stick drift",
+    "joystick drift",
+    "controller drift",
+    "no hdmi output",
+    "av output fault",
+    "white light error",
+    "blue light error",
+    "yellow light of death",
+    "red ring of death",
+    "wlod",
+    "ylod",
+    "rrod",
+    "no face id",
+    "face id not working",
+    "touch id not working",
+    "touch id missing",
+    "touch id issue",
+    "touchid issue",
+    "truedepth issue",
+    "true depth issue",
+    "mic issue",
+    "microphone issue",
+    "works with issues",
+)
+
+
+PHYSICAL_DAMAGE_TERMS = (
+    "badly damaged",
+    "screen damage",
+    "damaged screen",
+    "screen is damaged",
+    "screen badly damaged",
+    "badly damaged screen",
+    "screen damaged",
+    "screen cracked",
+    "cracked screen",
+    "cracked",
+    "smashed",
+    "dent",
+    "dented",
+    "chip",
+    "chipped",
+    "scratches",
+    "heavy wear",
+    "heavily used",
+    "cosmetic damage",
+    "cosmetically poor",
+    "scraped screen",
+    "physical damage",
+    "damaged casing",
+    "casing damage",
+    "damaged case",
+    "case damage",
+    "damaged housing",
+    "housing damage",
+    "damaged shell",
+    "shell damage",
+    "damaged chassis",
+    "chassis damage",
+    "damage to phone",
+    "damage to the phone",
+    "damage to device",
+    "damage to the device",
+    "damage to laptop",
+    "damage to the laptop",
+    "damage to console",
+    "damage to the console",
+    "damage to camera",
+    "damage to the camera",
+    "damage to watch",
+    "damage to the watch",
+    "damage to bike",
+    "damage to the bike",
+    "damage to car",
+    "damage to the car",
+    "phone has damage",
+    "phone with damage",
+    "rear glass damage",
+    "back glass damage",
+    "front glass damage",
+    "cracked rear glass",
+    "cracked back glass",
+    "cracked front glass",
+)
+
+
+def _has_functional_fault_language(blob: str) -> bool:
+    if any(term in blob for term in FUNCTIONAL_FAULT_TERMS):
+        return True
+    return bool(
+        re.search(
+            r"\b(face id|touch id|true\s*depth|hdmi|charging|charge port|battery|mic|microphone|"
+            r"speaker|camera|screen|display|disc drive|gimbal|lens|joystick|stick)\b"
+            r".{0,40}\b(issue|fault|faulty|not working|does not work|doesn't work|missing|broken)\b",
+            blob,
+        )
+        or re.search(
+            r"\b(works|working|fully working|tested and working)\b.{0,80}"
+            r"\b(except|apart from|but|however)\b.{0,80}"
+            r"\b(issue|fault|not working|does not work|doesn't work|missing|drift|no hdmi|no face id)\b",
+            blob,
+        )
+    )
+
+
+def _has_physical_damage_language(blob: str) -> bool:
+    return any(term in blob for term in PHYSICAL_DAMAGE_TERMS) or bool(
+        re.search(r"\b(damage|crack|cracked|smashed|dent|dented|chip|chipped)\b.{0,30}\b(casing|case|housing|body|shell|chassis|glass|corner|lid|panel)\b", blob)
+    )
+
+
+def _requires_condition_manual_review(blob: str) -> bool:
+    if re.search(r"\b(condition unknown|unknown condition|not sure if (it )?(works|working)|may be faulty|may need repair|untested but|not fully tested)\b", blob):
+        return True
+    return bool(
+        re.search(r"\b(fully working|working|works|tested and working)\b.{0,80}\b(but|except|apart from|however)\b", blob)
+        and _has_functional_fault_language(blob)
+    )
+
+
 GENERIC_PART_ONLY_TERMS = (
     "for parts",
     "parts only",
@@ -136,6 +337,10 @@ DEVICE_ACCESSORY_TERMS = (
     "controller only",
     "controller cable",
     "controller battery",
+    "battery for",
+    "battery replacement",
+    "replacement battery",
+    "hac-003",
     "usb-c cable",
     "usb cable",
     "usb-a to usb-c",
@@ -325,6 +530,132 @@ VEHICLE_PART_TERMS = (
     "window regulator",
 )
 
+COMPONENT_BUNDLE_TERMS = (
+    "job lot",
+    "joblot",
+    "bundle",
+    "collection",
+    "lot of",
+    "multiple",
+    "2x ",
+    "3x ",
+    "4x ",
+    "x2 ",
+    "x3 ",
+    "x4 ",
+    "pair of",
+)
+
+GPU_NON_PRODUCT_TERMS = (
+    "gpu box only",
+    "graphics card box only",
+    "empty gpu box",
+    "empty graphics card box",
+    "cooler only",
+    "heatsink only",
+    "heat sink only",
+    "fan only",
+    "replacement fan",
+    "fan shroud",
+    "backplate",
+    "bracket",
+    "gpu support",
+    "riser",
+    "riser cable",
+    "water block",
+    "waterblock",
+    "mining rig",
+    "laptop gpu",
+    "mobile gpu",
+    "mxm",
+    "sxm",
+    "repair service",
+)
+
+CPU_NON_PRODUCT_TERMS = (
+    "cpu box only",
+    "processor box only",
+    "empty cpu box",
+    "empty processor box",
+    "cooler only",
+    "stock cooler only",
+    "heatsink only",
+    "heat sink only",
+    "fan only",
+    "cpu keyring",
+    "processor keyring",
+    "engineering sample",
+    "qualification sample",
+    "motherboard compatible",
+    "compatible motherboard",
+    "processor not included",
+)
+
+MOTHERBOARD_NON_PRODUCT_TERMS = (
+    "motherboard box only",
+    "empty motherboard box",
+    "i/o shield only",
+    "io shield only",
+    "wifi antenna only",
+    "antenna only",
+    "bios chip",
+    "socket replacement",
+    "repair service",
+    "laptop motherboard",
+    "server motherboard",
+    "oem motherboard",
+    "cpu included",
+    "processor included",
+    "ram included",
+    "cpu bundle",
+    "processor bundle",
+    "ram bundle",
+)
+
+CAMERA_LENS_NON_PRODUCT_TERMS = (
+    "cap only",
+    "lens cap",
+    "rear cap",
+    "body cap",
+    "hood only",
+    "lens hood",
+    "filter",
+    "adapter",
+    "mount adapter",
+    "case only",
+    "pouch only",
+    "tripod collar",
+    "collar only",
+    "repair service",
+    "fungus",
+    "haze",
+    "scratched glass",
+)
+
+INDUSTRIAL_AUTOMATION_NON_PRODUCT_TERMS = (
+    "manual",
+    "book",
+    "catalogue",
+    "cable",
+    "lead",
+    "connector",
+    "enclosure",
+    "cabinet",
+    "control cabinet",
+    "repair service",
+    "service only",
+    "training",
+    "software only",
+    "license only",
+    "licence only",
+    "generic switch",
+    "network switch",
+    "complete machinery",
+    "machine only",
+    "freight",
+    "collection only",
+)
+
 
 def looks_like_partial_or_accessory_listing(
     title: str,
@@ -342,21 +673,14 @@ def looks_like_partial_or_accessory_listing(
     whole-product model key. It also catches obvious product-identity pollution
     such as fabricated Apple family/chip combinations.
     """
-    title_text = _as_text(title)
     source_text = _as_text(source)
     model_key_text = _as_text(model_key)
-
-    all_attr_parts = []
-    for _, value in (attrs or {}).items():
-        if isinstance(value, (list, tuple, set)):
-            all_attr_parts.extend(_as_text(x) for x in value)
-        else:
-            all_attr_parts.append(_as_text(value))
-
-    attr_text = " ".join(part for part in all_attr_parts if part)
-    blob = f"{title_text} {attr_text} {model_key_text}".strip()
+    blob = _listing_blob(title, attrs, model_key)
 
     if any(term in blob for term in GENERIC_PART_ONLY_TERMS):
+        return True
+
+    if _requires_condition_manual_review(blob):
         return True
 
     if any(term in blob for term in SUSPICIOUS_PRODUCT_IDENTITY_TERMS):
@@ -447,6 +771,66 @@ def looks_like_partial_or_accessory_listing(
     if is_vehicle and any(term in blob for term in VEHICLE_PART_TERMS):
         return True
 
+    is_gpu = (
+        "ebay-graphics-cards" in source_text
+        or model_key_text.startswith(
+            (
+                "nvidia-rtx-",
+                "nvidia-gtx-",
+                "nvidia-quadro-rtx-",
+                "amd-radeon-rx-",
+                "amd-radeon-pro-",
+                "intel-arc-",
+            )
+        )
+    )
+    if is_gpu and (
+        any(term in blob for term in GPU_NON_PRODUCT_TERMS)
+        or any(term in blob for term in COMPONENT_BUNDLE_TERMS)
+    ):
+        return True
+
+    is_cpu = (
+        "ebay-cpus" in source_text
+        or model_key_text.startswith(("amd-ryzen-", "intel-core-i"))
+    )
+    if is_cpu and (
+        any(term in blob for term in CPU_NON_PRODUCT_TERMS)
+        or any(term in blob for term in COMPONENT_BUNDLE_TERMS)
+        or re.search(r"\b(xeon|epyc|server|laptop|notebook|mobile)\b", blob)
+        or re.search(r"\b(bent|missing|damaged)\s+(pin|pins|pad|pads)\b", blob)
+    ):
+        return True
+
+    is_motherboard = (
+        "ebay-motherboards" in source_text
+        or (
+            source_text == "ebay-motherboards"
+            and model_key_text.startswith(("asus-", "msi-", "gigabyte-", "asrock-"))
+        )
+    )
+    if is_motherboard and (
+        any(term in blob for term in MOTHERBOARD_NON_PRODUCT_TERMS)
+        or any(term in blob for term in COMPONENT_BUNDLE_TERMS)
+        or re.search(r"\b(bent|damaged|missing)\s+(socket|pin|pins|component|components)\b", blob)
+        or re.search(r"\b(no post|no display|dead ram slot|dead pcie|dead m\.?2|liquid damage)\b", blob)
+    ):
+        return True
+
+    is_camera_lens = source_text == "ebay-camera-lenses"
+    if is_camera_lens and (
+        any(term in blob for term in CAMERA_LENS_NON_PRODUCT_TERMS)
+        or any(term in blob for term in COMPONENT_BUNDLE_TERMS)
+    ):
+        return True
+
+    is_industrial_automation = source_text == "ebay-industrial-automation"
+    if is_industrial_automation and (
+        any(term in blob for term in INDUSTRIAL_AUTOMATION_NON_PRODUCT_TERMS)
+        or any(term in blob for term in COMPONENT_BUNDLE_TERMS)
+    ):
+        return True
+
     return False
 
 
@@ -480,6 +864,9 @@ def has_investible_product_identity(
         return False
 
     source_text = _as_text(source)
+    if source_text in {"ebay-camera-lenses", "ebay-industrial-automation"}:
+        return False
+
     is_apple = source_text == "ebay-apple" or mk.startswith("apple-")
     is_samsung = source_text == "ebay-samsung" or mk.startswith("samsung-")
     is_console = (
@@ -499,6 +886,21 @@ def has_investible_product_identity(
     )
     is_lego = source_text == "ebay-lego" or mk.startswith("lego-")
     is_motor_vehicle = source_text == "ebay-motors" or mk.startswith("vehicle-")
+    is_gpu = (
+        source_text == "ebay-graphics-cards"
+        or mk.startswith(
+            (
+                "nvidia-rtx-",
+                "nvidia-gtx-",
+                "nvidia-quadro-rtx-",
+                "amd-radeon-rx-",
+                "amd-radeon-pro-",
+                "intel-arc-",
+            )
+        )
+    )
+    is_cpu = source_text == "ebay-cpus" or mk.startswith(("amd-ryzen-", "intel-core-i"))
+    is_motherboard = source_text == "ebay-motherboards"
     if (
         not is_apple
         and not is_samsung
@@ -506,6 +908,9 @@ def has_investible_product_identity(
         and not is_actioncam
         and not is_lego
         and not is_motor_vehicle
+        and not is_gpu
+        and not is_cpu
+        and not is_motherboard
     ):
         return True
 
@@ -565,6 +970,36 @@ def has_investible_product_identity(
             or re.match(insta360, mk)
             or re.match(secondary_actioncam, mk)
         )
+
+    if is_gpu:
+        if "_" in mk:
+            return False
+        nvidia_gpu = r"^nvidia-(rtx|gtx)-[1-5]\d{3}(-(ti|super))*-(4|6|8|10|11|12|16|20|24|32|48)gb$"
+        nvidia_quadro = r"^nvidia-quadro-rtx-(4000|5000|6000|8000)-(8|16|24|48)gb$"
+        nvidia_rtx_a = r"^nvidia-rtx-a(2000|4000|4500|5000|6000)-(6|8|12|16|20|24|48)gb$"
+        nvidia_rtx_ada = r"^nvidia-rtx-(4000|4500|5000|6000)-ada-(20|24|32|48)gb$"
+        amd_gpu = r"^amd-radeon-rx-[5-9]\d{3}(-(gre|xt|xtx))?-(4|6|8|10|12|16|20|24|32)gb$"
+        amd_pro = r"^amd-radeon-pro-w(5700|6800|7500|7600|7800|7900)-(8|32|48)gb$"
+        intel_gpu = r"^intel-arc-[ab]\d{3}-(4|6|8|10|12|16)gb$"
+        return bool(
+            re.match(nvidia_gpu, mk)
+            or re.match(nvidia_quadro, mk)
+            or re.match(nvidia_rtx_a, mk)
+            or re.match(nvidia_rtx_ada, mk)
+            or re.match(amd_gpu, mk)
+            or re.match(amd_pro, mk)
+            or re.match(intel_gpu, mk)
+        )
+
+    if is_cpu:
+        if "_" in mk:
+            return False
+        amd_cpu = r"^amd-ryzen-[3579]-\d{4,5}(x3d|xt|x|g|ge)?$"
+        intel_cpu = r"^intel-core-i[3579]-\d{4,5}(ks|kf|k|f|t)?$"
+        return bool(re.match(amd_cpu, mk) or re.match(intel_cpu, mk))
+
+    if is_motherboard:
+        return False
 
     if is_console:
         if "_" in mk:
@@ -629,83 +1064,70 @@ def has_investible_product_identity(
 
 def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
     """
-    Map raw attributes + title into a coarse condition grade:
+    Map raw attributes + title into the coarse condition grade used for comps.
 
-        A = new / sealed / like new
-        B = default used / unknown (safe mid-grade)
-        C = poorer refurb / rough
-        D = clearly faulty / for parts / box-only style listings
+    Policy:
+        A = clearly new-ish: brand new, sealed, unused, open box, like new.
+        B = normal resale used: fully working with ordinary cosmetic marks or
+            unclear-but-not-risky used condition.
+        C = physical/cosmetic damage cap: cracked, smashed, dented, damaged
+            casing/glass/body, heavy wear, or disclosed visible damage while
+            still described as working.
+        D = functional risk/fault: faulty, not working, spares/repair,
+            untested, water/liquid damage, charging/display/HDMI/Face ID/stick
+            drift faults, or incomplete/accessory-only listings.
 
-    Heuristics are intentionally simple and easy to tweak.
+    Contradictory or unclear wording is handled by
+    looks_like_partial_or_accessory_listing(), which keeps those rows out of
+    investible product identity/comps until a human reviews them.
     """
 
     # 1) Normalised text from title + attributes
-    title_text = _as_text(title)
-
-    all_attr_parts = []
-    for _, v in attrs.items():
-        if isinstance(v, (list, tuple, set)):
-            all_attr_parts.extend(_as_text(x) for x in v)
-        else:
-            all_attr_parts.append(_as_text(v))
-
-    attr_text = " ".join(p for p in all_attr_parts if p)
-    blob = f"{title_text} {attr_text}".strip()
+    blob = _listing_blob(title, attrs)
 
     # ----------------
     # Grade D: faulty / spares / box-only
     # ----------------
-    faulty_terms = [
-        # Core faults
-        "faulty", "not working", "no power", "won't power", "wont power",
-        "won't turn on", "wont turn on", "does not turn on", "doesn't turn on",
-        "no display", "no video", "no sound", "dead", "powers on then off",
-        "boot loop", "does not charge", "won't charge", "wont charge",
-        "overheating", "water damaged", "liquid damaged", "liquid damage",
-        "water damage",
-        "screen damage", "damaged screen", "screen is damaged", "screen badly damaged",
-        "badly damaged screen", "screen damaged", "screen cracked", "cracked screen", "screen issues",
-        "screen fault", "display fault", "display issue", "faulty battery",
-        "bad battery", "battery issue", "battery fault", "charging port issue",
-        "charging fault", "screen flickers", "read description", "empty",
-        "packaging only", "damaged", "broken screen", "spares and repairs",
-        "blue screen", "blue screened", "disc drive fault",
+    if _has_functional_fault_language(blob):
+        return "D"
 
-        # Spares/repairs flags
-        "for spares", "for parts", "spares or repairs", "spares & repairs",
-        "repair only", "needs repair", "for repair", "parts only",
-        "parts or repair", "parts & repair",
-        "non working", "non-working", "untested", "sold as seen", "as is", "as-is",
-        "not tested", "unable to test",
-
-        # Box/accessory-only
-        "box only", "boxes only", "package only",
-        "case only", "charger only", "battery only", "shell only",
-        "housing only", "empty box", "empty packaging",
-        "no console included", "no phone included", "no tablet included",
-
-        # Warnings / scam flags
-        "see description", "read full listing", "please read",
-
-        # Tools-specific
-        "no blade", "no battery", "bare unit", "body only", "body-only",
-        "no charger", "no accessories", "missing parts", "missing screws",
-
-        # Camera/drone
-        "lens error", "lens fault", "gimbal error", "gimbal fault",
-        "motor overload", "crash damage", "crashed",
-
-        # Console-specific
-        "drift issue", "stick drift", "joystick drift", "controller drift",
-        "no hdmi output", "av output fault", "white light error",
-        "blue light error", "yellow light of death", "red ring of death",
-        "wlod", "ylod", "rrod",
+    accessory_only_terms = [
+        "empty",
+        "packaging only",
+        "box only",
+        "boxes only",
+        "package only",
+        "case only",
+        "charger only",
+        "battery only",
+        "shell only",
+        "housing only",
+        "empty box",
+        "empty packaging",
+        "no console included",
+        "no phone included",
+        "no tablet included",
+        "no blade",
+        "no battery",
+        "bare unit",
+        "body only",
+        "body-only",
+        "no charger",
+        "no accessories",
+        "missing parts",
+        "missing screws",
     ]
+    if any(term in blob for term in accessory_only_terms):
+        return "D"
 
-    if any(term in blob for term in faulty_terms):
+    if "grade d" in blob:
         return "D"
 
     if re.search(r"\b(grade\s*c|used\s+fair|fair\s+condition|condition\s+fair)\b", blob):
+        return "C"
+
+    # Physical damage is a condition cap, not always a functional fault.
+    if _has_physical_damage_language(blob):
         return "C"
 
     # ----------------
@@ -717,6 +1139,8 @@ def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
         or attrs.get("Condition")
     )
     if grade_val:
+        if "grade d" in grade_val or " d" in grade_val or "d " in grade_val:
+            return "D"
         if "grade c" in grade_val or "c+" in grade_val or "c " in grade_val:
             return "C"
         if "grade b" in grade_val or "b+" in grade_val or "b " in grade_val:
@@ -752,8 +1176,6 @@ def _derive_condition_grade(attrs: Mapping[str, Any], title: str) -> str:
     # Grade C: rough but working
     # ----------------
     rough_terms = [
-        "heavy wear", "heavily used", "scratches",
-        "cosmetic damage", "cosmetically poor", "scraped screen",
         "no box", "without box", "unboxed", "no original box",
         "no manual", "no instructions", "missing manual",
     ]

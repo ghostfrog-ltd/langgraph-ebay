@@ -10,6 +10,22 @@ Active priority:
 5. Show potentials and closest misses so the human can decide whether to punt.
 
 Current known issues:
+- Heartbeat email now includes a source-scoped `Pokemon GBP 20 Profit Candidates`
+  section. It uses the same deterministic resale math as the normal potentials
+  report, but filters to `ebay-pokemon` and lowers the gate to £20 profit with
+  at least 3 same-key/same-grade comps. Current smoke run: 156 live Pokémon rows
+  with comps, 19 checked after guardrails/comp floor, 0 clearing the £20 gate.
+- Pokémon model keys now keep condition out of `model_key` and reserve
+  professional grades such as PSA/BGS/CGC in the product key. Rebuilt only
+  `ebay-pokemon` rows (6,925 scanned/changed, condition_changed=0), then
+  rebuilt comps. Pokémon comp rows rose from 151 to 1,241, comp rows with 3+
+  samples rose from 2 to 39, and live Pokémon rows with 3+ comps rose from 1 to
+  22. Current Pokémon buy-gate check still has 0 rows clearing the default £50
+  profit gate.
+- Slack review polling now has a launchd agent
+  `com.ghostfrog.langgraph-ebay.slack-review`, running `ebay slack-review-once`
+  every 15 seconds. It is installed and healthy with inbound bot token/channel
+  settings enabled.
 - Heartbeat could stall on slow `auction_listings` queries; migration
   `20260721_001_add_heartbeat_performance_indexes.sql` adds targeted indexes
   for the worst heartbeat reads. Verification after apply: missing-attributes
@@ -238,6 +254,35 @@ Current known issues:
   other request exceptions become `skip:error:trading_api_*` outcomes, leaving
   listing status/final price untouched while allowing the rest of the batch to
   continue.
+- Added three component collection sources inside the existing eBay listing
+  framework: `ebay-graphics-cards`, `ebay-cpus`, and `ebay-motherboards`.
+  Graphics cards and CPUs now get strict title/attribute model keys without
+  condition suffixes; motherboards get exact-ish board-name keys but remain
+  collection-only for buy-candidate guardrails. The new adapters use targeted
+  seed searches plus source-specific junk exclusions for box-only, accessories,
+  bundles, laptop/server parts, faulty/untested/spares rows, and obvious repair
+  listings. Initial smoke collection seeded 22 GPU rows, 20 CPU rows, and 418
+  motherboard rows, then rebuilt those source keys under the tightened rules.
+- Added two more collection-only eBay sources: `ebay-camera-lenses` and
+  `ebay-industrial-automation`. Lens keys are simple brand/focal/aperture-family
+  keys for premium modern lenses; industrial keys are mostly manufacturer plus
+  exact part number. Both sources are explicitly kept out of buy candidates for
+  now. Also added workstation/pro GPU seed searches to `ebay-graphics-cards` and
+  high-spec MacBook Pro / Mac Studio / Mac Pro seed searches to existing
+  `ebay-apple`. Initial smoke collection seeded 419 lens rows and 316 industrial
+  rows, all with known keys.
+- Fixed a live-listing demotion bug in the Browse collector. The post-upsert
+  stale cleanup was global and could mark live rows from other sources as
+  `unknown`; it also did not protect future-dated rows. Cleanup is now scoped to
+  the sources in the current batch and only demotes rows whose `end_time` is
+  missing or already passed. Repaired the local database by promoting 1,443
+  recently seen future-dated `unknown` rows back to `live`; `ebay stats` live
+  count recovered from 3 to 1,446.
+- Favourites now only show locally buyable rows. `list_favourites()` requires
+  the latest review action to be `up`, a matching `auction_listings` row, local
+  `status='live'`, `finalized=false`, and no expired `end_time`. Sold, ended,
+  expired, deleted, or unknown rows no longer appear in email/Slack/CLI
+  favourites even if the historical review action remains in the audit table.
 
 Boundary: no autonomous bids, buys, messages, relists, refunds, shipping marks,
 or other marketplace writes.

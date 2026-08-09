@@ -17,7 +17,6 @@ from typing import Any
 from psycopg2.extras import RealDictCursor
 
 from utils.db_schema import get_fresh_connection
-from utils.condition import has_investible_product_identity
 from utils.ebay_api_accounting import build_api_accounting
 
 DEFAULT_EXCLUDED_BACKFILL_SOURCES = (
@@ -31,9 +30,14 @@ DEFAULT_EXCLUDED_BACKFILL_SOURCES = (
 DEFAULT_BACKFILL_SOURCE_PRIORITY = (
     "ebay-apple",
     "ebay-samsung",
+    "ebay-graphics-cards",
+    "ebay-cpus",
+    "ebay-camera-lenses",
     "ebay-watches",
     "ebay-lego",
     "ebay-tools",
+    "ebay-motherboards",
+    "ebay-industrial-automation",
     "ebay-actioncams",
     "ebay-headphones",
     "ebay-pokemon",
@@ -70,14 +74,33 @@ def ensure_backfill_tracking_columns(cur) -> None:
     was checked, why it was or was not finalized, and when it can safely be
     considered again without burning the same API call every run.
     """
+    expected = {
+        "backfill_checked_at": "TIMESTAMPTZ",
+        "backfill_check_count": "INTEGER NOT NULL DEFAULT 0",
+        "backfill_last_reason": "TEXT",
+    }
     cur.execute(
         """
-        ALTER TABLE auction_listings
-            ADD COLUMN IF NOT EXISTS backfill_checked_at TIMESTAMPTZ,
-            ADD COLUMN IF NOT EXISTS backfill_check_count INTEGER NOT NULL DEFAULT 0,
-            ADD COLUMN IF NOT EXISTS backfill_last_reason TEXT
-        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'auction_listings'
+          AND column_name = ANY(%s)
+        """,
+        (list(expected),),
     )
+    existing = {
+        str(row.get("column_name") if isinstance(row, dict) else row[0])
+        for row in cur.fetchall()
+    }
+    missing = [(name, definition) for name, definition in expected.items() if name not in existing]
+    if not missing:
+        return
+
+    clauses = ",\n            ".join(
+        f"ADD COLUMN IF NOT EXISTS {name} {definition}" for name, definition in missing
+    )
+    cur.execute(f"ALTER TABLE auction_listings\n            {clauses}")
 
 
 def _fetch_one(cur, sql: str, params: tuple[Any, ...] = ()) -> dict[str, Any]:
@@ -235,13 +258,18 @@ def unknown_backfill_source_summary(cur) -> list[dict[str, Any]]:
             CASE nk.source
                 WHEN 'ebay-apple' THEN 0
                 WHEN 'ebay-samsung' THEN 1
-                WHEN 'ebay-watches' THEN 2
-                WHEN 'ebay-lego' THEN 3
-                WHEN 'ebay-tools' THEN 4
-                WHEN 'ebay-actioncams' THEN 5
-                WHEN 'ebay-headphones' THEN 6
-                WHEN 'ebay-pokemon' THEN 7
-                WHEN 'ebay-consoles' THEN 8
+                WHEN 'ebay-graphics-cards' THEN 2
+                WHEN 'ebay-cpus' THEN 3
+                WHEN 'ebay-camera-lenses' THEN 4
+                WHEN 'ebay-watches' THEN 5
+                WHEN 'ebay-lego' THEN 6
+                WHEN 'ebay-tools' THEN 7
+                WHEN 'ebay-motherboards' THEN 8
+                WHEN 'ebay-industrial-automation' THEN 9
+                WHEN 'ebay-actioncams' THEN 10
+                WHEN 'ebay-headphones' THEN 11
+                WHEN 'ebay-pokemon' THEN 12
+                WHEN 'ebay-consoles' THEN 13
                 ELSE 99
             END,
             live_listings_needing_comps DESC,
@@ -259,38 +287,15 @@ def unknown_backfill_candidates(
     if limit <= 0:
         return []
 
-    # The queue is filtered again by Python product-identity guardrails. Page
-    # through the ordered backlog until the requested limit is filled or the
-    # bounded SQL candidate set is genuinely exhausted.
-    filtered = []
-    offset = 0
-    page_size = max(BACKFILL_CANDIDATE_PAGE_SIZE, min(limit * 2, 20000))
-    max_scan_rows = max(BACKFILL_CANDIDATE_PAGE_SIZE, min(BACKFILL_MAX_SCAN_ROWS, limit * 1000))
-
-    while len(filtered) < limit and offset < max_scan_rows:
-        rows = _fetch_unknown_backfill_candidate_page(
-            cur,
-            limit=min(page_size, max_scan_rows - offset),
-            offset=offset,
-            excluded_sources=excluded_sources,
-        )
-        if not rows:
-            break
-
-        for row in rows:
-            if not has_investible_product_identity(
-                str(row.get("title") or ""),
-                source=str(row.get("source") or ""),
-                model_key=str(row.get("model_key") or ""),
-            ):
-                continue
-            filtered.append(row)
-            if len(filtered) >= limit:
-                break
-
-        offset += len(rows)
-
-    return filtered
+    # Final-price recovery is intentionally broader than the live buy list.
+    # Live candidates must pass strict investible-product guardrails; backfill
+    # should spend calls on known model-key rows so comps can become complete.
+    return _fetch_unknown_backfill_candidate_page(
+        cur,
+        limit=limit,
+        offset=0,
+        excluded_sources=excluded_sources,
+    )
 
 
 def _fetch_unknown_backfill_candidate_page(
@@ -412,13 +417,18 @@ def _fetch_unknown_backfill_candidate_page(
             CASE source
                 WHEN 'ebay-apple' THEN 0
                 WHEN 'ebay-samsung' THEN 1
-                WHEN 'ebay-watches' THEN 2
-                WHEN 'ebay-lego' THEN 3
-                WHEN 'ebay-tools' THEN 4
-                WHEN 'ebay-actioncams' THEN 5
-                WHEN 'ebay-headphones' THEN 6
-                WHEN 'ebay-pokemon' THEN 7
-                WHEN 'ebay-consoles' THEN 8
+                WHEN 'ebay-graphics-cards' THEN 2
+                WHEN 'ebay-cpus' THEN 3
+                WHEN 'ebay-camera-lenses' THEN 4
+                WHEN 'ebay-watches' THEN 5
+                WHEN 'ebay-lego' THEN 6
+                WHEN 'ebay-tools' THEN 7
+                WHEN 'ebay-motherboards' THEN 8
+                WHEN 'ebay-industrial-automation' THEN 9
+                WHEN 'ebay-actioncams' THEN 10
+                WHEN 'ebay-headphones' THEN 11
+                WHEN 'ebay-pokemon' THEN 12
+                WHEN 'ebay-consoles' THEN 13
                 ELSE 99
             END,
             CASE WHEN tier_rank = 1 THEN comp_samples ELSE NULL END ASC NULLS LAST,

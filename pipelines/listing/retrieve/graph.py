@@ -27,6 +27,11 @@ from .adapters.headphones import Adapter as HeadphonesAdapter
 from .adapters.hondaNc750 import Adapter as Nc750Adapter
 from .adapters.honda_msx125 import Adapter as Msx125Adapter
 from .adapters.mini_cooper import Adapter as MiniCooperAdapter
+from .adapters.graphics_cards import Adapter as GraphicsCardsAdapter
+from .adapters.cpus import Adapter as CpusAdapter
+from .adapters.motherboards import Adapter as MotherboardsAdapter
+from .adapters.camera_lenses import Adapter as CameraLensesAdapter
+from .adapters.industrial_automation import Adapter as IndustrialAutomationAdapter
 
 logger = get_logger(__name__)
 
@@ -116,6 +121,11 @@ ADAPTERS: Dict[str, Any] = {
     "nc750": Nc750Adapter,
     "msx125": Msx125Adapter,
     "mini_cooper": MiniCooperAdapter,
+    "graphics_cards": GraphicsCardsAdapter,
+    "cpus": CpusAdapter,
+    "motherboards": MotherboardsAdapter,
+    "camera_lenses": CameraLensesAdapter,
+    "industrial_automation": IndustrialAutomationAdapter,
 }
 
 DEFAULT_ADAPTER_ORDER: List[str] = [
@@ -134,6 +144,11 @@ DEFAULT_ADAPTER_ORDER: List[str] = [
     "nc750",
     "msx125",
     "mini_cooper",
+    "graphics_cards",
+    "cpus",
+    "motherboards",
+    "camera_lenses",
+    "industrial_automation",
 ]
 
 

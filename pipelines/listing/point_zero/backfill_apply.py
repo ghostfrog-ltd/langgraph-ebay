@@ -19,6 +19,7 @@ import requests
 from psycopg2.extras import execute_batch
 
 from pipelines.listing.ended.graph import (
+    TRADING_USAGE_LIMIT_ERROR_CODES,
     _call_trading_get_item,
     _extract_numeric_item_id,
     _parse_trading_get_item,
@@ -34,6 +35,15 @@ BACKFILL_LOCK_KEY = 260531001
 DEFAULT_DAILY_BACKFILL_BUDGET = 1000
 DEFAULT_BACKFILL_BATCH_SIZE = 100
 TRADING_DELETE_CODES = {"17", "1505", "21920397"}
+
+
+def _trading_usage_limit_reason(parsed: Optional[dict[str, Any]]) -> str | None:
+    if not parsed:
+        return None
+    code = str(parsed.get("code") or "")
+    if code in TRADING_USAGE_LIMIT_ERROR_CODES:
+        return f"trading_usage_limit_{code}"
+    return None
 
 
 def _try_acquire_lock(conn) -> bool:
@@ -169,6 +179,20 @@ def _classify_trading_snapshot(
             final_price=None,
             bid_count=0,
             reason=f"trading_item_not_found_{code}",
+        )
+
+    if code:
+        return BackfillOutcome(
+            listing_id=listing_id,
+            external_id=external_id,
+            source=source,
+            model_key=model_key,
+            title=title,
+            action="skip",
+            new_status="error",
+            final_price=None,
+            bid_count=0,
+            reason=f"trading_error_{code}",
         )
 
     if not bool(parsed.get("ended")):
@@ -429,17 +453,38 @@ def run_backfill(
     mode performs read-only Trading API calls and then updates only selected
     unknown PostgreSQL rows to `live`, `sold`, `ended`, or local deletion.
     """
+    logger.info(
+        "[point_zero.backfill_apply] start mode=%s limit=%d daily_backfill_budget=%d daily_cap=%d safety_reserve=%d",
+        "apply" if apply else "dry_run",
+        limit,
+        daily_backfill_budget,
+        daily_cap,
+        safety_reserve,
+    )
     checked_today = backfill_checks_today()
     remaining_backfill_budget = max(int(daily_backfill_budget) - checked_today, 0)
     effective_limit = min(limit, remaining_backfill_budget)
     planner_daily_cap = daily_cap
+    logger.info(
+        "[point_zero.backfill_apply] budget checked_today=%d remaining=%d effective_limit=%d",
+        checked_today,
+        remaining_backfill_budget,
+        effective_limit,
+    )
 
+    logger.info("[point_zero.backfill_apply] planning candidates limit=%d", effective_limit)
     candidates, plan = _load_candidates_from_plan(
         limit=effective_limit,
         daily_cap=planner_daily_cap,
         safety_reserve=safety_reserve,
         include_vehicle_sources=include_vehicle_sources,
         recommended_backfill_override=effective_limit,
+    )
+    logger.info(
+        "[point_zero.backfill_apply] planned candidates=%d shortfall=%d reason=%s",
+        len(candidates),
+        max(effective_limit - len(candidates), 0),
+        plan.get("candidate_shortfall_reason"),
     )
 
     if not apply:
@@ -462,7 +507,16 @@ def run_backfill(
 
     outcomes: list[BackfillOutcome] = []
     remaining_trading_calls = remaining_backfill_budget
-    for row in candidates:
+    stop_reason: str | None = None
+    total_candidates = len(candidates)
+    for index, row in enumerate(candidates, start=1):
+        if index == 1 or index % 50 == 0 or index == total_candidates:
+            logger.info(
+                "[point_zero.backfill_apply] progress processing=%d/%d remaining_calls=%d",
+                index,
+                total_candidates,
+                remaining_trading_calls,
+            )
         listing_id = int(row.get("id") or 0)
         external_id = str(row.get("external_id") or "")
         source = str(row.get("source") or "")
@@ -563,6 +617,26 @@ def run_backfill(
             )
             continue
         parsed = _parse_trading_get_item(response.text)
+        usage_limit_reason = _trading_usage_limit_reason(parsed)
+        if usage_limit_reason:
+            logger.warning(
+                "[point_zero.backfill_apply] Trading usage limit reached item_id=%s external_id=%s reason=%s; stopping batch",
+                item_id,
+                external_id,
+                usage_limit_reason,
+            )
+            outcomes.append(
+                _temporary_trading_failure_outcome(
+                    listing_id=listing_id,
+                    external_id=external_id,
+                    source=source,
+                    model_key=model_key,
+                    title=title,
+                    reason=usage_limit_reason,
+                )
+            )
+            stop_reason = usage_limit_reason
+            break
         outcomes.append(
             _classify_trading_snapshot(
                 listing_id=listing_id,
@@ -601,6 +675,8 @@ def run_backfill(
         "candidate_shortfall": max(effective_limit - len(candidates), 0),
         "candidate_shortfall_reason": plan.get("candidate_shortfall_reason"),
         "outcome_count": len(outcomes),
+        "status": "stopped" if stop_reason else "completed",
+        "stop_reason": stop_reason,
         "applied": applied,
         "counts": counts,
         "outcomes": [asdict(outcome) for outcome in outcomes],

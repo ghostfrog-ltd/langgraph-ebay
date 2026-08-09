@@ -148,7 +148,7 @@ def latest_review_actions(limit: int = 50) -> list[dict[str, Any]]:
 
 
 def list_favourites(limit: int = 100) -> list[dict[str, Any]]:
-    """Return latest thumbs-up listings, enriched from the live listing table."""
+    """Return latest thumbs-up listings that are still locally buyable."""
 
     ensure_review_table()
     conn = get_fresh_connection()
@@ -174,9 +174,15 @@ def list_favourites(limit: int = 100) -> list[dict[str, Any]]:
                     COALESCE(a.condition_grade, 'B') AS condition_grade,
                     latest.created_at
                 FROM latest
-                LEFT JOIN auction_listings AS a
+                JOIN auction_listings AS a
                   ON a.external_id = latest.external_id
                 WHERE latest.action = 'up'
+                  AND a.status = 'live'
+                  AND COALESCE(a.finalized, FALSE) = FALSE
+                  AND (
+                        a.end_time IS NULL
+                        OR a.end_time > (now() AT TIME ZONE 'utc')
+                  )
                 ORDER BY latest.created_at DESC, latest.id DESC
                 LIMIT %s
                 """,

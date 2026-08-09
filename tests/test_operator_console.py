@@ -15,6 +15,7 @@ class OperatorConsoleTests(unittest.TestCase):
         self.assertIn("serious", menu)
         self.assertIn("punt", menu)
         self.assertIn("stats", menu)
+        self.assertIn("explain", menu)
         self.assertIn("api-health", menu)
         self.assertIn("backfill-plan", menu)
         self.assertIn("model-keys-apply", menu)
@@ -172,6 +173,15 @@ class OperatorConsoleTests(unittest.TestCase):
         self.assertIn("== Comps And Live Coverage ==", text)
         self.assertIn("== API Buckets ==", text)
         self.assertIn("Trading API", text)
+
+    def test_explain_prints_listing_evidence(self):
+        with patch("pipelines.listing.explain.explain_listing", return_value="explanation text") as explain:
+            with patch("sys.stdout", new_callable=StringIO) as out:
+                code = operator_console.main(["explain", "206446095377", "--limit", "12"])
+
+        self.assertEqual(code, 0)
+        explain.assert_called_once_with("206446095377", limit=12, show_all=False)
+        self.assertIn("explanation text", out.getvalue())
 
     def test_stats_are_mapped_from_shared_heartbeat_metrics(self):
         metrics = {

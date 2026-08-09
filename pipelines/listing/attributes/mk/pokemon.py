@@ -2,9 +2,8 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any, Mapping, Optional
-
-from utils.condition import _derive_condition_grade
 
 UNKNOWN_KEY = "unknown"
 
@@ -13,8 +12,11 @@ def _clean(s: Any) -> str:
     """Basic string cleaner: None -> "", strip whitespace."""
     if s is None: return ""
     if isinstance(s, list):
-        return " ".join(str(v).lower() for v in s)
-    return str(s).strip()
+        s = " ".join(str(v) for v in s)
+    text = str(s).strip()
+    text = text.replace("PokÃ©mon", "Pokemon").replace("pokÃ©mon", "pokemon")
+    text = text.replace("PokÃmon", "Pokemon").replace("pokÃmon", "pokemon")
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
 
 
 def _alnum_token(s: str) -> str:
@@ -34,11 +36,15 @@ def _extract_professional_grade(attrs: Mapping[str, Any], title: str) -> str:
 
     # 1. Identify the company
     company = ""
-    if "psa" in search_text or "professional sports authenticator" in search_text:
+    if re.search(r"\bpsa\b", search_text) or "professional sports authenticator" in search_text:
         company = "psa"
-    elif "beckett" in search_text or "bgs" in search_text or "bas" in search_text:
+    elif (
+        "beckett" in search_text
+        or re.search(r"\bbgs\b", search_text)
+        or re.search(r"\bbas\b", search_text)
+    ):
         company = "bgs"
-    elif "cgc" in search_text:
+    elif re.search(r"\bcgc\b", search_text):
         company = "cgc"
 
     if not company:
@@ -131,7 +137,9 @@ def _compress_card_name(raw: Any) -> str:
 
 def pokemon_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
     """
-    Builds canonical card key: {franchise}-{set}-{cardcore}-{finish}{_lang?}_{grade}
+    Builds canonical card key: {franchise}-{set}-{cardcore}-{finish}{_lang?}{-prograde?}
+
+    Condition is deliberately stored separately in auction_listings.condition_grade.
     """
     franchise = _normalise_brand = _normalise_franchise(attrs)
     set_token = _normalise_set(attrs.get("Set"))
@@ -158,8 +166,7 @@ def pokemon_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str
     base_key = "-".join(base_parts)
     if lang: base_key += f"_{lang}"
 
-    # Condition & Professional Grade
-    condition_grade = _derive_condition_grade(attrs, title)
-    final_grade = f"{condition_grade}-{pro_grade}" if pro_grade else condition_grade
+    if pro_grade:
+        base_key += f"-{pro_grade}"
 
-    return f"{base_key}_{final_grade}"
+    return base_key
