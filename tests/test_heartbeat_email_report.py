@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pipelines.listing.main import (
     _build_heartbeat_email_html,
     _candidate_rows_for_refresh,
+    _email_link,
     _next_action_for_email,
     _potential_rows_for_email,
 )
@@ -11,6 +12,17 @@ from pipelines.listing.main import (
 
 class HeartbeatEmailReportTests(unittest.TestCase):
     """Heartbeat email should expose fresh live evidence and backfill status."""
+
+    def test_email_listing_link_uses_compact_visible_label(self):
+        html = _email_link(
+            "Apple MacBook Air 13in M1 8GB 256GB",
+            "https://www.ebay.co.uk/itm/168181595699?amdata=very-long",
+        )
+
+        self.assertIn("Apple MacBook Air 13in M1 8GB 256GB", html)
+        self.assertIn('href="https://www.ebay.co.uk/itm/168181595699?amdata=very-long"', html)
+        self.assertIn(">View listing</a>", html)
+        self.assertNotIn(">https://www.ebay.co.uk/itm/168181595699", html)
 
     def test_candidate_price_refresh_shortlist_is_unique_and_capped(self):
         report = {

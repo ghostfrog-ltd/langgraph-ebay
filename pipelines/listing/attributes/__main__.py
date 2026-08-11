@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import sys
 from datetime import datetime, timezone
 
 from utils.logger import get_logger
 from pipelines.listing.attributes.graph import (
     run,
+    run_for_ids,
     save_graph_diagram,
 )
 
@@ -33,6 +35,20 @@ def _parse_int_flag(name: str, default: int) -> int:
         return default
 
 
+def _parse_ids_flag(name: str = "--ids") -> list[str]:
+    if name not in sys.argv:
+        return []
+    i = sys.argv.index(name) + 1
+    values: list[str] = []
+    while i < len(sys.argv) and not sys.argv[i].startswith("--"):
+        for part in sys.argv[i].split(","):
+            part = part.strip()
+            if part:
+                values.append(part)
+        i += 1
+    return values
+
+
 def main() -> None:
     _load_env()
 
@@ -53,8 +69,14 @@ def main() -> None:
 
     limit = _parse_int_flag("--limit", 20)
     enable_api = "--no-api" not in sys.argv
+    force = "--force" in sys.argv
+    item_ids = _parse_ids_flag()
 
-    run(limit=limit, enable_api=enable_api)
+    if item_ids:
+        result = run_for_ids(item_ids, enable_api=enable_api, force=force)
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        run(limit=limit, enable_api=enable_api)
 
     finished = datetime.now(timezone.utc).isoformat()
     logger.info(f"[listing.attributes] CLI end {finished}")

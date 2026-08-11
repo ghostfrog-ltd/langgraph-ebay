@@ -10,6 +10,7 @@ Which live eBay listings are priced below our safe buy price for the same
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from typing import Any, Mapping
 
 from psycopg2.extras import RealDictCursor
@@ -196,6 +197,7 @@ def build_potentials(
     min_profit: float = MIN_PROFIT_GBP,
     min_roi: float = MIN_ROI,
     min_comps: int = MIN_CANDIDATE_COMPS,
+    now: datetime | None = None,
 ) -> tuple[list[ListingPotential], list[ListingPotential], dict[str, int]]:
     """
     Return rows that clear the buy maths, plus closest misses for debugging.

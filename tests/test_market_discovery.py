@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timedelta, timezone
 
 from pipelines.listing.market_discovery.graph import (
     _fetch_live_listing_comp_rows,
@@ -178,6 +179,155 @@ class ListingPotentialTests(unittest.TestCase):
         self.assertEqual(potentials, [])
         self.assertEqual(closest, [])
         self.assertEqual(stats["blocked_identity"], 1)
+
+    def test_dirty_false_positives_do_not_hide_valid_future_auction(self):
+        now = datetime(2026, 8, 11, 12, 0, tzinfo=timezone.utc)
+        dirty_rows = [
+            {
+                "source": "ebay-consoles",
+                "external_id": "v1|307061337039|0",
+                "title": "Nintendo Switch 2 USB-C Wall Charger And Cable",
+                "url": "https://example.test/charger",
+                "model_key": "nintendo-switch-2",
+                "raw_attrs": {"Type": "USB Cable", "Compatible Product": "Nintendo Switch 2 Console"},
+                "sale_type": "bin",
+                "price_current": 8.0,
+                "median_final_price": 390.0,
+                "samples": 20,
+            },
+            {
+                "source": "ebay-consoles",
+                "external_id": "v1|375144747987|0",
+                "title": "Wireless Controller for Nintendo Switch 2",
+                "url": "https://example.test/controller",
+                "model_key": "nintendo-switch-2",
+                "raw_attrs": {"Type": "Controller", "Platform": "Nintendo Switch 2"},
+                "sale_type": "bin",
+                "price_current": 20.0,
+                "median_final_price": 390.0,
+                "samples": 20,
+            },
+            {
+                "source": "ebay-consoles",
+                "external_id": "v1|236802209004|0",
+                "title": "Nintendo Switch 2 Messenger Bag Carry Case",
+                "url": "https://example.test/bag",
+                "model_key": "nintendo-switch-2",
+                "raw_attrs": {"Type": "Carry Case", "Compatible Product": "Nintendo Switch 2 Console"},
+                "sale_type": "bin",
+                "price_current": 12.0,
+                "median_final_price": 390.0,
+                "samples": 20,
+            },
+            {
+                "source": "ebay-consoles",
+                "external_id": "v1|168601275794|0",
+                "title": "Nintendo Switch Console Game - Let's Build a Zoo -",
+                "url": "https://example.test/game",
+                "model_key": "nintendo-switch-2",
+                "sale_type": "bin",
+                "price_current": 45.0,
+                "median_final_price": 390.0,
+                "samples": 20,
+            },
+            {
+                "source": "ebay-graphics-cards",
+                "external_id": "v1|227471586676|0",
+                "title": "*DAMAGED* NVIDIA GeForce RTX 5090 32GB Graphics Card",
+                "url": "https://example.test/gpu",
+                "model_key": "nvidia-rtx-5090-32gb",
+                "sale_type": "bin",
+                "price_current": 600.0,
+                "median_final_price": 1800.0,
+                "samples": 20,
+            },
+            {
+                "source": "ebay-apple",
+                "external_id": "v1|198553558510-mac|0",
+                "title": "*DAMAGED* Apple MacBook Pro 14 inch M3 Pro 18GB 512GB",
+                "url": "https://example.test/macbook",
+                "model_key": "apple-macbook-pro-14in-m3pro-18gb-512gb",
+                "sale_type": "bin",
+                "price_current": 200.0,
+                "median_final_price": 1200.0,
+                "samples": 20,
+            },
+            {
+                "source": "ebay-lego",
+                "external_id": "v1|177824021246|0",
+                "title": "LEGO Castle Byers Exclusive Promo Set 75810",
+                "url": "https://example.test/lego",
+                "model_key": "lego-set-75810",
+                "sale_type": "bin",
+                "price_current": 5.0,
+                "median_final_price": 170.0,
+                "samples": 20,
+            },
+            {
+                "source": "ebay-apple",
+                "external_id": "v1|198553558510-phone|0",
+                "title": "Apple iPhone 15 Pro 512GB",
+                "url": "https://example.test/iphone",
+                "model_key": "apple-iphone-15-pro-512gb",
+                "sale_type": "auction",
+                "end_time": now + timedelta(hours=86),
+                "price_current": 1.0,
+                "median_final_price": 700.0,
+                "samples": 20,
+            },
+        ]
+
+        potentials, closest, stats = build_potentials(dirty_rows, now=now)
+
+        self.assertEqual([p.external_id for p in potentials], ["v1|198553558510-phone|0"])
+        self.assertEqual(closest[0].external_id, "v1|198553558510-phone|0")
+        self.assertEqual(stats["blocked_identity"], 7)
+        self.assertEqual(stats["checked"], 1)
+
+    def test_scratch_typo_switch_screen_damage_does_not_reach_punt_list(self):
+        potentials, closest, stats = build_potentials(
+            [
+                {
+                    "source": "ebay-consoles",
+                    "external_id": "v1|267569109985|0",
+                    "title": "Nintendo Switch 32GB Home Console - Black (HAC-001(01 )*SCRATHED SCREEN*",
+                    "url": "https://example.test/scrathed",
+                    "model_key": "nintendo-switch-base",
+                    "sale_type": "bin",
+                    "price_current": 66.0,
+                    "median_final_price": 114.70,
+                    "samples": 203,
+                }
+            ],
+            min_profit=25,
+        )
+
+        self.assertEqual(potentials, [])
+        self.assertEqual(closest, [])
+        self.assertEqual(stats["blocked_identity"], 1)
+
+    def test_future_auction_can_still_be_scored(self):
+        now = datetime(2026, 8, 11, 12, 0, tzinfo=timezone.utc)
+        potentials, closest, stats = build_potentials(
+            [
+                {
+                    "source": "ebay-apple",
+                    "external_id": "v1|mature|0",
+                    "title": "Apple iPhone 15 Pro 512GB",
+                    "url": "https://example.test/future",
+                    "model_key": "apple-iphone-15-pro-512gb",
+                    "sale_type": "auction",
+                    "end_time": now + timedelta(hours=86),
+                    "price_current": 100.0,
+                    "median_final_price": 700.0,
+                    "samples": 20,
+                }
+            ],
+            now=now,
+        )
+
+        self.assertEqual(len(potentials), 1)
+        self.assertEqual(closest[0].external_id, "v1|mature|0")
 
     def test_build_potentials_counts_low_comp_rows_without_returning_them(self):
         potentials, closest, stats = build_potentials(

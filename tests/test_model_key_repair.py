@@ -956,6 +956,12 @@ class ModelKeyRepairTests(unittest.TestCase):
             "unknown",
         )
 
+    def test_damaged_gpu_keeps_condition_out_of_key(self):
+        key = normalise_model("*DAMAGED* NVIDIA RTX 5090 32GB Graphics Card", {}, "ebay-graphics-cards")
+
+        self.assertEqual(key, "nvidia-rtx-5090-32gb")
+        self.assertEqual(_derive_condition_grade({}, "*DAMAGED* NVIDIA RTX 5090 32GB Graphics Card"), "C")
+
     def test_workstation_gpu_keys_are_supported(self):
         self.assertEqual(
             normalise_model("NVIDIA Quadro RTX 5000 16GB Graphics Card", {}, "ebay-graphics-cards"),
@@ -1073,6 +1079,46 @@ class ModelKeyRepairTests(unittest.TestCase):
     def test_industrial_automation_junk_is_unknown(self):
         self.assertEqual(
             normalise_model("Siemens S7 PLC Manual Book", {}, "ebay-industrial-automation"),
+            "unknown",
+        )
+
+    def test_audit_switch_accessories_are_unknown_not_console_keys(self):
+        examples = [
+            (
+                "Nintendo Switch 2 USB-C Wall Charger And Cable",
+                {"Type": "USB Cable", "Compatible Product": "Nintendo Switch 2 Console"},
+            ),
+            (
+                "Wireless Controller for Nintendo Switch 2",
+                {"Type": "Controller", "Platform": "Nintendo Switch 2"},
+            ),
+            (
+                "Nintendo Switch 2 Messenger Bag Carry Case",
+                {"Type": "Carry Case", "Compatible Product": "Nintendo Switch 2 Console"},
+            ),
+            (
+                "Nintendo Switch Console Game - Let's Build a Zoo -",
+                {},
+            ),
+        ]
+
+        for title, attrs in examples:
+            with self.subTest(title=title):
+                self.assertEqual(normalise_model(title, attrs, "ebay-consoles"), "unknown")
+
+    def test_console_with_controller_still_gets_console_key(self):
+        self.assertEqual(
+            normalise_model(
+                "Nintendo Switch 2 Console With Wireless Controller",
+                {"Type": "Video Game Console"},
+                "ebay-consoles",
+            ),
+            "nintendo-switch-2",
+        )
+
+    def test_lego_promo_set_is_unknown_not_full_set_key(self):
+        self.assertEqual(
+            normalise_model("LEGO Castle Byers Exclusive Promo Set 75810", {}, "ebay-lego"),
             "unknown",
         )
 

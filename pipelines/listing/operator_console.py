@@ -97,6 +97,12 @@ COMMANDS: tuple[ConsoleCommand, ...] = (
         "ebay comps",
     ),
     ConsoleCommand(
+        "enrich-ids",
+        "Run Trading attribute enrichment for explicit listing IDs only.",
+        "spends eBay API calls + writes local DB",
+        "ebay enrich-ids 147485216891 366595448811",
+    ),
+    ConsoleCommand(
         "model-keys-dry-run",
         "Preview all-source model-key and condition-grade rebuild.",
         "read-only",
@@ -242,6 +248,7 @@ def command_menu() -> str:
             "  ebay backfill-plan",
             "  ebay backfill-dry-run --limit 250 --daily-limit 5000",
             "  ebay backfill-apply --limit 250 --daily-limit 5000",
+            "  ebay enrich-ids 147485216891 366595448811",
             "  ebay model-keys-dry-run",
             "  ebay model-keys-apply",
             "  ebay actioncam-keys-dry-run",
@@ -806,6 +813,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("comps", help="Rebuild confirmed sold comps.")
 
+    p = sub.add_parser("enrich-ids", help="Run Trading enrichment for explicit listing IDs only.")
+    p.add_argument("items", nargs="+", help="eBay item URL, Browse ID, or bare numeric item ID.")
+    p.add_argument("--no-api", action="store_true", help="Load nothing from eBay; useful only for plumbing tests.")
+    p.add_argument("--force", action="store_true", help="Re-fetch even if Trading enrichment already completed.")
+
     for name, dry_run in (("model-keys-dry-run", True), ("model-keys-apply", False)):
         p = sub.add_parser(name, help="Rebuild model keys and condition grades across all sources.")
         p.add_argument("--limit", type=_positive_int, default=200000)
@@ -934,6 +946,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "comps":
         return _python_module("pipelines.listing.comps")
+
+    if args.command == "enrich-ids":
+        cmd = ["pipelines.listing.attributes", "--ids", *args.items]
+        if args.no_api:
+            cmd.append("--no-api")
+        if args.force:
+            cmd.append("--force")
+        return _python_module(*cmd)
 
     if args.command in {"model-keys-dry-run", "model-keys-apply"}:
         cmd = [

@@ -402,6 +402,130 @@ class ConditionGuardrailTests(unittest.TestCase):
             )
         )
 
+    def test_damaged_rtx_5090_is_not_investible_normal_stock(self):
+        title = "*DAMAGED* NVIDIA GeForce RTX 5090 32GB Graphics Card"
+
+        self.assertEqual(_derive_condition_grade({}, title), "C")
+        self.assertFalse(
+            has_investible_product_identity(
+                title,
+                source="ebay-graphics-cards",
+                model_key="nvidia-rtx-5090-32gb",
+            )
+        )
+
+    def test_damaged_macbook_is_not_investible_normal_stock(self):
+        title = "*DAMAGED* Apple MacBook Pro 14 inch M3 Pro 18GB 512GB"
+
+        self.assertEqual(_derive_condition_grade({}, title), "C")
+        self.assertFalse(
+            has_investible_product_identity(
+                title,
+                source="ebay-apple",
+                model_key="apple-macbook-pro-14in-m3pro-18gb-512gb",
+            )
+        )
+
+    def test_clean_damage_negation_does_not_trigger_damage_guard(self):
+        self.assertEqual(
+            _derive_condition_grade(
+                {"Seller notes": "Fully working with no damage."},
+                "Sony PS5 Disc Edition 825GB Console",
+            ),
+            "B",
+        )
+
+    def test_screen_damage_variants_and_typos_are_not_investible(self):
+        examples = [
+            "Nintendo Switch 32GB Home Console - Black *SCRATHED SCREEN*",
+            "Nintendo Switch 32GB Home Console - Black scratched-screen",
+            "Nintendo Switch 32GB Home Console - Black scratch screen",
+            "Nintendo Switch 32GB Home Console - Black screen-damaged",
+            "Nintendo Switch 32GB Home Console - Black DAMAGED!!",
+            "Nintendo Switch 32GB Home Console - Black faulty-screen",
+        ]
+
+        for title in examples:
+            with self.subTest(title=title):
+                self.assertEqual(_derive_condition_grade({}, title), "C" if "faulty" not in title.lower() else "D")
+                self.assertFalse(
+                    has_investible_product_identity(
+                        title,
+                        source="ebay-consoles",
+                        model_key="nintendo-switch-base",
+                    )
+                )
+
+    def test_negated_scratch_wording_does_not_trigger_damage_guard(self):
+        self.assertEqual(
+            _derive_condition_grade(
+                {"Seller notes": "Fully working with no scratches or cracks."},
+                "Nintendo Switch 32GB Home Console - Black",
+            ),
+            "B",
+        )
+
+    def test_apple_unlocked_language_is_not_lock_risk(self):
+        for title in (
+            "Unlocked Apple iPhone",
+            "Network Unlocked Apple iPhone",
+            "Factory Unlocked Apple iPhone",
+        ):
+            with self.subTest(title=title):
+                self.assertFalse(
+                    looks_like_partial_or_accessory_listing(
+                        title,
+                        source="ebay-apple",
+                        model_key="apple-iphone-14-pro-128gb",
+                    )
+                )
+                self.assertTrue(
+                    has_investible_product_identity(
+                        title,
+                        source="ebay-apple",
+                        model_key="apple-iphone-14-pro-128gb",
+                    )
+                )
+
+    def test_apple_locked_language_is_lock_risk(self):
+        for title in (
+            "Locked Apple iPhone",
+            "Network Locked Apple iPhone",
+            "Activation Locked Apple iPhone",
+        ):
+            with self.subTest(title=title):
+                self.assertTrue(
+                    looks_like_partial_or_accessory_listing(
+                        title,
+                        source="ebay-apple",
+                        model_key="apple-iphone-14-pro-128gb",
+                    )
+                )
+                self.assertFalse(
+                    has_investible_product_identity(
+                        title,
+                        source="ebay-apple",
+                        model_key="apple-iphone-14-pro-128gb",
+                    )
+                )
+
+    def test_unlocked_trading_specifics_do_not_block_iphone_14_pro_candidate(self):
+        attrs = {
+            "Model": "Apple iPhone 14 Pro",
+            "Network": "Unlocked",
+            "Lock Status": "Network Unlocked",
+            "Storage Capacity": "128 GB",
+        }
+
+        self.assertTrue(
+            has_investible_product_identity(
+                "Apple iPhone 14 Pro 128GB, Space Black, Unlocked",
+                attrs,
+                source="ebay-apple",
+                model_key="apple-iphone-14-pro-128gb",
+            )
+        )
+
     def test_macbook_screen_for_listing_is_device_part(self):
         self.assertTrue(
             looks_like_partial_or_accessory_listing(
@@ -845,6 +969,63 @@ class ConditionGuardrailTests(unittest.TestCase):
                 "Pokemon Legends Z-A Nintendo Switch",
                 source="ebay-consoles",
                 model_key="switch_b",
+            )
+        )
+
+    def test_audit_switch_accessories_are_not_investible_consoles(self):
+        examples = [
+            (
+                "Nintendo Switch 2 USB-C Wall Charger And Cable",
+                {"Type": "USB Cable", "Compatible Product": "Nintendo Switch 2 Console"},
+            ),
+            (
+                "Wireless Controller for Nintendo Switch 2",
+                {"Type": "Controller", "Platform": "Nintendo Switch 2"},
+            ),
+            (
+                "Nintendo Switch 2 Messenger Bag Carry Case",
+                {"Type": "Carry Case", "Compatible Product": "Nintendo Switch 2 Console"},
+            ),
+            (
+                "Nintendo Switch Console Game - Let's Build a Zoo -",
+                {},
+            ),
+        ]
+
+        for title, attrs in examples:
+            with self.subTest(title=title):
+                self.assertTrue(
+                    looks_like_partial_or_accessory_listing(
+                        title,
+                        attrs,
+                        source="ebay-consoles",
+                        model_key="nintendo-switch-2",
+                    )
+                )
+                self.assertFalse(
+                    has_investible_product_identity(
+                        title,
+                        attrs,
+                        source="ebay-consoles",
+                        model_key="nintendo-switch-2",
+                    )
+                )
+
+    def test_console_with_controller_is_still_investible_console(self):
+        self.assertTrue(
+            has_investible_product_identity(
+                "Nintendo Switch 2 Console With Wireless Controller",
+                source="ebay-consoles",
+                model_key="nintendo-switch-2",
+            )
+        )
+
+    def test_lego_promo_set_is_not_investible_as_full_set(self):
+        self.assertFalse(
+            has_investible_product_identity(
+                "LEGO Castle Byers Exclusive Promo Set 75810",
+                source="ebay-lego",
+                model_key="lego-set-75810",
             )
         )
 

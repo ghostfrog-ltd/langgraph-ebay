@@ -23,6 +23,62 @@ def _listing_blob(title: str, attrs: Optional[Mapping[str, Any]] = None, model_k
     return " ".join(part for part in parts if part).strip()
 
 
+def _normalised_tokens(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9]+", _as_text(text))
+
+
+def _has_token_phrase(tokens: list[str], phrase: tuple[str, ...]) -> bool:
+    if not phrase or len(phrase) > len(tokens):
+        return False
+    width = len(phrase)
+    return any(tuple(tokens[idx : idx + width]) == phrase for idx in range(len(tokens) - width + 1))
+
+
+APPLE_LOCK_RISK_PHRASES = (
+    ("activation", "locked"),
+    ("activation", "lock"),
+    ("icloud", "locked"),
+    ("icloud", "lock"),
+    ("i", "cloud", "locked"),
+    ("i", "cloud", "lock"),
+    ("network", "locked"),
+    ("carrier", "locked"),
+    ("locked", "apple", "iphone"),
+    ("locked", "apple", "ipad"),
+    ("locked", "iphone"),
+    ("locked", "ipad"),
+    ("mdm", "locked"),
+    ("remote", "management", "locked"),
+)
+
+
+def _has_apple_lock_risk_language(text: str) -> bool:
+    tokens = _normalised_tokens(text)
+    if "locked" in tokens:
+        return True
+    return any(_has_token_phrase(tokens, phrase) for phrase in APPLE_LOCK_RISK_PHRASES)
+
+
+def _has_vehicle_signal(*, source: str, model_key: str, text: str) -> bool:
+    source_text = _as_text(source)
+    model_key_text = _as_text(model_key)
+    if source_text in {"ebay-motors", "ebay-mini-cooper"}:
+        return True
+    if model_key_text.startswith("vehicle-") or model_key_text.startswith("mini-cooper"):
+        return True
+
+    tokens = _normalised_tokens(text)
+    return (
+        _has_token_phrase(tokens, ("mini", "cooper"))
+        or "honda" in tokens
+        or "msx" in tokens
+        or "grom" in tokens
+        or "motor" in tokens
+        or "motors" in tokens
+        or "car" in tokens
+    )
+
+
 FUNCTIONAL_FAULT_TERMS = (
     "faulty",
     "not working",
@@ -52,6 +108,7 @@ FUNCTIONAL_FAULT_TERMS = (
     "screen issue",
     "screen issues",
     "screen fault",
+    "faulty screen",
     "display fault",
     "display issue",
     "faulty battery",
@@ -71,6 +128,7 @@ FUNCTIONAL_FAULT_TERMS = (
     "for spares",
     "for parts",
     "spares or repairs",
+    "spares or repair",
     "spares & repairs",
     "repair only",
     "needs repair",
@@ -120,6 +178,7 @@ FUNCTIONAL_FAULT_TERMS = (
 
 
 PHYSICAL_DAMAGE_TERMS = (
+    "damaged",
     "badly damaged",
     "screen damage",
     "damaged screen",
@@ -129,8 +188,20 @@ PHYSICAL_DAMAGE_TERMS = (
     "screen damaged",
     "screen cracked",
     "cracked screen",
+    "scratch screen",
+    "scratched screen",
+    "scrathed screen",
+    "screen scratch",
+    "screen scratched",
+    "screen scrathed",
+    "screen smashed",
+    "smashed screen",
+    "screen broken",
     "cracked",
     "smashed",
+    "broken",
+    "scratched",
+    "scrathed",
     "dent",
     "dented",
     "chip",
@@ -180,27 +251,47 @@ PHYSICAL_DAMAGE_TERMS = (
 
 
 def _has_functional_fault_language(blob: str) -> bool:
-    if any(term in blob for term in FUNCTIONAL_FAULT_TERMS):
+    normalised = re.sub(r"[^a-z0-9]+", " ", blob)
+    normalised = re.sub(r"\s+", " ", normalised).strip()
+    if any(term in normalised for term in FUNCTIONAL_FAULT_TERMS):
         return True
     return bool(
         re.search(
             r"\b(face id|touch id|true\s*depth|hdmi|charging|charge port|battery|mic|microphone|"
             r"speaker|camera|screen|display|disc drive|gimbal|lens|joystick|stick)\b"
             r".{0,40}\b(issue|fault|faulty|not working|does not work|doesn't work|missing|broken)\b",
-            blob,
+            normalised,
         )
         or re.search(
             r"\b(works|working|fully working|tested and working)\b.{0,80}"
             r"\b(except|apart from|but|however)\b.{0,80}"
             r"\b(issue|fault|not working|does not work|doesn't work|missing|drift|no hdmi|no face id)\b",
-            blob,
+            normalised,
         )
     )
 
 
 def _has_physical_damage_language(blob: str) -> bool:
-    return any(term in blob for term in PHYSICAL_DAMAGE_TERMS) or bool(
-        re.search(r"\b(damage|crack|cracked|smashed|dent|dented|chip|chipped)\b.{0,30}\b(casing|case|housing|body|shell|chassis|glass|corner|lid|panel)\b", blob)
+    normalised = re.sub(r"[^a-z0-9]+", " ", blob)
+    normalised = re.sub(r"\s+", " ", normalised).strip()
+    detection_text = re.sub(
+        r"\b(?:no|not|without|free from)\s+(?:visible\s+|significant\s+|major\s+)?"
+        r"(?:damage|damaged|crack|cracked|scratch|scratched|scratches|broken|breaks)\b",
+        "",
+        normalised,
+    )
+    detection_text = re.sub(r"\s+", " ", detection_text).strip()
+    if any(term in detection_text for term in PHYSICAL_DAMAGE_TERMS):
+        return True
+    return bool(
+        re.search(
+            r"\b(damage|crack|cracked|smashed|scratch|scratched|scrathed|dent|dented|chip|chipped)\b.{0,30}\b(casing|case|housing|body|shell|chassis|glass|corner|lid|panel|screen|display)\b",
+            detection_text,
+        )
+        or re.search(
+            r"\b(screen|display)\b.{0,30}\b(damage|damaged|crack|cracked|smashed|scratch|scratched|scrathed|broken|faulty)\b",
+            detection_text,
+        )
     )
 
 
@@ -232,6 +323,7 @@ GENERIC_PART_ONLY_TERMS = (
     "needs repair",
     "faulty",
     "not working",
+    "no power",
     "not starting",
     "dead",
     "scrap",
@@ -302,6 +394,8 @@ WATCH_PART_TERMS = (
 )
 
 LEGO_PART_TERMS = (
+    "promo",
+    "promotional",
     "minifigure only",
     "minifig only",
     "no minifigure",
@@ -313,6 +407,7 @@ LEGO_PART_TERMS = (
     "missing pieces",
     "missing parts",
     "incomplete",
+    "partial",
     "build only",
     "builds only",
     "part only",
@@ -322,6 +417,13 @@ LEGO_PART_TERMS = (
     "joblot bricks",
     "instruction book only",
     "instructions only",
+    "box only",
+    "custom",
+    "compatible with lego",
+    "lego compatible",
+    "non-lego",
+    "non lego",
+    "not lego",
 )
 
 DEVICE_ACCESSORY_TERMS = (
@@ -418,18 +520,6 @@ DEVICE_PART_TERMS = (
 )
 
 DEVICE_REPAIR_REVIEW_TERMS = (
-    "activation locked",
-    "activation lock",
-    "icloud locked",
-    "icloud lock",
-    "i cloud locked",
-    "i cloud lock",
-    "locked apple iphone",
-    "locked apple ipad",
-    "locked iphone",
-    "locked ipad",
-    "mdm locked",
-    "remote management locked",
     "blacklisted",
     "blocked imei",
     "bad imei",
@@ -465,6 +555,12 @@ CONSOLE_NON_HARDWARE_TERMS = (
     "games bundle",
     "game bundle",
     "software bundle",
+    "software only",
+    "console game",
+    "video game",
+    "game only",
+    "game cartridge",
+    "game card",
     "stickers",
     "sticker",
     "button led",
@@ -487,6 +583,85 @@ CONSOLE_HARDWARE_TERMS = (
     "console only",
     "oled model",
 )
+
+CONSOLE_ACCESSORY_OR_SOFTWARE_TERMS = (
+    "wall charger",
+    "usb-c charger",
+    "usb c charger",
+    "charger cable",
+    "charging cable",
+    "charging lead",
+    "usb-c cable",
+    "usb c cable",
+    "cable for",
+    "wireless controller",
+    "pro controller",
+    "controller for",
+    "gamepad for",
+    "carrying case",
+    "protective case",
+    "messenger bag",
+    "travel bag",
+    "case for",
+    "bag for",
+    "dock only",
+    "dock for",
+    "screen protector",
+    "sd card",
+    "memory card",
+    "stand for",
+    "grip for",
+    "replacement part",
+    "replacement shell",
+    "replacement case",
+    "game cartridge",
+    "game card",
+    "console game",
+    "video game",
+    "software only",
+)
+
+
+def _has_console_hardware_signal(title: str, blob: str) -> bool:
+    title_text = _as_text(title)
+    return any(term in title_text for term in CONSOLE_HARDWARE_TERMS) or bool(
+        re.search(r"\b(128|256|500|512|825)\s?gb\b|\b(1|2)\s?tb\b", title_text)
+        or re.search(r"\b(?:with|including|incl\.?)\s+(?:a\s+)?(?:console|system)\b", blob)
+    )
+
+
+def _looks_like_console_accessory_or_software(
+    title: str,
+    attrs: Optional[Mapping[str, Any]],
+    blob: str,
+) -> bool:
+    title_text = _as_text(title)
+    attrs_text = _listing_blob("", attrs)
+    attr_keys = " ".join(_as_text(key) for key in (attrs or {}).keys())
+
+    if any(key in attr_keys for key in ("game name", "video game name", "genre", "rating")):
+        return True
+
+    accessory_type = re.search(
+        r"\b(usb\s*-?\s*cable|cable|charger|charging\s+dock|controller|gamepad|case|bag|"
+        r"dock|screen\s+protector|sd\s+card|memory\s+card|stand|grip|replacement\s+part|"
+        r"game|software)\b",
+        attrs_text,
+    )
+    if accessory_type and not _has_console_hardware_signal(title, blob):
+        return True
+
+    if any(term in title_text for term in CONSOLE_ACCESSORY_OR_SOFTWARE_TERMS):
+        return not _has_console_hardware_signal(title, blob)
+
+    return bool(
+        re.search(
+            r"\b(charger|cable|controller|gamepad|case|bag|dock|stand|grip|game|software)\b"
+            r".{0,40}\b(for|compatible with)\b",
+            title_text,
+        )
+        and not _has_console_hardware_signal(title, blob)
+    )
 
 VEHICLE_PART_TERMS = (
     "aerial",
@@ -688,7 +863,7 @@ def looks_like_partial_or_accessory_listing(
 
     is_apple = "ebay-apple" in source_text or "apple-" in model_key_text or " apple " in f" {blob} "
     is_macbook = "macbook" in blob or "apple-macbook" in model_key_text
-    if is_apple and re.search(r"\blocked\b", blob):
+    if is_apple and _has_apple_lock_risk_language(blob):
         return True
 
     if is_apple and is_macbook and re.search(r"\ba\d{1,2}\s*(pro|max|ultra)?\b", blob):
@@ -702,25 +877,59 @@ def looks_like_partial_or_accessory_listing(
     if is_lego and any(term in blob for term in LEGO_PART_TERMS):
         return True
 
+    is_console = any(
+        marker in f"{source_text} {model_key_text} {blob}"
+        for marker in ("console", "ps4", "ps5", "xbox", "switch", "playstation", "nintendo")
+    )
+    if is_console and _looks_like_console_accessory_or_software(title, attrs, blob):
+        return True
+
     if any(term in blob for term in DEVICE_ACCESSORY_TERMS):
         return True
 
     if any(term in blob for term in DEVICE_PART_TERMS):
         return True
 
+    electronic_or_vehicle = any(
+        marker in f"{source_text} {model_key_text} {blob}"
+        for marker in (
+            "apple",
+            "iphone",
+            "ipad",
+            "macbook",
+            "samsung",
+            "galaxy",
+            "console",
+            "ps4",
+            "ps5",
+            "xbox",
+            "switch",
+            "playstation",
+            "nintendo",
+            "gopro",
+            "dji",
+            "insta360",
+            "graphics",
+            "gpu",
+            "rtx",
+            "gtx",
+            "radeon",
+            "camera",
+            "lens",
+            "vehicle",
+            "motor",
+        )
+    )
+    if electronic_or_vehicle and (_has_functional_fault_language(blob) or _has_physical_damage_language(blob)):
+        return True
+
     if any(term in blob for term in DEVICE_REPAIR_REVIEW_TERMS):
         return True
 
-    is_console = any(
-        marker in f"{source_text} {model_key_text} {blob}"
-        for marker in ("console", "ps4", "ps5", "xbox", "switch", "playstation", "nintendo")
-    )
     if is_console and any(term in blob for term in CONSOLE_NON_HARDWARE_TERMS):
         return True
 
-    complete_console_signal = any(term in blob for term in CONSOLE_HARDWARE_TERMS) or bool(
-        re.search(r"\b(128|256|500|512|825)\s?gb\b|\b(1|2)\s?tb\b", blob)
-    )
+    complete_console_signal = _has_console_hardware_signal(title, blob)
     platform_only_signal = any(
         term in blob
         for term in (
@@ -764,10 +973,7 @@ def looks_like_partial_or_accessory_listing(
     ):
         return True
 
-    is_vehicle = any(
-        marker in f"{source_text} {model_key_text} {blob}"
-        for marker in ("mini", "cooper", "honda", "msx", "grom", "motor", "motors", "car")
-    )
+    is_vehicle = _has_vehicle_signal(source=source_text, model_key=model_key_text, text=blob)
     if is_vehicle and any(term in blob for term in VEHICLE_PART_TERMS):
         return True
 

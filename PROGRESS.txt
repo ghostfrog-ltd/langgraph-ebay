@@ -283,6 +283,36 @@ Current known issues:
   `status='live'`, `finalized=false`, and no expired `end_time`. Sold, ended,
   expired, deleted, or unknown rows no longer appear in email/Slack/CLI
   favourites even if the historical review action remains in the audit table.
+- First deterministic quality-control pass is in place for live opportunities.
+  Obvious damaged/faulty electronics are blocked from normal investible
+  identity, console accessories/software no longer inherit console buckets,
+  LEGO promo/partial/non-LEGO rows no longer inherit full-set buckets, and
+  auction/both rows are only actionable in the final 24 hours. Current
+  `ebay serious` shows 3 potentials after blocking the previous Switch game
+  false positive; the remaining top rows are near-ending Apple auctions.
+- Second small QC pass tightens damage spelling/format handling. Damage checks
+  now normalise punctuation/spacing and catch obvious screen damage variants
+  such as `SCRATHED SCREEN`, `scratched-screen`, `screen-damaged`, and
+  `faulty-screen`, while preserving simple negated wording such as "no
+  scratches". `ebay punt` no longer shows the scratched-screen Switch row in
+  the top closest output; `ebay serious` remains the same 3 Apple auctions.
+- Third narrow QC pass investigated the remaining three Apple phone candidates
+  without adding speculative Apple rejections. Browse ingestion now preserves
+  already-returned low-cost review evidence in `raw_attrs`: full/short
+  description text when present, seller feedback, item location, returns,
+  compact shipping, category/timing fields, and localized aspects such as
+  network, lock status, storage, and model number.
+- Fixed the attribute enrichment state semantics. `raw_attrs` now remains
+  evidence storage, while Trading enrichment completion is recorded with an
+  explicit `_trading_enrichment_status` marker inside the JSON. Browse-only
+  rows are eligible for Trading GetItem enrichment, Trading specifics merge
+  into existing Browse evidence, and failure/no-attribute attempts are marked
+  without erasing seller-visible Browse fields.
+- Added a safe targeted Trading enrichment path for explicit listing IDs:
+  `ebay enrich-ids ...`. Retryable no-response outcomes no longer write a
+  terminal enrichment marker, and completed rows are skipped on repeated
+  targeted runs unless `--force` is explicitly supplied. Enriched the three
+  current serious Apple phone candidates with exactly 3 Trading GetItem calls.
 
 Boundary: no autonomous bids, buys, messages, relists, refunds, shipping marks,
 or other marketplace writes.

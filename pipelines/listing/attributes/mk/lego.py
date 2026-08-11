@@ -52,6 +52,7 @@ def _is_not_real_lego(text: str) -> bool:
         term in text
         for term in (
             "non lego",
+            "non-lego",
             "not lego",
             "lego compatible",
             "compatible with lego",
@@ -91,7 +92,10 @@ def _is_partial_or_accessory(text: str) -> bool:
     return any(
         term in text
         for term in (
+            "promo",
+            "promotional",
             "incomplete",
+            "partial",
             "missing pieces",
             "missing parts",
             "no minifigure",
@@ -106,6 +110,7 @@ def _is_partial_or_accessory(text: str) -> bool:
             "manual only",
             "box only",
             "empty box",
+            "custom",
             "replacement sticker",
             "sticker sheet only",
             "spare parts",

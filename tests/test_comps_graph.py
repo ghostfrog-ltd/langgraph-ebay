@@ -263,7 +263,70 @@ class CompsGraphTests(unittest.TestCase):
 
         self.assertEqual(attrs["Browse condition"], "Used")
         self.assertIn("screen is damaged", attrs["Browse conditionDescription"])
-        self.assertNotIn("RAM Size", attrs)
+        self.assertEqual(attrs["Browse aspect RAM Size"], "8 GB")
+
+    def test_browse_description_attrs_keep_low_cost_review_evidence(self):
+        attrs = _browse_description_attrs(
+            {
+                "condition": "Used",
+                "description": "Apple iPhone 14 with clean display and Find My removed.",
+                "shortDescription": "iPhone 14 128GB on EE.",
+                "categoryId": "9355",
+                "itemCreationDate": "2026-08-05T12:30:00Z",
+                "seller": {
+                    "username": "phone-seller",
+                    "feedbackScore": 443,
+                    "feedbackPercentage": "99.4",
+                },
+                "itemLocation": {
+                    "country": "GB",
+                    "city": "London",
+                    "postalCode": "SW1A",
+                },
+                "returnTerms": {
+                    "returnsAccepted": True,
+                    "returnPeriod": {"value": 30, "unit": "DAY"},
+                },
+                "shippingOptions": [
+                    {
+                        "shippingServiceCode": "UK_RoyalMail48",
+                        "shippingCost": {"value": "3.29", "currency": "GBP"},
+                    }
+                ],
+                "localizedAspects": [
+                    {"name": "Network", "value": "EE"},
+                    {"name": "Lock Status", "value": "Unlocked"},
+                    {"name": "Storage Capacity", "value": "128 GB"},
+                    {"name": "Model Number", "value": "MPUA3LL/A"},
+                ],
+            }
+        )
+
+        self.assertEqual(attrs["Browse description"], "Apple iPhone 14 with clean display and Find My removed.")
+        self.assertEqual(attrs["Browse seller feedbackScore"], 443)
+        self.assertEqual(attrs["Browse seller feedbackPercentage"], "99.4")
+        self.assertEqual(attrs["Browse itemLocation country"], "GB")
+        self.assertEqual(attrs["Browse returnTerms returnsAccepted"], True)
+        self.assertEqual(attrs["Browse returnTerms returnPeriod"], "30 DAY")
+        self.assertEqual(attrs["Browse shippingOptions"][0]["shippingCost"]["currency"], "GBP")
+        self.assertEqual(attrs["Browse aspect Network"], "EE")
+        self.assertEqual(attrs["Browse aspect Lock Status"], "Unlocked")
+        self.assertEqual(attrs["Browse aspect Storage Capacity"], "128 GB")
+        self.assertEqual(attrs["Browse aspect Model Number"], "MPUA3LL/A")
+
+    def test_browse_description_attrs_do_not_coerce_missing_feedback_percentage_to_zero(self):
+        attrs = _browse_description_attrs(
+            {
+                "condition": "Used",
+                "seller": {
+                    "username": "phone-seller",
+                    "feedbackScore": 35,
+                },
+            }
+        )
+
+        self.assertEqual(attrs["Browse seller feedbackScore"], 35)
+        self.assertNotIn("Browse seller feedbackPercentage", attrs)
 
     def test_browse_unavailable_detects_past_end_time(self):
         reason = _browse_item_unavailable_reason(

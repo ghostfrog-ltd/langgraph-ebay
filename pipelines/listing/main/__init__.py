@@ -1129,7 +1129,11 @@ def _email_link(title: Any, url: Any, *, max_chars: int = 96) -> str:
     label = escape(cleaned_title or "Untitled listing")
     if not clean_url:
         return label
-    return f'<a href="{escape(clean_url)}" style="color:#0369a1;text-decoration:none;">{label}</a>'
+    return (
+        f"{label}<br>"
+        f'<a href="{escape(clean_url)}" style="color:#0369a1;text-decoration:none;font-weight:700;">'
+        "View listing</a>"
+    )
 
 
 def _review_links_for_email(item: dict[str, Any]) -> str:

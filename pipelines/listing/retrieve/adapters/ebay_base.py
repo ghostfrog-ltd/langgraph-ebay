@@ -64,24 +64,115 @@ def _iso_z(dt: datetime) -> str:
     return dt.replace(microsecond=0, tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _browse_attr_value(value: Any, *, max_chars: int = 4000) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+        return value[:max_chars]
+    if isinstance(value, (int, float, bool)):
+        return value
+    return value
+
+
+def _add_browse_attr(
+    attrs: dict[str, Any],
+    label: str,
+    value: Any,
+    *,
+    max_chars: int = 4000,
+) -> None:
+    value = _browse_attr_value(value, max_chars=max_chars)
+    if value is not None:
+        attrs[label] = value
+
+
 def _browse_description_attrs(raw: dict[str, Any]) -> dict[str, Any]:
     """
-    Extract useful seller-visible text from Browse getItem responses.
+    Extract useful low-cost evidence from Browse search/getItem responses.
 
-    Item specifics are handled by the attributes pipeline. This only preserves
-    description/condition text that can reveal damage hidden behind a clean
-    title, e.g. "screen is damaged" or "selling for parts".
+    The attributes pipeline still owns normalized specifics. This preserves
+    already-returned Browse evidence in raw_attrs so human review and condition
+    guardrails can see risk text that may be absent from the title.
     """
     attrs: dict[str, Any] = {}
     for key in (
         "condition",
         "conditionDescription",
+        "description",
         "shortDescription",
         "subtitle",
+        "categoryId",
+        "categoryPath",
+        "itemCreationDate",
+        "itemEndDate",
     ):
-        value = raw.get(key)
-        if value:
-            attrs[f"Browse {key}"] = value
+        _add_browse_attr(attrs, f"Browse {key}", raw.get(key))
+
+    seller = raw.get("seller") or {}
+    if isinstance(seller, dict):
+        for key in ("username", "feedbackScore", "feedbackPercentage"):
+            _add_browse_attr(attrs, f"Browse seller {key}", seller.get(key), max_chars=255)
+
+    item_location = raw.get("itemLocation") or {}
+    if isinstance(item_location, dict):
+        for key in ("country", "city", "stateOrProvince", "postalCode"):
+            _add_browse_attr(attrs, f"Browse itemLocation {key}", item_location.get(key), max_chars=255)
+
+    return_terms = raw.get("returnTerms") or {}
+    if isinstance(return_terms, dict):
+        for key in ("returnsAccepted", "refundMethod", "returnMethod"):
+            _add_browse_attr(attrs, f"Browse returnTerms {key}", return_terms.get(key), max_chars=255)
+        return_period = return_terms.get("returnPeriod")
+        if isinstance(return_period, dict):
+            _add_browse_attr(
+                attrs,
+                "Browse returnTerms returnPeriod",
+                " ".join(
+                    str(part)
+                    for part in (
+                        return_period.get("value"),
+                        return_period.get("unit"),
+                    )
+                    if part is not None
+                ),
+                max_chars=255,
+            )
+
+    shipping_options = raw.get("shippingOptions") or []
+    if isinstance(shipping_options, list) and shipping_options:
+        compact_shipping: list[dict[str, Any]] = []
+        for option in shipping_options[:3]:
+            if not isinstance(option, dict):
+                continue
+            compact: dict[str, Any] = {}
+            for key in ("shippingServiceCode", "shippingCarrierCode", "type"):
+                if option.get(key) is not None:
+                    compact[key] = option.get(key)
+            cost = option.get("shippingCost")
+            if isinstance(cost, dict):
+                compact["shippingCost"] = {
+                    key: cost.get(key)
+                    for key in ("value", "currency")
+                    if cost.get(key) is not None
+                }
+            if compact:
+                compact_shipping.append(compact)
+        if compact_shipping:
+            attrs["Browse shippingOptions"] = compact_shipping
+
+    aspects = raw.get("localizedAspects") or []
+    if isinstance(aspects, list):
+        for aspect in aspects:
+            if not isinstance(aspect, dict):
+                continue
+            name = str(aspect.get("name") or "").strip()
+            if not name:
+                continue
+            _add_browse_attr(attrs, f"Browse aspect {name}", aspect.get("value"), max_chars=1000)
+
     return attrs
 
 

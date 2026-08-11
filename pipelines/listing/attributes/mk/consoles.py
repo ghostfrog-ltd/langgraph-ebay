@@ -60,8 +60,47 @@ def _has_game_attrs(attrs: Mapping[str, Any]) -> bool:
     return any(key in attrs for key in ("Game Name", "Video Game Name", "Genre", "Rating"))
 
 
-def _is_accessory_or_part(text: str) -> bool:
+def _has_console_hardware_signal(title_text: str, text: str) -> bool:
     return any(
+        term in title_text
+        for term in (
+            "console",
+            "system",
+            "handheld",
+            "disc edition",
+            "disk edition",
+            "digital edition",
+            "blu ray",
+            "blu-ray",
+            "tablet only",
+            "oled model",
+        )
+    ) or bool(
+        re.search(r"\b(128|256|500|512|825)\s?gb\b|\b(1|2)\s?tb\b", title_text)
+        or re.search(r"\b(?:with|including|incl\.?)\s+(?:a\s+)?(?:console|system)\b", text)
+    )
+
+
+def _looks_like_accessory_or_software_intent(title_text: str, text: str, attrs: Mapping[str, Any]) -> bool:
+    attr_keys = " ".join(_as_text(key) for key in attrs.keys())
+    if any(key in attr_keys for key in ("game name", "video game name", "genre", "rating")):
+        return True
+
+    hardware_signal = _has_console_hardware_signal(title_text, text)
+    accessory_patterns = (
+        r"\b(wall\s+charger|usb\s*-?\s*c\s+charger|charger\s+cable|charging\s+cable|usb\s*-?\s*c\s+cable)\b",
+        r"\b(wireless\s+controller|pro\s+controller|controller\s+for|gamepad\s+for)\b",
+        r"\b(carrying\s+case|protective\s+case|messenger\s+bag|travel\s+bag|case\s+for|bag\s+for)\b",
+        r"\b(dock\s+only|dock\s+for|screen\s+protector|sd\s+card|memory\s+card|stand\s+for|grip\s+for)\b",
+        r"\b(replacement\s+part|replacement\s+shell|replacement\s+case)\b",
+        r"\b(console\s+game|game\s+cartridge|game\s+card|video\s+game|software\s+only)\b",
+        r"\b(charger|cable|controller|gamepad|case|bag|dock|stand|grip|game|software)\b.{0,40}\b(for|compatible with)\b",
+    )
+    return not hardware_signal and any(re.search(pattern, title_text) for pattern in accessory_patterns)
+
+
+def _is_accessory_or_part(text: str, *, hardware_signal: bool = False) -> bool:
+    explicit_accessory_or_part = any(
         term in text
         for term in (
             "box only",
@@ -72,10 +111,7 @@ def _is_accessory_or_part(text: str) -> bool:
             "controller only",
             "controller pair",
             "controller pairs",
-            "wireless controller",
-            "power a controller",
             "dock only",
-            "charging dock",
             "accessory kit",
             "accessories kit",
             "sports accessories",
@@ -87,7 +123,6 @@ def _is_accessory_or_part(text: str) -> bool:
             "thumbstick",
             "joystick",
             "hdmi port",
-            "power supply",
             "battery for",
             "battery replacement",
             "replacement battery",
@@ -109,11 +144,36 @@ def _is_accessory_or_part(text: str) -> bool:
             "disc drive attachment",
             "disc drive blu ray attachment",
             "game only",
+            "console game",
+            "game cartridge",
+            "game card",
+            "software only",
             "code in a box",
             "download code",
             "digital code",
         )
     )
+    if explicit_accessory_or_part:
+        return True
+
+    accessory_unless_hardware = any(
+        term in text
+        for term in (
+            "wireless controller",
+            "power a controller",
+            "wall charger",
+            "usb-c charger",
+            "usb c charger",
+            "charging dock",
+            "power supply",
+            "messenger bag",
+            "screen protector",
+            "sd card",
+            "memory card",
+            "video game",
+        )
+    )
+    return accessory_unless_hardware and not hardware_signal
 
 
 def _looks_like_game_only(text: str, attrs: Mapping[str, Any]) -> bool:
@@ -298,7 +358,12 @@ def _switch_key(text: str) -> str:
 def console_or_game_model_key(attrs: Mapping[str, Any], title: str) -> Optional[str]:
     title_text = _as_text(title)
     text = _blob(attrs, title)
-    if _is_accessory_or_part(text) or _looks_like_game_only(text, attrs):
+    hardware_signal = _has_console_hardware_signal(title_text, text)
+    if (
+        _looks_like_accessory_or_software_intent(title_text, text, attrs)
+        or _is_accessory_or_part(text, hardware_signal=hardware_signal)
+        or _looks_like_game_only(text, attrs)
+    ):
         return UNKNOWN_KEY
 
     storage = _extract_storage(attrs, title)

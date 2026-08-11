@@ -19,6 +19,7 @@ class OperatorConsoleTests(unittest.TestCase):
         self.assertIn("api-health", menu)
         self.assertIn("backfill-plan", menu)
         self.assertIn("model-keys-apply", menu)
+        self.assertIn("enrich-ids", menu)
         self.assertIn("actioncam-keys-apply", menu)
         self.assertIn("lego-keys-apply", menu)
         self.assertIn("review-server", menu)
@@ -182,6 +183,21 @@ class OperatorConsoleTests(unittest.TestCase):
         self.assertEqual(code, 0)
         explain.assert_called_once_with("206446095377", limit=12, show_all=False)
         self.assertIn("explanation text", out.getvalue())
+
+    def test_enrich_ids_runs_attributes_for_explicit_ids(self):
+        with patch("pipelines.listing.operator_console._python_module", return_value=0) as run:
+            code = operator_console.main(
+                ["enrich-ids", "147485216891", "366595448811", "366586504122"]
+            )
+
+        self.assertEqual(code, 0)
+        run.assert_called_once_with(
+            "pipelines.listing.attributes",
+            "--ids",
+            "147485216891",
+            "366595448811",
+            "366586504122",
+        )
 
     def test_stats_are_mapped_from_shared_heartbeat_metrics(self):
         metrics = {
