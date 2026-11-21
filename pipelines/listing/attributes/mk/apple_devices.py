@@ -100,6 +100,9 @@ def iphone_key(attrs, title):
     if len(variants) != 1:
         return 'unknown'
     model = next(iter(variants))
+    model_numbers_for_variant = IPHONE_MODEL_NUMBERS.get(model)
+    if model_numbers_for_variant and not ids <= set(model_numbers_for_variant.split()):
+        return 'unknown'
     return f'apple-iphone-{model}-{storage}' if storage in IPHONE_STORAGE.get(model, '').split() else 'unknown'
 
 

@@ -20,9 +20,13 @@ IPHONE_STORAGE = {
     '17': '256gb 512gb',
     '17e': '256gb 512gb',
     '17-pro-max': _PHONE_256 + ' 2tb',
+    '18-pro': _PHONE_256 + ' 2tb',
+    '18-pro-max': _PHONE_256 + ' 2tb',
 }
 
 IPHONE_MODEL_NUMBERS = {
+    '18-pro-max': 'a3473 a3716 a3717 a3718',
+    '18-pro': 'a3472 a3713 a3714 a3715',
     '17e': 'a3575 a3634 a3635',
     '17-pro-max': 'a3257 a3525 a3526 a3527',
     '17-pro': 'a3256 a3522 a3523 a3524',
