@@ -221,6 +221,16 @@ def _extract_chip(attrs: Mapping[str, Any], title: str) -> str:
     return title_chip or attr_chip
 
 
+def macbook_specs_conflict(attrs: Mapping[str, Any], title: str) -> bool:
+    """Flag incompatible specs independently reported by a listing title and its attributes."""
+    for extract in (_extract_chassis, _extract_size, _extract_chip, _extract_ram, _extract_storage):
+        from_title = extract({}, title)
+        from_attrs = extract(attrs, "")
+        if from_title and from_attrs and from_title != from_attrs:
+            return True
+    return False
+
+
 def _apple_blob(attrs: Mapping[str, Any], title: str) -> str:
     return " ".join(
         [title]
