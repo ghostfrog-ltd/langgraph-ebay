@@ -18,6 +18,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from pydantic import Field
 
+from ops.ghostfrog_spend import current_summary
 from pipelines.listing.attributes.mk import normalise_model
 from pipelines.listing.attributes.mk.apple import macbook_specs_conflict
 from pipelines.listing.market_discovery.pricing import (
@@ -256,6 +257,12 @@ def ghostfrog_macbook_valuation(item_id: ItemID, limit: RowLimit = 10) -> dict[s
         expected_profit_gbp=profit, expected_roi=round(profit / price, 4),
         reject_reason="above_max_safe_buy" if price > ceiling or profit < MIN_PROFIT_GBP else None,
     )
+
+
+@MCP.tool(annotations=READ_ONLY)
+def ghostfrog_openai_spend() -> dict[str, Any]:
+    """Report current verified organization costs and GBP alert state, or monitoring unavailable."""
+    return current_summary()
 
 
 def main() -> None:

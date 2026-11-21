@@ -98,6 +98,7 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual({tool.name for tool in tools}, {
                     "ghostfrog_source_coverage", "ghostfrog_macbook_listings",
                     "ghostfrog_macbook_bid_history", "ghostfrog_macbook_valuation",
+                    "ghostfrog_openai_spend",
                 })
                 self.assertTrue(all(tool.annotations.readOnlyHint for tool in tools))
                 coverage = "ghostfrog_source_coverage"
