@@ -91,6 +91,78 @@ pending until both the live read and tunnel stop test have been observed. If
 the Mac or tunnel is offline, there is no live connection or cached response
 from this service.
 
+## Persistent tunnel on the Mac mini
+
+Before enabling the LaunchAgent, get account-specific confirmation from OpenAI
+about whether continuous idle polling and MCP request, response, or bandwidth
+usage are billable, what paid API billing or credits are required, and any
+included allowance or rates. The
+[Secure MCP Tunnel guide](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels#limits)
+documents quotas, including 600 MCP requests per minute per tunnel and calling
+application. The [API pricing page](https://developers.openai.com/api/docs/pricing)
+does not specify a tunnel charge. Keep the agent uninstalled until the cost and
+any necessary spend approval are established.
+
+This user LaunchAgent runs after macOS login. It needs the logged-in user's
+session and the repository volume for the MCP server. It retries exits with a
+60-second launchd throttle. Use the existing `ghostfrog` profile in
+`~/.config/tunnel-client/ghostfrog.yaml` and its file reference to the restricted
+key in `~/.config/ghostfrog-mcp/platform-runtime-key`. Keep the profile, key and
+`~/.pgpass` private and owned by the login user.
+
+From the repo root, render and validate the plist. This only prepares a local
+file.
+
+```sh
+label=com.ghostfrog.langgraph-ebay.mcp-tunnel
+domain="gui/$(id -u)"
+service="$domain/$label"
+plist="$HOME/Library/LaunchAgents/$label.plist"
+logs="$HOME/Library/Logs/GhostFrog/mcp-tunnel"
+staged="$(mktemp -t ghostfrog-tunnel)"
+.venv-mac/bin/python ops/launchd/ghostfrog_tunnel_agent.py render > "$staged"
+plutil -lint "$staged"
+```
+
+After the spend check, stop the existing foreground GhostFrog client with
+Ctrl-C in its terminal and verify it exited. The agent also checks for an
+existing client using the `ghostfrog` profile before starting. Install only
+after the foreground client has stopped.
+
+```sh
+mkdir -p "$HOME/Library/LaunchAgents"
+install -d -m 700 "$logs"
+install -m 600 "$staged" "$plist"
+launchctl enable "$service"
+launchctl bootstrap "$domain" "$plist"
+```
+
+Use the same variables for lifecycle commands. **Stop** persists across
+logins until **Start** re-enables the agent.
+
+| Action | Command |
+| --- | --- |
+| Start after a stop | `launchctl enable "$service" && launchctl bootstrap "$domain" "$plist"` |
+| Stop | `launchctl disable "$service" && launchctl bootout "$service"` |
+| Restart while loaded | `launchctl kickstart -k "$service"` |
+| Status | `launchctl print "$service"` |
+| Uninstall | Disable and boot out the service if loaded, then remove only `"$plist"`. The profile, credentials and logs can be retained. |
+
+The loopback health address is in `"$logs/health.url"` for the current run.
+Check the launchd state first because the file can remain after a stop.
+`/healthz` and `/readyz` should return HTTP 200. Check
+`/health?details=true` or `/metrics` for a successful control-plane poll.
+Warnings and startup errors go to `"$logs/stdout.log"` and
+`"$logs/stderr.log"`. The agent disables raw HTTP, tracing and payload capture.
+
+With the foreground terminal closed, verify one process for the profile and
+run `ghostfrog_source_coverage(limit=1)` in a fresh ChatGPT website chat.
+Verify an actual tool invocation with PostgreSQL provenance and a current
+query timestamp. Stop through launchd and repeat in a fresh chat to confirm
+unavailability. Start through launchd and verify health, one process and a
+new successful read. Test login recovery during a planned login or reboot
+window.
+
 ## Manual fallback
 
 Run the following from the repo root on the Mac mini. It prints a timestamped
