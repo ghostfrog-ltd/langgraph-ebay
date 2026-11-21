@@ -21,6 +21,14 @@ tests, docs, and operator tooling.
 - Use PostgreSQL as the live source of truth.
 - Preserve user changes unless asked to change them.
 
+## Listing state conventions
+
+For any code touching `auction_listings.status`, sale finalization, retry logic,
+comps or buy-listing visibility, read [docs/listing-statuses.md](docs/listing-statuses.md).
+Keep listing lifecycle separate from processing/retry and identity/condition
+review. The guide is a **proposed standard** under Issue #19; no schema or data
+migration is authorised by this link.
+
 ## Engineering Defaults
 
 - Prefer small, testable Python changes that improve collection, final-price

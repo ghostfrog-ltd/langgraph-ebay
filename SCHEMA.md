@@ -45,6 +45,10 @@ For buy/resale decisions, preserve:
 - max buy price,
 - red flags and decision status.
 
+For plain-English meanings, legacy aliases and safe-change instructions, see
+[docs/listing-statuses.md](docs/listing-statuses.md) (Issue #19; proposed, not yet
+migrated).
+
 Important listing statuses:
 
 - `live`: currently seen as buyable/open.
