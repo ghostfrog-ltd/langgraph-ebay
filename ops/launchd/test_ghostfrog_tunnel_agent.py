@@ -49,6 +49,7 @@ class LaunchAgentTests(unittest.TestCase):
                     agent.run_tunnel(home)
                 client, args, environment = launch.call_args.args
                 self.assertEqual(args[:4], [str(client), "run", "--profile", "ghostfrog"])
+                self.assertIn("--log.file=", args)
                 self.assertIn("--log.http-raw-unsafe=false", args)
                 self.assertIn("--harpoon.capture-payloads=false", args)
                 self.assertIn("--tracing.enabled=false", args)

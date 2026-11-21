@@ -64,7 +64,7 @@ def run_tunnel(home: Path) -> None:
         str(client), "run", "--profile", "ghostfrog", "--profile-dir", str(profiles),
         "--health.listen-addr", "127.0.0.1:0", "--health.url-file", str(logs / "health.url"),
         "--allow-remote-ui=false", "--open-web-ui=false",
-        "--log.level=warn", "--log.file=stdout", "--log.http-raw-unsafe=false",
+        "--log.level=warn", "--log.file=", "--log.http-raw-unsafe=false",
         "--tracing.enabled=false", "--harpoon.capture-payloads=false",
     ]
     # The existing profile resolves its key from a local file.
