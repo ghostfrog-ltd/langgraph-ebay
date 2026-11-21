@@ -2,6 +2,12 @@ from __future__ import annotations
 from typing import Mapping, Any, Optional
 import re
 
+from .apple_catalog import MACBOOK_AIRS, MACBOOK_PROS, MACBOOK_PRO_GPU_CORES
+from .apple_devices import (
+    airpods_key, airtag_key, desktop_key, evidence, gpu_cores, ipad_key, iphone_key, matches,
+    model_numbers, screen_sizes, watch_key,
+)
+
 
 def _clean(v: Any) -> str:
     if not v: return ""
@@ -14,13 +20,6 @@ def _text(v: Any) -> str:
     if isinstance(v, (list, tuple, set)):
         return " ".join(_text(x) for x in v)
     return str(v).strip().lower()
-
-
-def _num(v: Any) -> str:
-    """Simple digit extractor (used for things like mm sizes)."""
-    if not v:
-        return ""
-    return "".join(ch for ch in str(v) if ch.isdigit())
 
 
 def _canonical_capacity(value: str) -> str:
@@ -280,116 +279,115 @@ def _contains_junk_apple_listing(blob: str) -> bool:
     return any(term in blob for term in junk_terms)
 
 
-def _extract_connectivity(attrs: Mapping[str, Any], title: str) -> str:
-    blob = _apple_blob(attrs, title)
-    if re.search(r"\b(cellular|cellular\+wifi|wifi\+cellular|wi-fi\+cellular|gps\+cellular|5g|lte|4g|cell|cel)\b", blob):
-        return "cellular"
-    if re.search(r"\b(gps only|gps-only|gps)\b", blob):
-        return "gps"
-    if re.search(r"\b(wifi|wi-fi)\b", blob):
-        return "wifi"
-    return ""
-
-
-def _iphone_model_token(attrs: Mapping[str, Any], title: str) -> str:
-    blob = _apple_blob(attrs, title)
-    clean_blob = _clean(blob)
-
-    if re.search(r"\biphone\s*se\b", blob) or "iphone-se" in clean_blob:
-        if re.search(r"\b(2022|3rd|third)\b", blob):
-            return "se-3"
-        if re.search(r"\b(2020|2nd|second)\b", blob):
-            return "se-2"
-        if re.search(r"\b(2016|1st|first)\b", blob):
-            return "se-1"
-        return "se"
-
-    for legacy in ("xs max", "xs", "xr", "x"):
-        if re.search(rf"\biphone\s*{re.escape(legacy)}\b", blob):
-            return legacy.replace(" ", "-")
-
-    match = re.search(r"\biphone\s*(\d{1,2})\b", blob)
+def _mac_line(text: str) -> str:
+    match = re.search(r'\b(macbook(?:[ -]+(?:air|pro))?|imac(?:[ -]+pro)?|mac[ -]*(?:mini|studio|pro))\b', text)
     if not match:
-        return ""
-
-    base = match.group(1)
-    tail = blob[match.end() : match.end() + 48]
-    if re.search(r"\bpro\s*max\b", tail):
-        return f"{base}-pro-max"
-    if re.search(r"\bair\b", tail):
-        return f"{base}-air"
-    if re.search(r"\bmini\b", tail):
-        return f"{base}-mini"
-    if re.search(r"\bplus\b", tail):
-        return f"{base}-plus"
-    if re.search(r"\bpro\b", tail):
-        return f"{base}-pro"
-    return base
+        return ''
+    return re.sub(r'^mac(?=mini|studio|pro)', 'mac-', match[1].replace(' ', '-'))
 
 
-def _ipad_generation_token(attrs: Mapping[str, Any], title: str) -> str:
-    blob = _apple_blob(attrs, title)
-    gen = re.search(r"\b(\d{1,2})(?:st|nd|rd|th)\s*(?:gen|generation)\b", blob)
-    if gen:
-        return f"{gen.group(1)}th-gen"
-    gen = re.search(r"\b(?:gen|generation)\s*(\d{1,2})\b", blob)
-    if gen:
-        return f"{gen.group(1)}th-gen"
-    year_to_gen = {
-        "2025": "11th-gen",
-        "2022": "10th-gen",
-        "2021": "9th-gen",
-        "2020": "8th-gen",
-        "2019": "7th-gen",
-        "2018": "6th-gen",
-        "2017": "5th-gen",
+def _macbook_key(attrs, title, line, chip, ram, storage):
+    model_text = evidence(attrs, title, 'MPN', 'Model', 'Processor Model')
+    chassis_ids = model_numbers(model_text)
+    gpu = gpu_cores(attrs, title)
+    if len(gpu) > 1:
+        return 'unknown'
+    screens = evidence(attrs, title, 'Screen Size', 'Display')
+    screens.extend(f'{value}in' for value in evidence(attrs, '', 'Screen Size') if re.fullmatch(r'\d{2}(\.\d)?', value))
+    sizes = screen_sizes(screens)
+    if len(chassis_ids) > 1 or not (ram and storage) or storage in {'1gb', ram}:
+        return 'unknown'
+
+    air_ids = {row[0] for row in MACBOOK_AIRS}
+    if chassis_ids & air_ids or (line == 'macbook-air' and chip in {'m1', 'm2', 'm3', 'm4'}):
+        if line not in {'macbook-air', 'macbook'}:
+            return 'unknown'
+        candidates = []
+        for chassis, cpu, size, aliases, memory in MACBOOK_AIRS:
+            if (chassis_ids <= {chassis} and (chip == cpu or (not chip and chassis_ids == {chassis}))
+                    and sizes <= set(aliases.split()) and ram in memory.split()
+                    and storage in {'256gb', '512gb', '1tb', '2tb'}):
+                valid_gpu = {'m1': {7, 8}, 'm4': {8, 10}}.get(cpu, {8, 10})
+                if gpu <= valid_gpu:
+                    variant = f'-{next(iter(gpu))}gpu' if gpu else ''
+                    candidates.append(f'apple-macbook-air-{chassis}-{size}-{cpu}{variant}-{ram}-{storage}')
+        return candidates[0] if len(candidates) == 1 else 'unknown'
+
+    pro_ids = {chassis for codes, *_ in MACBOOK_PROS for chassis in codes.split()}
+    pro_chips = {cpu for _, cpu, *_ in MACBOOK_PROS}
+    if chassis_ids & pro_ids or (line == 'macbook-pro' and chip in pro_chips):
+        if line not in {'macbook-pro', 'macbook'}:
+            return 'unknown'
+        candidates = []
+        for codes, cpu, diagonal, memory, capacities in MACBOOK_PROS:
+            if (chip and chip != cpu) or ram not in memory.split() or storage not in capacities.split():
+                continue
+            diagonals = [diagonal] if diagonal else ['142in', '162in']
+            for chassis, size in zip(codes.split(), diagonals):
+                rounded = {'133in': '13in', '142in': '14in', '162in': '16in'}[size]
+                valid_gpu = MACBOOK_PRO_GPU_CORES[cpu]
+                if chassis_ids <= {chassis} and sizes <= {size, rounded} and gpu <= valid_gpu:
+                    variant = f'-{next(iter(gpu))}gpu' if gpu and len(valid_gpu) > 1 else ''
+                    candidates.append(f'apple-macbook-pro-{chassis}-{size}-{cpu}{variant}-{ram}-{storage}')
+        if chip or chassis_ids:
+            return candidates[0] if len(candidates) == 1 else 'unknown'
+        return 'unknown'
+
+    if not chip or not (chassis_ids or sizes):
+        return 'unknown'
+    # Accept rounded marketing sizes alongside the matching measured diagonal.
+    for short, precise in (('13in', '133in'), ('14in', '142in'), ('15in', '154in'), ('16in', '162in')):
+        if {short, precise} <= sizes:
+            sizes.remove(short)
+    if len(sizes) > 1:
+        return 'unknown'
+    return '-'.join(part for part in (
+        'apple', line, next(iter(chassis_ids), ''), next(iter(sizes), ''), chip, ram, storage,
+    ) if part)
+
+
+def _mac_memory(attrs, title):
+    explicit = matches(r'\b(\d{1,3})\s*gb\s*(?:ram(?=\b|\d)|unified\s+memory\b)', evidence({}, title))
+    explicit |= matches(r'\b(\d{1,3})\s*gb\b', evidence(attrs, '', 'RAM Size', 'Memory', 'RAM'))
+    # Some eBay listings copy the SSD capacity into the RAM item specific.
+    # Desktop configurations may legitimately have 256 GB and more.
+    plausible = {f'{amount}gb' for amount in explicit if int(amount) in {
+        4, 6, 8, 12, 16, 18, 24, 32, 36, 48, 64, 96, 128, 192, 256, 512, 768,
+    }}
+    if _mac_line(title.lower()).startswith('macbook'):
+        plausible = {value for value in plausible if int(value[:-2]) <= 128}
+    if plausible:
+        return next(iter(plausible)) if len(plausible) == 1 else ''
+    ram = _extract_ram(attrs, title)
+    if not ram and re.search(r'\b\d{3,4}\s*gb\b|\b\d{1,2}\s*tb\b', title):
+        smaller = matches(r'\b(4|8|16|18|24|32|36|48|64|96|128)\s*gb\b', [title])
+        if len(smaller) == 1:
+            return f'{smaller.pop()}gb'
+    return ram
+
+
+def _mac_storage(attrs, title):
+    explicit = {
+        _capacity_token(*match.groups())
+        for text in evidence(attrs, '', 'Storage Capacity', 'SSD Capacity', 'Hard Drive Capacity', 'Capacity')
+        for match in re.finditer(r'\b(\d{1,4})\s*(gb|tb)\b', text)
     }
-    if "ipad pro" not in blob and "ipad air" not in blob and "ipad mini" not in blob:
-        for year, generation in year_to_gen.items():
-            if re.search(rf"\b{year}\b", blob):
-                return generation
-    return ""
-
-
-def _watch_model_token(attrs: Mapping[str, Any], title: str) -> str:
-    blob = _apple_blob(attrs, title)
-    if "ultra" in blob:
-        if re.search(r"\bultra\s*2\b|\b2nd\b|\bsecond\b", blob):
-            return "ultra-2"
-        return "ultra"
-    if re.search(r"\bwatch\s*se\b|\bse\b", blob):
-        if re.search(r"\b(2nd|second|2022)\b", blob):
-            return "se-2"
-        return "se"
-    series = re.search(r"\bseries\s*(\d{1,2})\b", blob)
-    return f"series-{series.group(1)}" if series else ""
-
-
-def _watch_size_token(attrs: Mapping[str, Any], title: str) -> str:
-    blob = _apple_blob(attrs, title)
-    m = re.search(r"\b(38|40|41|42|44|45|46|49)\s*mm\b", blob)
-    if m:
-        return f"{m.group(1)}mm"
-    case_size = _num(attrs.get("Case Size") or "")
-    return f"{case_size}mm" if case_size in {"38", "40", "41", "42", "44", "45", "46", "49"} else ""
-
-
-def _airpods_key(attrs: Mapping[str, Any], title: str) -> str:
-    blob = _apple_blob(attrs, title)
-    if "airpods max" in blob:
-        return "apple-airpods-max"
-    if "airpods pro" in blob:
-        gen = "2" if re.search(r"\b(2nd|second|gen\s*2|generation\s*2|pro\s*2)\b", blob) else "1"
-        connector = "usbc" if re.search(r"\b(usb-c|usbc|type-c)\b", blob) else "lightning" if "lightning" in blob else ""
-        return "-".join(p for p in ["apple", "airpods-pro", gen, connector] if p)
-    if "airpods" in blob or "airpod" in blob:
-        gen_match = re.search(r"\b(?:airpods?|gen|generation)\s*(\d)\b", blob)
-        gen = gen_match.group(1) if gen_match else ""
-        if not gen:
-            return "unknown"
-        suffix = "anc" if re.search(r"\b(active noise cancellation|anc)\b", blob) else ""
-        return "-".join(p for p in ["apple", "airpods", gen, suffix] if p)
-    return ""
+    for text in evidence({}, title):
+        labelled = _capacity_from_labelled_text(
+            text, ('ssd|storage|hard\\s*drive|hdd|flash',), ('ssd|storage|hard\\s*drive|hdd|flash',),
+        )
+        if labelled:
+            explicit.add(labelled)
+        else:
+            # Avoid using GPU VRAM as storage in comma/slash-delimited specs.
+            sizes = re.findall(r'\b(\d{1,4})\s*(gb|tb)\b(?!\s*(?:ram|unified memory))', text)
+            disks = {_capacity_token(amount, unit) for amount, unit in sizes if unit == 'tb' or int(amount) >= 240}
+            if len(disks) > 1:
+                return ''
+            explicit |= disks
+    if explicit:
+        return next(iter(explicit)) if len(explicit) == 1 else ''
+    return _extract_storage(attrs, title)
 
 
 def apple_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
@@ -408,7 +406,7 @@ def apple_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
         title_blob = title.lower()
         return bool(
             re.search(
-                r"\b(apple|iphone|ipad|macbook|imac|airpods?|airtag|ipod)\b",
+                r"\b(apple|iphone|ipad|macbook|imac|mac[ -]*(?:mini|studio|pro)|airpods?|air[ -]?tags?|ipod|homepod)\b",
                 title_blob,
             )
         )
@@ -419,124 +417,72 @@ def apple_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
     if _contains_junk_apple_listing(apple_blob):
         return "unknown"
 
-    # 1. Base Spec Extraction
-    storage = _extract_storage(attrs, title)
-    ram = _extract_ram(attrs, title)
-    size = _extract_size(attrs, title)
-    chassis = _extract_chassis(attrs, title)
-    chip = _extract_chip(attrs, title)
+    title_low = evidence({}, title)
+    title_text = title_low[0] if title_low else ''
+    family_fields = evidence(attrs, '', 'Product Line', 'Series', 'Model', 'Type')
 
-    # 3. Family Logic
-    family_text = " ".join(
-        _text(attrs.get(k))
-        for k in ["Product Line", "Series", "Model", "Type"]
-        if attrs.get(k)
-    )
-    family_title = title.lower()
-    family_title_clean = _clean(family_title)
-    family_blob = _clean(f"{family_text} {family_title}")
+    def family(text):
+        match = re.search(
+            r'\b(airpods?|iphone|ipad|(?:apple\s+)?watch|air[ -]?tags?|apple[ -]+tv|homepod|ipod|'
+            r'macbook(?:[ -]+(?:air|pro))?|imac(?:[ -]+pro)?|mac[ -]*(?:mini|studio|pro))\b',
+            text,
+        )
+        if match:
+            name = match[1]
+            if name.startswith('airpod'):
+                return 'airpods'
+            if name.replace(' ', '').replace('-', '').startswith('airtag'):
+                return 'airtag'
+            if name.endswith('watch'):
+                return 'watch'
+            return _mac_line(name) or name.replace(' ', '-')
+        return ''
 
-    parts = ["apple"]
+    line = family(title_text)
+    if not line:
+        families = {family(text) for text in family_fields} - {''}
+        if len(families) != 1:
+            return 'unknown'
+        line = families.pop()
 
-    # --- AIRPODS / SMALL AUDIO ---
-    if "airpods" in family_blob or "airpod" in family_blob:
-        return _airpods_key(attrs, title)
-
-    # --- MACS ---
-    if any(x in family_blob for x in ("macbook", "imac", "mac-mini", "mac-studio", "mac-pro")):
-        if "macbook" in family_blob:
-            line = (
-                "macbook-air"
-                if "macbook-air" in family_title_clean
-                else "macbook-pro"
-                if "macbook-pro" in family_title_clean
-                else "macbook-air"
-                if "air" in family_blob
-                else "macbook-pro"
-                if "pro" in family_blob
-                else "macbook"
-            )
-        elif "mac-mini" in family_blob or "mini" in family_blob:
-            line = "mac-mini"
-        elif "studio" in family_blob:
-            line = "mac-studio"
-        elif "mac-pro" in family_blob:
-            line = "mac-pro"
-        else:
-            line = "imac"
-        if line == "macbook-air" and chip in {"m2", "m3", "m4"} and size == "13in":
-            size = "136in"
-        if line.startswith("macbook") and not (chip and ram and storage and (chassis or size)):
-            return "unknown"
-        if not line.startswith("macbook") and not (chip and storage and (chassis or size)):
-            return "unknown"
-        parts.extend([line, chassis, size, chip, ram, storage])
-
-    # --- IPHONES ---
-    elif "iphone" in family_blob:
-        model = _iphone_model_token(attrs, title)
-        phone_storage = _device_storage(attrs, title)
-        if not model or not phone_storage:
-            return "unknown"
-        parts.extend(["iphone", model, phone_storage])
-
-    # --- IPADS ---
-    elif "ipad" in family_blob:
-        tablet_storage = _device_storage(attrs, title)
-        connectivity = _extract_connectivity(attrs, title)
-        if "ipad-mini" in family_blob or re.search(r"\bipad\s*mini\b", apple_blob):
-            line = "ipad-mini"
-        elif "ipad-pro" in family_blob or re.search(r"\bipad\s*pro\b", apple_blob):
-            line = "ipad-pro"
-        elif "ipad-air" in family_blob or re.search(r"\bipad\s*air\b", apple_blob):
-            line = "ipad-air"
-        else:
-            line = "ipad"
-
-        if line in {"ipad-pro", "ipad-air"}:
-            identity = chip or _ipad_generation_token(attrs, title)
-            if not (size and identity and tablet_storage):
-                return "unknown"
-            parts.extend([line, size, identity, tablet_storage, connectivity])
-        else:
-            generation = _ipad_generation_token(attrs, title)
-            if not (generation and tablet_storage):
-                return "unknown"
-            parts.extend([line, size, generation, tablet_storage, connectivity])
-
-    # --- WATCHES ---
-    elif "watch" in family_blob:
-        model = _watch_model_token(attrs, title)
-        watch_size = _watch_size_token(attrs, title)
-        connectivity = _extract_connectivity(attrs, title)
-        if not (model and watch_size):
-            return "unknown"
-        parts.extend(["watch", model, watch_size, connectivity])
-
-    # --- APPLE TV / HOMEPOD / AIRTAG / IPOD ---
-    elif "apple-tv" in family_blob or "apple-tv" in _clean(title):
-        blob = apple_blob
-        line = "tv-4k" if "4k" in blob else "tv-hd" if "hd" in blob else ""
-        tv_storage = _device_storage(attrs, title)
-        if not line:
-            return "unknown"
-        parts = ["apple", line, tv_storage]
-    elif "homepod" in family_blob:
-        model = "homepod-mini" if "mini" in family_blob else "homepod"
-        generation = "2nd-gen" if re.search(r"\b(2nd|second|2023)\b", apple_blob) else ""
-        parts = ["apple", model, generation]
-    elif "airtag" in family_blob or "air-tag" in family_blob:
-        pack = "4pack" if re.search(r"\b(4|four)\s*(pack|pk)\b", apple_blob) else "1pack"
-        parts = ["apple", "airtag", pack]
-    elif "ipod" in family_blob:
-        blob = apple_blob
-        line = "ipod-touch" if "touch" in blob else "ipod-nano" if "nano" in blob else "ipod-classic" if "classic" in blob else ""
-        ipod_storage = _device_storage(attrs, title)
-        if not (line and ipod_storage):
-            return "unknown"
-        parts = ["apple", line, ipod_storage]
-
-    # 4. Final Cleanup
-    base_key = "-".join([p for p in parts if p]).strip("-")
-    if base_key == "apple": return "unknown"
-    return base_key
+    if line == 'airpods':
+        return airpods_key(attrs, title)
+    if line == 'iphone':
+        return iphone_key(attrs, title)
+    if line == 'ipad':
+        return ipad_key(attrs, title)
+    if line == 'watch':
+        return watch_key(attrs, title)
+    if line == 'airtag':
+        return airtag_key(attrs, title)
+    if line.startswith(('mac', 'imac')):
+        reported_lines = {_mac_line(text) for text in family_fields} - {'', 'macbook'}
+        # A few legacy item specifics use an incorrect series label; clear
+        # laptop title evidence is needed before using those listings as Macs.
+        if reported_lines - {line} and line != 'macbook-pro':
+            return 'unknown'
+        chips = {
+            chip for value in evidence(attrs, title_text, 'Chipset Model', 'Processor', 'CPU', 'Processor Model')
+            if (chip := _chip_from_text(value)) and chip != 'intel'
+        }
+        if len(chips) > 1:
+            return 'unknown'
+        chip = next(iter(chips), '') or _extract_chip(attrs, title_text)
+        ram = _mac_memory(attrs, title_text)
+        storage = _mac_storage(attrs, title_text)
+        if line.startswith('macbook'):
+            return _macbook_key(attrs, title, line, chip, ram, storage)
+        return desktop_key(attrs, title, line, chip, ram, storage)
+    if line == 'apple-tv':
+        model = 'tv-4k' if '4k' in apple_blob else 'tv-hd' if 'hd' in apple_blob else ''
+        return '-'.join(filter(None, ('apple', model, _device_storage(attrs, title)))) if model else 'unknown'
+    if line == 'homepod':
+        family_blob = ' '.join(family_fields + [title_text])
+        model = 'homepod-mini' if 'mini' in family_blob else 'homepod'
+        generation = '2nd-gen' if re.search(r'\b(2nd|second|2023)\b', apple_blob) else ''
+        return '-'.join(filter(None, ('apple', model, generation)))
+    if line == 'ipod':
+        model = next((kind for kind in ('touch', 'nano', 'classic') if kind in apple_blob), '')
+        storage = _device_storage(attrs, title)
+        return f'apple-ipod-{model}-{storage}' if model and storage else 'unknown'
+    return 'unknown'

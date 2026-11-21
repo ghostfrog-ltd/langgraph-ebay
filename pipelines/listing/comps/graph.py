@@ -266,7 +266,9 @@ def _truncate_comps() -> None:
         cur.execute("TRUNCATE TABLE comps;")
 
 
-def _compute_daily_comps(days: Optional[int] = None) -> None:
+def _compute_daily_comps(
+    days: Optional[int] = None, *, model_keys: list[str] | None = None,
+) -> None:
     """
     Insert new per-model_key stats for the last N days of listings with
     confirmed realized sale prices.
@@ -276,6 +278,8 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
     - Only aggregates rows where model_key is non-null and not 'unknown'
       to avoid contaminating comps with garbage buckets.
     """
+    if model_keys == []:
+        return
     if days is None:
         days = _get_window_days()
 
@@ -285,7 +289,8 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
         days,
     )
 
-    sql = """
+    scope = "AND graded.model_key = ANY(%s)" if model_keys is not None else ""
+    sql = f"""
         INSERT INTO comps (model_key, condition_grade, median_final_price, mean_final_price, samples, computed_at)
         SELECT
             graded.model_key,
@@ -310,6 +315,14 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
               ON tc.listing_id = a.id
         ) AS graded
         WHERE graded.final_price IS NOT NULL
+          AND (
+              LOWER(graded.model_key) NOT LIKE 'apple-%%'
+              OR (
+                  graded.source = 'ebay-apple'
+                  AND graded.status = 'sold'
+                  AND graded.final_price > 0
+              )
+          )
           AND graded.end_time >= (now() AT TIME ZONE 'utc' - (%s || ' days')::interval)
           AND graded.model_key IS NOT NULL
           AND LOWER(graded.model_key) <> 'unknown'
@@ -319,7 +332,7 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
           AND LOWER(graded.model_key) !~ '_[a-d](-[a-d])?$'
           AND NOT (
               LOWER(graded.model_key) LIKE 'apple-iphone-%%'
-              AND LOWER(graded.model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+)(-|_)'
+              AND LOWER(graded.model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+[es]?)(-|_)'
           )
           AND NOT (
               LOWER(graded.model_key) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'
@@ -330,7 +343,7 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
               OR (
                   graded.source = 'ebay-apple'
                   AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) LIKE '%%macbook%%'
-                  AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ '\\ma[0-9]{1,2}\\s*(pro|max|ultra)?\\M'
+                  AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ '\\ma[0-9]{{1,2}}\\s*(pro|max|ultra)?\\M'
               )
               OR (
                   graded.source = 'ebay-apple'
@@ -380,6 +393,7 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
                   AND LOWER(COALESCE(graded.title, '')) NOT LIKE ALL(%s)
               )
           )
+          {scope}
         GROUP BY graded.model_key, graded.effective_condition_grade
         ON CONFLICT (model_key, condition_grade) DO UPDATE SET
             median_final_price = EXCLUDED.median_final_price,
@@ -390,6 +404,8 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
 
     with connection, connection.cursor() as cur:
         _ensure_utc_session(cur)
+        if model_keys is not None:
+            cur.execute("DELETE FROM comps WHERE model_key = ANY(%s)", (model_keys,))
         cur.execute(
             sql,
             (
@@ -409,9 +425,12 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
                 ELECTRONICS_DAMAGE_WORD_PATTERN,
                 ELECTRONICS_DAMAGE_NEGATION_PATTERN,
                 list(LEGO_WHOLE_SET_TEXT_PATTERNS),
+                *((model_keys,) if model_keys is not None else ()),
             ),
         )
 
+    if model_keys is not None:
+        return
     # Debug: how many comps did we just insert?
     with connection.cursor() as cur:
         _ensure_utc_session(cur)

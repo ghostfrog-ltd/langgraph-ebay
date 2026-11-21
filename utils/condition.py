@@ -1304,7 +1304,7 @@ def has_investible_product_identity(
             or re.match(samsung_tab, mk)
         )
 
-    if mk.startswith("apple-iphone-") and not re.match(r"^apple-iphone-(se|x|xr|xs|\d+)\b", mk):
+    if mk.startswith("apple-iphone-") and not re.match(r"^apple-iphone-(se|x|xr|xs|\d+[es]?)\b", mk):
         return False
 
     if mk.startswith(("apple-macbook", "apple-imac", "apple-mac-mini", "apple-mac-studio")):

@@ -635,7 +635,9 @@ def _node_apply(state: AttributesState) -> AttributesState:
     raw_map = state.get("raw_map") or {}
     source = state.get("source")
     title = state.get("title")
-    key = normalise_model(title=title, attrs=attrs, source=source) or UNKNOWN_KEY
+    # Apple identity needs the original item specifics for conflict detection.
+    identity_attrs = {**attrs, **raw_map} if source == "ebay-apple" else attrs
+    key = normalise_model(title=title, attrs=identity_attrs, source=source) or UNKNOWN_KEY
     condition_grade = _derive_condition_grade(raw_map or attrs, title or "")
 
     _apply_attributes(

@@ -1,3 +1,14 @@
+2026-11-21 — Apple model identity (#23–#29)
+- Deployed Apple identity rules and verified 8,200 live or sold key updates in
+  PostgreSQL. Of these updates, 2,299 marked conflicting or insufficient
+  evidence unknown. A stratified audit covered 123 confirmed sold listings.
+- Rebuilt affected grade-specific comps and recalculated live opportunities.
+  The M1 Air 8GB/256GB cohort with no reported GPU count is 182 grade-B sales
+  at £302.32. The A16 iPad 128GB Wi-Fi cohort is 188 at £282.60. All named
+  impossible iPhone, iMac and AirPods Pro 1 USB-C keys disappeared from comps.
+- Existing raw listing and final-price evidence supports recovery by reverting
+  the classifier and regenerating the affected keys and comps.
+
 CURRENT_STATE_2026_07_21:
 
 Mission: buy cheap from eBay to resell on eBay for profit.

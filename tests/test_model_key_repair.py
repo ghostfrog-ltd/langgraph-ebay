@@ -66,7 +66,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-apple",
         )
 
-        self.assertEqual(key, "apple-macbook-pro-a2991-162in-m3pro-36gb-512gb")
+        self.assertEqual(key, "apple-macbook-pro-a2991-162in-m3pro-18gpu-36gb-512gb")
 
     def test_macbook_16_point_0_screen_maps_to_16in(self):
         key = normalise_model(
@@ -84,7 +84,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-apple",
         )
 
-        self.assertEqual(key, "apple-macbook-pro-a2485-16in-m1pro-16gb-512gb")
+        self.assertEqual(key, "apple-macbook-pro-a2485-162in-m1pro-16gb-512gb")
 
     def test_title_only_iphone_can_get_strict_key(self):
         key = normalise_model(
@@ -127,7 +127,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-apple",
         )
 
-        self.assertEqual(key, "apple-macbook-air-136in-m4-16gb-1tb")
+        self.assertEqual(key, "apple-macbook-air-a3240-136in-m4-16gb-1tb")
 
     def test_m2_macbook_air_13_seller_shorthand_maps_to_136in(self):
         key = normalise_model(
@@ -144,7 +144,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-apple",
         )
 
-        self.assertEqual(key, "apple-macbook-air-136in-m2-16gb-512gb")
+        self.assertEqual(key, "apple-macbook-air-a2681-136in-m2-16gb-512gb")
 
     def test_macbook_ram_without_space_before_storage_does_not_become_512gb_ram(self):
         key = normalise_model(
@@ -161,7 +161,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-apple",
         )
 
-        self.assertEqual(key, "apple-macbook-pro-16in-m4pro-24gb-512gb")
+        self.assertEqual(key, "apple-macbook-pro-a3403-162in-m4pro-24gb-512gb")
 
     def test_macbook_bad_512gb_ram_title_uses_plausible_16gb_ram(self):
         key = normalise_model(
@@ -213,7 +213,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-apple",
         )
 
-        self.assertEqual(key, "apple-macbook-pro-13in-m2-16gb-512gb")
+        self.assertEqual(key, "apple-macbook-pro-a2338-133in-m2-16gb-512gb")
 
     def test_water_damage_parts_or_repair_is_condition_d(self):
         grade = _derive_condition_grade(

@@ -1345,7 +1345,17 @@ def bulk_upsert_auction_listings(rows: list[dict]):
             max_bid       = EXCLUDED.max_bid,
             notes         = EXCLUDED.notes,
             source_id     = EXCLUDED.source_id,
-            model_key     = COALESCE(EXCLUDED.model_key,     auction_listings.model_key),
+            model_key     = CASE
+                              WHEN EXCLUDED.source = 'ebay-apple' AND auction_listings.source = EXCLUDED.source
+                                AND auction_listings.title IS NOT DISTINCT FROM EXCLUDED.title
+                                AND (auction_listings.model_key = 'unknown'
+                                  OR jsonb_typeof(auction_listings.raw_attrs) = 'object')
+                                THEN COALESCE(auction_listings.model_key, EXCLUDED.model_key)
+                              WHEN EXCLUDED.source = 'ebay-apple'
+                                AND auction_listings.title IS DISTINCT FROM EXCLUDED.title
+                                THEN EXCLUDED.model_key
+                              ELSE COALESCE(EXCLUDED.model_key, auction_listings.model_key)
+                            END,
             raw_attrs     = CASE
                               WHEN EXCLUDED.raw_attrs IS NULL THEN auction_listings.raw_attrs
                               WHEN auction_listings.raw_attrs IS NULL
