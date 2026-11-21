@@ -54,7 +54,7 @@ def _decimal(value) -> Decimal:
     return number
 
 
-def _costs(key: str, organization: str, start: int, end: int) -> tuple[str, Decimal]:
+def _costs(key: str, organization: str, start: int, end: int) -> tuple[str, Decimal, int]:
     params = {"start_time": start, "end_time": end, "bucket_width": "1d", "limit": 180}
     headers = {"Authorization": f"Bearer {key}", "OpenAI-Organization": organization}
     currency = None
@@ -62,6 +62,7 @@ def _costs(key: str, organization: str, start: int, end: int) -> tuple[str, Deci
     bucket_starts = set()
     cursors = set()
     final_day = (end - 1) // DAY * DAY
+    closed_days = set(range(start, end // DAY * DAY, DAY))
     for _ in range(12):
         page = json.loads(_request(f"{COSTS_URL}?{urlencode(params)}", headers), parse_float=Decimal)
         if page["object"] != "page" or not isinstance(page["data"], list):
@@ -92,10 +93,11 @@ def _costs(key: str, organization: str, start: int, end: int) -> tuple[str, Deci
                 currency = unit
                 total += _decimal(amount["value"])
         if page["has_more"] is False:
-            if bucket_starts != set(range(start, end, DAY)):
-                raise Unavailable("Costs API did not return all requested days")
-            # Explicit empty results for every verified UTC day are zero recorded costs.
-            return currency or "USD", total
+            if not bucket_starts or not closed_days.issubset(bucket_starts):
+                raise Unavailable("Costs API did not return all requested closed days")
+            # OpenAI can omit the current UTC day. Only the returned days contribute.
+            coverage_end = min(max(bucket_starts) + DAY, end)
+            return currency or "USD", total, coverage_end
         cursor = page["next_page"]
         if page["has_more"] is not True or not isinstance(cursor, str) or not cursor or cursor in cursors:
             raise Unavailable("Incomplete Costs API pagination")
@@ -121,9 +123,11 @@ def _iso(timestamp: int) -> str:
 
 
 def _update(previous: dict, organization: str, now: int, total: Decimal, currency: str,
-            rate: Decimal, rate_date: str | None) -> dict:
+            rate: Decimal, rate_date: str | None, *, start: int, coverage_end: int) -> dict:
     if previous and (previous["organization"] != organization or previous["currency"] != currency):
         raise Unavailable("Billing organization or currency changed")
+    if previous and coverage_end < previous["coverage_end"]:
+        raise Unavailable("Costs API coverage regressed")
     baseline = _decimal(previous["baseline"]) if previous else total
     first_charge = previous.get("first_charge_at")
     if first_charge is None and total > baseline:
@@ -131,7 +135,8 @@ def _update(previous: dict, organization: str, now: int, total: Decimal, currenc
     return {
         "organization": organization,
         "currency": currency,
-        "start_time": previous.get("start_time", now // DAY * DAY),
+        "start_time": start,
+        "coverage_end": coverage_end,
         "baseline": str(baseline),
         "baseline_at": previous.get("baseline_at", now),
         "total": str(total),
@@ -166,6 +171,8 @@ def _summary(state: dict, now: int) -> dict:
         "baseline_total": str(baseline),
         "baseline_at_utc": _iso(state["baseline_at"]),
         "period_start_utc": _iso(state["start_time"]),
+        "period_end_utc": _iso(state["coverage_end"]),
+        "current_utc_day_included": state["coverage_end"] > now // DAY * DAY,
         "checked_at_utc": _iso(state["last_verified"]),
         "increase": str(increase),
         "increase_gbp_estimate": str(gbp.quantize(Decimal("0.0001"))),
@@ -244,10 +251,11 @@ def refresh(root: Path, now: int) -> None:
             organization = organization_path.read_text().strip()
             if not re.fullmatch(r"org-[A-Za-z0-9]+", organization) or not re.fullmatch(r"sk-[A-Za-z0-9_-]+", key):
                 raise Unavailable("Invalid local billing configuration")
-            start = state.get("start_time", now // DAY * DAY)
-            currency, cost = _costs(key, organization, start, now)
+            start = state.get("start_time", now // DAY * DAY - DAY)
+            currency, cost, coverage_end = _costs(key, organization, start, now)
             quote, quote_date = _exchange_rate(currency, datetime.fromtimestamp(now, timezone.utc).date())
-            new_state = _update(state, organization, now, cost, currency, quote, quote_date)
+            new_state = _update(state, organization, now, cost, currency, quote, quote_date,
+                                start=start, coverage_end=coverage_end)
         except READ_ERRORS as exc:
             if state:
                 _write(root, dict(state, failed=True))

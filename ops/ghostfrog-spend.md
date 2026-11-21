@@ -15,11 +15,13 @@ cost is not evidence that tunnel traffic was billed or that a payment was
 collected. The Platform Billing page is the source for credit balances and
 invoices. The Costs API can post charges and corrections later.
 
-The first complete reading establishes a baseline and the UTC day from which to
-re-query. A successful response that explicitly covers every requested day with
-empty results represents zero recorded costs. A missing day, broken pagination,
-failed fetch or expired snapshot reports **monitoring unavailable**. No stale
-totals are returned in that state.
+The first verified reading establishes the baseline and anchors the query at
+the start of the preceding UTC day. The service requires every elapsed UTC day
+to be present. The Costs API may omit the current UTC day, in which case
+`period_end_utc` and `current_utc_day_included` show that the amount only covers
+earlier dates. An explicitly returned empty bucket represents zero recorded
+costs for its own period. A missing elapsed day, broken pagination, failed
+fetch or expired snapshot reports **monitoring unavailable** with no totals.
 
 For USD costs, the threshold uses the latest
 [ECB reference rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html)
@@ -65,7 +67,9 @@ stable `first_charge_event`. Notify once for that event ID and retain the ID
 in the watch's chat history so subsequent checks can deduplicate it.
 A nonempty `repeat_alert_id` calls for a reminder on every hourly check.
 If both are present on the same check, send one alert. If the source is
-unavailable, report **monitoring unavailable** without amounts.
+unavailable, report **monitoring unavailable** without amounts. If the
+current UTC day is absent, state the covered dates and do not claim there are
+no charges today.
 
 Acknowledge the current repeat alert locally from the repo root:
 

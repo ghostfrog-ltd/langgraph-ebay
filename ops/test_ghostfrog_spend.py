@@ -27,10 +27,18 @@ class CostsTests(unittest.TestCase):
     @patch.object(spend, "_request")
     def test_complete_empty_bucket_and_missing_response_differ(self, request):
         request.return_value = page([bucket(DAY_START, [])])
-        self.assertEqual(spend._costs("test", ORG, DAY_START, NOW), ("USD", Decimal(0)))
+        self.assertEqual(spend._costs("test", ORG, DAY_START, NOW), ("USD", Decimal(0), NOW))
         request.return_value = page([])
         with self.assertRaises(spend.Unavailable):
             spend._costs("test", ORG, DAY_START, NOW)
+
+    @patch.object(spend, "_request")
+    def test_omitted_current_day_is_not_zero_usage_for_today(self, request):
+        request.return_value = page([bucket(DAY_START, [])])
+        self.assertEqual(spend._costs("test", ORG, DAY_START, NOW + spend.DAY),
+                         ("USD", Decimal(0), DAY_START + spend.DAY))
+        with self.assertRaises(spend.Unavailable):
+            spend._costs("test", ORG, DAY_START, NOW + 2 * spend.DAY)
 
     @patch.object(spend, "_request")
     def test_cost_reads_paginate_and_do_not_assume_tunnel_attribution(self, request):
@@ -40,7 +48,7 @@ class CostsTests(unittest.TestCase):
             page([bucket(DAY_START, [first])], cursor="next"),
             page([bucket(DAY_START + spend.DAY, [second])]),
         ]
-        self.assertEqual(spend._costs("test", ORG, DAY_START, NOW + spend.DAY), ("USD", Decimal("0.3")))
+        self.assertEqual(spend._costs("test", ORG, DAY_START, NOW + spend.DAY), ("USD", Decimal("0.3"), NOW + spend.DAY))
         self.assertIn("page=next", request.call_args.args[0])
         self.assertNotIn("api_key_ids", request.call_args.args[0])
 
@@ -65,6 +73,7 @@ class SpendStateTests(unittest.TestCase):
             previous = {}
         spend._write(self.root, spend._update(
             previous, ORG, NOW + offset, Decimal(total), "USD", GBP_PER_USD, "2026-11-20",
+            start=DAY_START, coverage_end=NOW + offset,
         ))
         return spend.current_summary(self.root, now=NOW + offset)
 
