@@ -28,6 +28,7 @@ from pipelines.listing.market_discovery.pricing import (
 )
 from utils.condition import effective_condition_grade, looks_like_partial_or_accessory_listing
 from ops import ghostfrog_diagnostics as diagnostics
+from ops.ghostfrog_listing_detail import listing_detail
 
 SOURCE = "ebay-apple"
 ROLE = "ghostfrog_mcp"
@@ -169,6 +170,24 @@ def ghostfrog_db_query(
 ) -> dict[str, Any]:
     """Run one bounded read-only SELECT over unqualified relation names from ghostfrog_db_catalog."""
     return diagnostics.query(sql, limit)
+
+
+@MCP.tool(annotations=READ_ONLY)
+def ghostfrog_listing_detail(
+    item_id: ItemID,
+    section: Literal["overview", "product", "description", "photos", "seller_terms", "checks",
+                     "history", "reviews", "comparables"] = "overview",
+    after: Annotated[int, Field(strict=True, ge=0, le=10000)] = 0,
+    limit: Annotated[int, Field(strict=True, ge=1, le=50)] = 20,
+    listing_id: Annotated[int, Field(strict=True, ge=1, le=2147483647)] | None = None,
+) -> dict[str, Any]:
+    """Inspect one public eBay item using stored evidence, photos, seller terms and linked records.
+
+    Overview includes the listing and a first page of each section. Continue a
+    named section using its next_after value. A returned comparable can be
+    opened using its item_id and listing_id. Missing evidence is unverified.
+    """
+    return listing_detail(item_id, section, after, limit, listing_id)
 
 
 @MCP.tool(annotations=READ_ONLY)

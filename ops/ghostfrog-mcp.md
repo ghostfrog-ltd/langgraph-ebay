@@ -33,6 +33,69 @@ outcomes, price histories, collector cadence and call counts, stored comps,
 condition queues, backfill attempts, scores and tracked outcomes. An optional
 relation appears when it exists and the login has appropriate grants.
 
+### Inspect a listing end to end
+
+Call `ghostfrog_listing_detail` with a 12-digit public eBay `item_id`. The
+default overview returns the stored listing and a first page of each section.
+If multiple stored variations match, select the returned `listing_id` and
+repeat the call. `listing` contains the public title and URL, source, sale
+type, lifecycle status and finalisation, observations, bid and price fields,
+condition grade, stored identity and scoring fields, and finalisation evidence.
+A confirmed final price is shown only for a past-end sold record with a
+positive price.
+
+| Section | Stored evidence |
+| --- | --- |
+| `product` | Original product-labelled specifics, including nested values, condition and lock claims |
+| `description` | Title, description, short description, subtitle, condition description and stored notes |
+| `photos` | Stored eBay-hosted gallery and primary image URLs in original array order |
+| `seller_terms` | Public seller username and reputation, shipping options and charges, returns, broad location, condition and any buying options or availability |
+| `checks` | Latest text, visual and stored model assessment, notes and flags, and the latest operator review |
+| `history` | Recorded price and bid-count observations with timestamps |
+| `reviews` | Recorded operator review actions and dates |
+| `comparables` | Current matching confirmed sales and the same-grade comp snapshot, pricing assumptions and indicative ceiling when eligible |
+
+Example of a continuation:
+
+```json
+{"item_id":"123456789012","listing_id":42,"section":"description","after":5,"limit":20}
+```
+
+Use the returned `next_after` as `after`. Value rows have their original
+`field`, a typed JSON `value_path` (zero-based array indices), and numbered
+parts. Join string parts without separators. Counts, booleans, and structured
+paths are usable as JSON. Each response has row and byte bounds. A section
+that has another page sets `truncated` and supplies the next cursor. Restart
+pagination if the stored evidence changes. Separate live observations from
+collector caps. Browse descriptions may already be capped at 4,000
+characters, gallery arrays at 12 photos, and shipping at three options.
+
+The tool marks missing fields as `not_collected` and absent condition or
+review records as `not_checked`. `withheld` identifies excluded URLs or
+unsafe values. It reports observations older than 24 hours as stale.
+Current availability and seller claims require checking the marketplace.
+Public eBay URLs retain their approved path and numeric variation if present.
+Query tracking and credentials are discarded. Postal codes, private contact
+and account fields, unrelated payloads, and unsafe image URLs are suppressed.
+
+For a comparable, call the same tool with that result's `item_id` and
+`listing_id`. The matching list uses recent confirmed sales with the same
+stored source, identity and effective grade. The aggregate from
+`latest_comps` reports its own timestamp, sample count and median. The
+database does not record the aggregate's historical row membership. The
+ceiling uses the shared pricing formula and identifies fee, postage, packaging,
+reserve, minimum margin and comp-count assumptions. It does not substitute a
+shipping offer for the pricing assumption.
+
+The diagnostic SQL catalog also lists `listing_inspection_v`,
+`listing_inspection_evidence_v` and `listing_inspection_checks_v`. For SQL
+use the previously resolved `listing_id`, project the columns you need, and
+filter evidence by `section` and `evidence_seq`. `value_text` and
+`value_path_text` are the safe scalar SQL projections of the typed tool data.
+The migration grants access to the views and the fixed, bounded comparable
+lookup without granting raw columns. Update the existing connector's tool list
+if a ChatGPT session still advertises only the old tools.
+
 The query tool accepts one SELECT with joins, subqueries, nonrecursive CTEs,
 grouping, filtering, window functions and a set of built-in functions and casts.
 It runs on loopback in a read-only transaction, with an eight-second statement

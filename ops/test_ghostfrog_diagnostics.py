@@ -67,7 +67,7 @@ class DiagnosticSQLTests(unittest.TestCase):
         grants = dict(re.findall(r"\('([a-z0-9_]+)', '([a-z_ ]+)'\)", grant_file.read_text()))
         self.assertEqual(grants, {
             relation: " ".join(columns.split()) for relation, columns in RELATIONS.items()
-            if relation != "apple_listing_evidence_v"
+            if relation != "apple_listing_evidence_v" and not relation.startswith("listing_inspection")
         })
         self.assertNotIn("ebay_app_token", grants)
         self.assertNotIn("raw_attrs", grants["auction_listings"])

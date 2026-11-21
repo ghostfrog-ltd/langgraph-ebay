@@ -253,7 +253,7 @@ def _projection(name: str, entry: dict):
         ):
             columns[column] = identifier
             continue
-        if column in {"external_id", "listing_external_id"}:
+        if column in {"external_id", "listing_external_id", "item_id"}:
             columns[column] = sql.SQL("CASE WHEN {col} ~ {pattern} THEN {col} END AS {col}").format(
                 col=identifier, pattern=sql.Literal(PUBLIC_ITEM_ID),
             )

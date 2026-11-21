@@ -14,6 +14,21 @@ RELATIONS = {
         listing_id external_id source status model_key condition_grade final_price end_time
         last_seen_at fetched_at evidence_seq field value_index part_index part_count product_value
     """,
+    "listing_inspection_v": """
+        listing_id external_id item_id source source_id title url url_withheld sale_type status finalized
+        first_seen last_seen_at fetched_at price_current price_bid_current bids_count end_time
+        condition_grade effective_condition_grade final_price model_key storage_gb brand product_family
+        model_name colour roi_estimate max_bid backfill_checked_at backfill_check_count backfill_last_reason
+        text_condition_checked text_condition_checked_at visual_condition_checked visual_condition_checked_at
+        text_grade visual_grade text_review_required visual_review_required identity_risk
+        browse_description_chars stored_gallery_count stored_shipping_option_count
+    """,
+    "listing_inspection_evidence_v": """
+        listing_id section evidence_seq field value_path_text part_index part_count value_text withheld
+    """,
+    "listing_inspection_checks_v": """
+        listing_id kind checked_at grade confidence review_required model_name verdict recommended_max_bid
+    """,
     "auction_price_history_orphans": """
         original_id external_id price bids_count timestamp recorded_at archived_at archive_reason
     """,
@@ -80,7 +95,12 @@ RELATIONS = {
 }
 
 # PostgreSQL sanitizes these specific columns before they are visible to the login.
-READABLE_TEXT = {"apple_listing_evidence_v": {"field", "product_value"}}
+READABLE_TEXT = {
+    "apple_listing_evidence_v": {"field", "product_value"},
+    "listing_inspection_v": {"item_id", "title", "url", "brand", "product_family", "model_name", "colour"},
+    "listing_inspection_evidence_v": {"field", "value_path_text", "value_text"},
+    "listing_inspection_checks_v": {"model_name", "verdict"},
+}
 
 # Composite joins shown here describe how the stored keys are used. For actual
 # constraints the catalog tool separately reads PostgreSQL's foreign keys.
@@ -90,6 +110,9 @@ LOGICAL_RELATIONSHIPS = (
     ("auction_price_history_orphans", ("external_id",), "auction_listings", ("external_id",)),
     ("auction_listings", ("model_key", "condition_grade"), "latest_comps", ("model_key", "condition_grade")),
     ("apple_listing_evidence_v", ("listing_id",), "auction_listings", ("id",)),
+    ("listing_inspection_v", ("listing_id",), "auction_listings", ("id",)),
+    ("listing_inspection_evidence_v", ("listing_id",), "listing_inspection_v", ("listing_id",)),
+    ("listing_inspection_checks_v", ("listing_id",), "listing_inspection_v", ("listing_id",)),
     ("listing_text_conditions", ("listing_id",), "auction_listings", ("id",)),
     ("listing_visual_conditions", ("listing_id",), "auction_listings", ("id",)),
     ("listing_text_condition_queue", ("listing_id",), "auction_listings", ("id",)),
