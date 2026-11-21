@@ -6,19 +6,75 @@ scheduled job, or website change.
 
 | Tool | Evidence |
 | --- | --- |
+| `ghostfrog_db_catalog` | Available operational schemas, tables and views, column types, declared foreign keys and logical join keys |
+| `ghostfrog_db_query` | One bounded, read-only PostgreSQL SELECT across approved operational relations |
 | `ghostfrog_source_coverage` | Configured eBay sources, enabled status, scrape cadence and last recorded scrape |
 | `ghostfrog_macbook_listings` | Auctions seen live in the last 24 hours or finalized, positive-price sales ending in the last 30 days |
 | `ghostfrog_macbook_bid_history` | Price and total bid count snapshots by 12-digit eBay item ID |
 | `ghostfrog_macbook_valuation` | 90-day confirmed sales for the exact MacBook key and effective grade, plus acquisition ceiling, profit, ROI and reject reason |
 
-Returns at most 25 rows per list. Bid counts are collector observations. The
-valuation excludes unsafe listings, checks the stored key against the current
+The original listing and coverage tools return at most 25 rows per list. Bid
+counts are collector observations. The valuation excludes unsafe listings, checks the stored key against the current
 classifier, and requires line, chassis, screen, CPU, RAM and storage. A ceiling
 requires the current Apple comp floor of 10. If the 200-candidate scan would
 truncate, it withholds the ceiling. Coverage timestamps describe collector
 state and may be stale. Outputs omit raw titles, seller fields, raw attributes,
 URLs, notes and credentials. PostgreSQL reads have a three-second connection
 timeout and five-second per-statement timeout.
+
+## Operational diagnostics
+
+Start with `ghostfrog_db_catalog`. It lists reviewed relations visible to the
+dedicated login on this database, including their physical schema and available
+columns. Use unqualified relation names from that catalog in
+`ghostfrog_db_query`. It distinguishes PostgreSQL foreign keys from logical joins.
+The catalog covers all configured markets, including listing observations and
+outcomes, price histories, collector cadence and call counts, stored comps,
+condition queues, backfill attempts, scores and tracked outcomes. An optional
+relation appears when it exists and the login has appropriate grants.
+
+The query tool accepts one SELECT with joins, subqueries, nonrecursive CTEs,
+grouping, filtering, window functions and a set of built-in functions and casts.
+It runs on loopback in a read-only transaction, with an eight-second statement
+timeout, one-second lock timeout and a dedicated login limited to three
+connections. It returns 25 rows by default, at most 100 when requested, with a
+40-column maximum, a 48 KB row-data limit and a truncation indicator. Use a
+time range or listing key and aggregate within that range. A row limit alone
+does not make a full-history aggregate fast.
+
+Diagnostics omit credentials, seller fields, free-text listing and error
+payloads, URLs and raw attributes. Approved text fields expose short operational
+codes. Values that fail the text checks are redacted, and external listing IDs
+outside supported public eBay formats return as SQL NULL. Queue diagnoses use
+states, timestamps and attempt counts. Database administration, raw system
+catalogs and SQL writes are unavailable through these tools.
+
+For a recent lifecycle investigation, compare the stored status and finalization
+flag over an explicit time window. See the
+[status definitions](../docs/listing-statuses.md) when interpreting those totals.
+
+```sql
+SELECT source_id, status, finalized, count(*) AS listings
+FROM auction_listings
+WHERE end_time >= now() - interval '7 days'
+  AND end_time < now()
+GROUP BY source_id, status, finalized
+ORDER BY listings DESC, source_id, status, finalized
+```
+
+For collector health, inspect `sources.last_scraped_at` alongside
+`scrape_interval_seconds` and compare it with listing observation times.
+For processing failures, group recent queue records by source and status and
+report the attempt counts. For price-history checks, filter by the public eBay
+item ID. For comp quality, report the stored sample count and computation
+timestamp from `latest_comps`. Join on both model and grade when the grade
+matches the comp cohort, and do not use whole-product comps for parts,
+accessories or repair-only listings.
+
+When drafting a GitHub ticket from a diagnostic result, include the query or
+filters, a UTC observation time, denominator, truncation status and aggregate
+evidence. Keep individual operational records and sensitive values out of the
+ticket.
 
 ## Local setup after review
 
@@ -59,6 +115,44 @@ codex mcp get ghostfrog
 
 In a fresh local Codex session, ask it to call `ghostfrog_source_coverage`
 with `limit=1` and return the provenance and query timestamp.
+
+### Enable the diagnostics login after review
+
+Apply the [diagnostics grant migration](../migrations/20261121_002_add_ghostfrog_diagnostics_reader.sql)
+through the repository migration process. It grants read access only to listed
+columns, with the new role initially set to `NOLOGIN`. Review the effective
+privileges for this role, including privileges inherited through `PUBLIC`.
+For a relation added after the migration, review new grants explicitly.
+
+Before enabling login, have the database administrator require SCRAM for this
+role on the intended database over IPv4 loopback. For a host with broad trust
+rules, put these role-specific entries above those rules in `pg_hba.conf`.
+Replace `your_ghostfrog_database_name` with the actual database name.
+
+```conf
+local all ghostfrog_diagnostics reject
+host your_ghostfrog_database_name ghostfrog_diagnostics 127.0.0.1/32 scram-sha-256
+host all ghostfrog_diagnostics all reject
+```
+
+Validate and reload the authentication configuration. Set a SCRAM password
+interactively with psql's `\password ghostfrog_diagnostics`, enable `LOGIN`,
+and save the credential as a separate entry in the local mode-0600
+`~/.pgpass`. Add a separate service entry to `~/.pg_service.conf`.
+
+```ini
+[ghostfrog_diagnostics]
+port=5432
+dbname=your_ghostfrog_database_name
+```
+
+From the MCP virtual environment, run
+`.venv/ghostfrog-mcp/bin/python -m unittest ops.test_ghostfrog_diagnostics ops.test_ghostfrog_mcp`.
+In local Codex, call `ghostfrog_db_catalog` and issue the sample lifecycle query.
+For the ChatGPT acceptance check, refresh the existing GhostFrog app's tools
+after the updated MCP server is in use. In a fresh chat, call the catalog and
+run the same SELECT. Confirm the tool invocation, UTC timestamp and provenance
+against the local result without sharing credentials or individual records.
 
 ## ChatGPT website acceptance test
 

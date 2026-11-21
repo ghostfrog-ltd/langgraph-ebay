@@ -97,6 +97,7 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
                 tools = (await session.list_tools()).tools
                 self.assertEqual({tool.name for tool in tools}, {
                     "ghostfrog_source_coverage", "ghostfrog_macbook_listings",
+                    "ghostfrog_db_catalog", "ghostfrog_db_query",
                     "ghostfrog_macbook_bid_history", "ghostfrog_macbook_valuation",
                     "ghostfrog_openai_spend",
                 })
