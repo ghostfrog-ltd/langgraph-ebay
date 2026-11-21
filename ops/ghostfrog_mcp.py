@@ -28,6 +28,7 @@ from pipelines.listing.market_discovery.pricing import (
     max_safe_buy,
 )
 from utils.condition import effective_condition_grade, looks_like_partial_or_accessory_listing
+from ops import ghostfrog_diagnostics as diagnostics
 
 SOURCE = "ebay-apple"
 ROLE = "ghostfrog_mcp"
@@ -154,6 +155,21 @@ def _listing(row: Mapping[str, Any]) -> dict[str, Any]:
         "last_seen_at": row["last_seen_at"],
         "reject_reason": reject_reason,
     }
+
+
+@MCP.tool(annotations=READ_ONLY)
+def ghostfrog_db_catalog() -> dict[str, Any]:
+    """List approved operational PostgreSQL relations, columns, foreign keys, and logical joins."""
+    return diagnostics.catalog()
+
+
+@MCP.tool(annotations=READ_ONLY)
+def ghostfrog_db_query(
+    sql: Annotated[str, Field(max_length=diagnostics.MAX_QUERY_BYTES)],
+    limit: Annotated[int, Field(strict=True, ge=1, le=diagnostics.MAX_ROWS)] = 25,
+) -> dict[str, Any]:
+    """Run one bounded read-only SELECT over unqualified relation names from ghostfrog_db_catalog."""
+    return diagnostics.query(sql, limit)
 
 
 @MCP.tool(annotations=READ_ONLY)
