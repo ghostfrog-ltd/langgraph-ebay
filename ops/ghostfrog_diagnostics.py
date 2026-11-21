@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from contextlib import closing, contextmanager
 from datetime import date, datetime, timezone
-from decimal import Decimal
 import json
 
 from mcp.server.fastmcp.exceptions import ToolError
@@ -14,7 +13,7 @@ from pglast.stream import RawStream
 import psycopg2
 from psycopg2 import sql
 
-from ops.ghostfrog_diagnostic_catalog import LOGICAL_RELATIONSHIPS, RELATIONS
+from ops.ghostfrog_diagnostic_catalog import LOGICAL_RELATIONSHIPS, READABLE_TEXT, RELATIONS
 
 
 ROLE = "ghostfrog_diagnostics"
@@ -229,8 +228,13 @@ def catalog() -> dict:
     relations = [
         {
             "schema": "public", "name": name, "kind": entry["kind"],
-            "columns": [{"name": col, "type": kind, "redacts_text": data_type in TEXT_TYPES}
-                        for col, (data_type, kind) in entry["columns"].items()],
+            "columns": [
+                {
+                    "name": col, "type": kind, "redacts_text": data_type in TEXT_TYPES,
+                    **({"text_format": "sanitized product evidence"} if col in READABLE_TEXT.get(name, ()) else {}),
+                }
+                for col, (data_type, kind) in entry["columns"].items()
+            ],
         }
         for name, entry in available.items()
     ]
@@ -242,7 +246,11 @@ def _projection(name: str, entry: dict):
     indexed_history_ids = name == "auction_price_history" and "external_id" in entry["columns"]
     for column, (data_type, _) in entry["columns"].items():
         identifier = sql.Identifier(column)
-        if data_type not in TEXT_TYPES or indexed_history_ids and column == "external_id":
+        if (
+            data_type not in TEXT_TYPES
+            or column in READABLE_TEXT.get(name, ())
+            or (indexed_history_ids and column == "external_id")
+        ):
             columns[column] = identifier
             continue
         if column in {"external_id", "listing_external_id"}:
@@ -271,13 +279,12 @@ def _projection(name: str, entry: dict):
 
 def _json_cell(value):
     if isinstance(value, (date, datetime)):
-        return value.isoformat()
-    if isinstance(value, (str, Decimal)):
-        return str(value)[:MAX_CELL_CHARS]
+        return value.isoformat(), False
     if value is None or isinstance(value, (int, bool)):
-        return value
-    # Includes interval values and non-finite floats, which aren't JSON numbers.
-    return str(value)[:MAX_CELL_CHARS]
+        return value, False
+    # Includes Decimal, interval and non-finite floats.
+    text = str(value)
+    return text[:MAX_CELL_CHARS], len(text) > MAX_CELL_CHARS
 
 
 def query(query_text: str, limit: int) -> dict:
@@ -307,12 +314,18 @@ def query(query_text: str, limit: int) -> dict:
                 raise ToolError("Project at most 40 diagnostic result columns.")
             result_rows = []
             size = 0
-            truncated = False
+            rows_truncated = cells_truncated = False
             for row in rows:
-                values = [_json_cell(value) for value in row]
+                cells = [_json_cell(value) for value in row]
+                values = [value for value, _ in cells]
                 size += len(json.dumps(values))
                 if len(result_rows) == limit or size > MAX_RESULT_BYTES:
-                    truncated = True
+                    rows_truncated = True
                     break
+                cells_truncated |= any(clipped for _, clipped in cells)
                 result_rows.append(values)
-    return _result(relations=sources, columns=columns, rows=result_rows, truncated=truncated)
+    return _result(
+        relations=sources, columns=columns, rows=result_rows,
+        truncated=rows_truncated or cells_truncated, rows_truncated=rows_truncated,
+        cells_truncated=cells_truncated,
+    )

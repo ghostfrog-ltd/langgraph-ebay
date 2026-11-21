@@ -1,6 +1,6 @@
 """Column-level allowlist for GhostFrog operational PostgreSQL diagnostics."""
 
-# Values are physical columns. Text is projected as coded labels, never free text.
+# Values are physical columns. Text is coded except in the sanitized evidence view.
 RELATIONS = {
     "auction_listings": """
         id source_id source external_id sale_type status finalized model_key condition_grade
@@ -10,6 +10,10 @@ RELATIONS = {
         visual_condition_checked_at text_condition_checked text_condition_checked_at
     """,
     "auction_price_history": "id external_id price bids_count timestamp recorded_at",
+    "apple_listing_evidence_v": """
+        listing_id external_id source status model_key condition_grade final_price end_time
+        last_seen_at fetched_at evidence_seq field value_index part_index part_count product_value
+    """,
     "auction_price_history_orphans": """
         original_id external_id price bids_count timestamp recorded_at archived_at archive_reason
     """,
@@ -75,6 +79,9 @@ RELATIONS = {
     "schema_migrations": "name applied_at",
 }
 
+# PostgreSQL sanitizes these specific columns before they are visible to the login.
+READABLE_TEXT = {"apple_listing_evidence_v": {"field", "product_value"}}
+
 # Composite joins shown here describe how the stored keys are used. For actual
 # constraints the catalog tool separately reads PostgreSQL's foreign keys.
 LOGICAL_RELATIONSHIPS = (
@@ -82,6 +89,7 @@ LOGICAL_RELATIONSHIPS = (
     ("auction_price_history", ("external_id",), "auction_listings", ("external_id",)),
     ("auction_price_history_orphans", ("external_id",), "auction_listings", ("external_id",)),
     ("auction_listings", ("model_key", "condition_grade"), "latest_comps", ("model_key", "condition_grade")),
+    ("apple_listing_evidence_v", ("listing_id",), "auction_listings", ("id",)),
     ("listing_text_conditions", ("listing_id",), "auction_listings", ("id",)),
     ("listing_visual_conditions", ("listing_id",), "auction_listings", ("id",)),
     ("listing_text_condition_queue", ("listing_id",), "auction_listings", ("id",)),

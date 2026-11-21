@@ -10,7 +10,7 @@ from mcp.client.stdio import stdio_client
 from ops import ghostfrog_mcp as server
 
 
-MODEL = "apple-macbook-air-a2337-13in-m1-8gb-256gb"
+MODEL = "apple-macbook-air-a2337-133in-m1-8gb-256gb"
 TITLE = 'Apple MacBook Air A2337 13" M1 8GB RAM 256GB SSD'
 
 
@@ -38,12 +38,22 @@ def listing(item_id=123456789012, **fields):
 class ValuationTests(unittest.TestCase):
     def test_strict_identity_and_condition_rejects(self):
         self.assertEqual(server._identity_and_reject(listing()), (MODEL, None))
+        self.assertEqual(
+            server._identity_and_reject(listing(raw_attrs={"Screen Size": "13.3 in"})),
+            (MODEL, None),
+        )
+        gpu_key = "apple-macbook-air-a2337-133in-m1-7gpu-8gb-256gb"
+        self.assertEqual(
+            server._identity_and_reject(listing(title=TITLE + " 7-core GPU", model_key=gpu_key)),
+            (gpu_key, None),
+        )
         for row in (
             listing(title=TITLE + " for parts"),
             listing(title='Apple MacBook Air A2337 13" M1 8GB RAM'),
             listing(raw_attrs={"Processor": "Apple M2"}),
             listing(raw_attrs={"RAM Size": "16 GB"}),
             listing(raw_attrs={"SSD Capacity": "512 GB"}),
+            listing(raw_attrs={"Screen Size": "13.6 in"}),
             listing(text_grade="D"),
             listing(review_action="down"),
         ):

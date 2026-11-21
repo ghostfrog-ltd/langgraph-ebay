@@ -42,12 +42,82 @@ connections. It returns 25 rows by default, at most 100 when requested, with a
 time range or listing key and aggregate within that range. A row limit alone
 does not make a full-history aggregate fast.
 
-Diagnostics omit credentials, seller fields, free-text listing and error
-payloads, URLs and raw attributes. Approved text fields expose short operational
-codes. Values that fail the text checks are redacted, and external listing IDs
-outside supported public eBay formats return as SQL NULL. Queue diagnoses use
-states, timestamps and attempt counts. Database administration, raw system
-catalogs and SQL writes are unavailable through these tools.
+Diagnostics keep the original title and raw attributes inaccessible on
+`auction_listings`. Operational text fields use short codes, and external IDs
+outside supported public eBay formats return as SQL NULL. The Apple evidence
+view below is the approved readable projection. Database administration, raw
+system catalogs and writes are unavailable through these tools.
+
+### Inspect an Apple listing
+
+`apple_listing_evidence_v` covers individual listings from `ebay-apple` with
+a public eBay ID, including `unknown` keys and confirmed sales. It exposes
+listing ID, eBay ID, source, status, model key, condition grade, final price,
+end time, last-seen and fetch timestamps. The query envelope includes its UTC
+timestamp and PostgreSQL provenance. To compare a sold listing against a
+cohort, confirm sold status and positive final price, then check the model and
+grade in `latest_comps`. Every listing can supply evidence independent of
+whether it qualifies as a comp.
+
+Find a listing ID using the existing `auction_listings` projection, then query
+the evidence view with that ID. Use a specific ID so PostgreSQL can read only
+the requested listing.
+
+```sql
+SELECT id, external_id, model_key, status, final_price, end_time
+FROM auction_listings
+WHERE source = 'ebay-apple' AND model_key = 'unknown'
+  AND status = 'sold' AND final_price > 0
+ORDER BY end_time DESC, id DESC
+LIMIT 5
+```
+
+```sql
+SELECT listing_id, external_id, model_key, status, final_price, fetched_at,
+       evidence_seq, field, value_index, part_index, part_count, product_value
+FROM apple_listing_evidence_v
+WHERE listing_id = 123 AND evidence_seq > 0
+ORDER BY evidence_seq
+```
+
+The sanitized public title is the first field, `title`. Approved top-level
+item-specific keys are matched case-insensitively and returned with their
+original spelling. A `Browse aspect ` prefix is allowed on the same keys.
+
+- Identity and generation: Brand, Model, Model Name, Model Number, Model
+  Identifier, Apple Model, MPN, Manufacturer Part Number, Product Line, Series,
+  Type, Variant, Generation, Release Year, Year of Manufacture.
+- Hardware: Screen Size, Display, Display Type, Maximum Resolution, Processor,
+  Processor Model, Processor Speed, Chip, Chipset Model, CPU, GPU, Graphics
+  Processing Type, RAM, RAM Size, Memory, Memory Size, Unified Memory, Storage
+  Capacity, SSD Capacity, Hard Drive Capacity, Storage Type, Capacity.
+- Connectivity and locks: Connectivity, Internet Connectivity, Network
+  Connectivity, Network, Carrier, Cellular Band, SIM Card Slot, Lock Status,
+  Activation Lock, iCloud Lock, Carrier Lock, Network Lock.
+- Condition and physical details: Condition, Browse Condition, Browse
+  conditionDescription, Condition Description, ConditionDescription, Item Condition,
+  Cosmetic Condition, Condition/Grade, Grade, Defect, Defects, Defect Description,
+  Damage, Fault, Faults, Parts, Parts or Repair, Repair, Features, Battery Health, Battery
+  Capacity, Case Size, Case Material, Material, Colour, Color, Manufacturer
+  Colour, Unit Quantity, Pack Quantity, Number in Pack, Number of Items in Set.
+
+Arrays retain their item order. A nested JSON object contributes only through
+its `value` or `values` members. Unlisted keys and arbitrary nested payloads
+are discarded. PostgreSQL removes contact details, street addresses and
+postcodes, URLs, device serial identifiers, and recognizable credential and
+authorization text before returning chunks. Sensitive portions are shown as
+`[redacted]`. Empty or missing evidence produces no field row.
+
+Each sanitized value is split into numbered parts of up to 480 characters.
+Join the parts of a given `field` and `value_index` in `part_index` order
+without adding separators. Continue after the last returned `evidence_seq`
+until a request returns no remaining rows. Use the same `listing_id` and
+increase the sequence filter for each page. Keep the query free of an inner
+`LIMIT` if you rely on the tool's `rows_truncated` flag. If the listing
+changes during pagination, start again from sequence zero. The existing row
+and byte caps still apply, and `cells_truncated` reports any clipped cells in
+other queries. A check is incomplete if a field has fewer parts than
+`part_count` or the next page has not been fetched.
 
 For a recent lifecycle investigation, compare the stored status and finalization
 flag over an explicit time window. See the
@@ -123,6 +193,10 @@ through the repository migration process. It grants read access only to listed
 columns, with the new role initially set to `NOLOGIN`. Review the effective
 privileges for this role, including privileges inherited through `PUBLIC`.
 For a relation added after the migration, review new grants explicitly.
+Apply the [Apple evidence migration](../migrations/20261121_003_add_apple_listing_evidence.sql)
+for access to the sanitized view. It adds view SELECT and execution of the
+two input-only sanitizing functions. The SQL tool itself continues to reject
+function calls outside its existing allowlist.
 
 Before enabling login, have the database administrator require SCRAM for this
 role on the intended database over IPv4 loopback. For a host with broad trust
@@ -148,11 +222,15 @@ dbname=your_ghostfrog_database_name
 
 From the MCP virtual environment, run
 `.venv/ghostfrog-mcp/bin/python -m unittest ops.test_ghostfrog_diagnostics ops.test_ghostfrog_mcp`.
+Set `GF_TEST_DIAGNOSTIC_LOGIN=1` for the tests that verify the applied Apple
+evidence migration, redaction and effective privileges using the actual login.
 In local Codex, call `ghostfrog_db_catalog` and issue the sample lifecycle query.
 For the ChatGPT acceptance check, refresh the existing GhostFrog app's tools
-after the updated MCP server is in use. In a fresh chat, call the catalog and
-run the same SELECT. Confirm the tool invocation, UTC timestamp and provenance
-against the local result without sharing credentials or individual records.
+if needed after the updated MCP server is in use. In a fresh chat, call the
+catalog and run the Apple evidence SELECT for a real listing whose key is
+`unknown`. Verify that it returns the title and useful evidence along with
+the UTC timestamp and provenance. Keep individual records within the private
+workspace.
 
 ## ChatGPT website acceptance test
 

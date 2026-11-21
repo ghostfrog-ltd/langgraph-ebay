@@ -20,7 +20,6 @@ from pydantic import Field
 
 from ops.ghostfrog_spend import current_summary
 from pipelines.listing.attributes.mk import normalise_model
-from pipelines.listing.attributes.mk.apple import macbook_specs_conflict
 from pipelines.listing.market_discovery.pricing import (
     MIN_PROFIT_GBP,
     effective_min_comps_for_source,
@@ -38,7 +37,8 @@ COMP_DAYS = 90
 COMP_CANDIDATE_LIMIT = 200
 STRICT_MACBOOK_KEY = re.compile(
     r"apple-macbook(?:-air|-pro)?-a[0-9]{4}-[0-9]{2,3}in-"
-    r"(?:m[1-9](?:pro|max|ultra)?|core-[im][3579])-[0-9]{1,3}gb-[0-9]{1,4}(?:gb|tb)"
+    r"(?:m[1-9](?:pro|max|ultra)?(?:-[0-9]{1,2}gpu)?|core-[im][3579])"
+    r"-[0-9]{1,3}gb-[0-9]{1,4}(?:gb|tb)"
 )
 MCP = FastMCP(
     "GhostFrog",
@@ -129,7 +129,6 @@ def _identity_and_reject(row: Mapping[str, Any]) -> tuple[str, str | None]:
     if (
         not STRICT_MACBOOK_KEY.fullmatch(stored_key)
         or normalise_model(title, attrs, SOURCE) != stored_key
-        or macbook_specs_conflict(attrs, title)
     ):
         return "unknown", "missing_or_conflicting_model_identity"
     if effective_condition_grade(row["condition_grade"], row["visual_grade"], row["text_grade"]) == "D":
