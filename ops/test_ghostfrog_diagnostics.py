@@ -102,7 +102,11 @@ class DiagnosticEvidenceIntegrationTests(unittest.TestCase):
         title = "Apple MacBook Air A2337 13.3-inch M1 8GB RAM 256GB SSD"
         description = ("Screen line visible on boot; the USB-C port works. " * 24).strip()
         attributes = {
-            "Model": ["MacBook Air", {"values": ["A2337", "M1"], "seller": "private-alias"}],
+            "Model": [
+                "MacBook Air",
+                {"name": "Model", "values": ["A2337", "M1"], "seller": "private-alias"},
+                {"name": "Seller Username", "value": "private-alias"},
+            ],
             "Storage Capacity": "256GB",
             "RAM Size": "8 GB",
             "Browse aspect Network": ["Unlocked", "5G"],

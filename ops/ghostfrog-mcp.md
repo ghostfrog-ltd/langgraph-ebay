@@ -102,8 +102,9 @@ original spelling. A `Browse aspect ` prefix is allowed on the same keys.
   Colour, Unit Quantity, Pack Quantity, Number in Pack, Number of Items in Set.
 
 Arrays retain their item order. A nested JSON object contributes only through
-its `value` or `values` members. Unlisted keys and arbitrary nested payloads
-are discarded. PostgreSQL removes contact details, street addresses and
+its `value` or `values` members. An object with a `name`, `key` or `label`
+must identify the enclosing item-specific field. Unlisted keys and arbitrary
+nested payloads are discarded. PostgreSQL removes contact details, street addresses and
 postcodes, URLs, device serial identifiers, and recognizable credential and
 authorization text before returning chunks. Sensitive portions are shown as
 `[redacted]`. Empty or missing evidence produces no field row.

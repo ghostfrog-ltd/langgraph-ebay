@@ -83,6 +83,14 @@ AS $function$
             SELECT parent.value -> wrapper.key, wrapper.ordinal
             FROM (VALUES ('value', 1::bigint), ('values', 2::bigint)) AS wrapper(key, ordinal)
             WHERE jsonb_typeof(parent.value) = 'object' AND parent.value ? wrapper.key
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM (VALUES ('name'), ('key'), ('label')) AS descriptor(key)
+                  WHERE parent.value ? descriptor.key
+                    AND lower(parent.field) IS DISTINCT FROM lower(parent.value ->> descriptor.key)
+                    AND lower(parent.field) IS DISTINCT FROM
+                        ('browse aspect ' || lower(parent.value ->> descriptor.key))
+              )
         ) AS child
     ),
     sanitized AS MATERIALIZED (
