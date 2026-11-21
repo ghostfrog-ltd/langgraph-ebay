@@ -66,7 +66,8 @@ Use the returned `next_after` as `after`. Value rows have their original
 parts. Join string parts without separators. Counts, booleans, and structured
 paths are usable as JSON. Each response has row and byte bounds. A section
 that has another page sets `truncated` and supplies the next cursor. Restart
-pagination if the stored evidence changes. Separate live observations from
+pagination if the stored evidence changes. A section exceeding 10,000 cursor
+positions reports `continuation_limit_reached`. Separate live observations from
 collector caps. Browse descriptions may already be capped at 4,000
 characters, gallery arrays at 12 photos, and shipping at three options.
 

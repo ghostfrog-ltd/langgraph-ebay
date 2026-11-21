@@ -78,9 +78,11 @@ def _page(rows, *, limit: int, budget: int, after: int, evidence: bool = False):
     next_after = None
     if more:
         next_after = items[-1]["evidence_seq"] if evidence else after + len(items)
+    unavailable_cursor = next_after is not None and next_after > 10000
     return {
         "status": "available" if items else ("end_of_section" if after else "not_collected"),
-        "rows": items, "truncated": more, "next_after": next_after,
+        "rows": items, "truncated": more, "next_after": None if unavailable_cursor else next_after,
+        "continuation_limit_reached": unavailable_cursor,
     }
 
 
@@ -90,11 +92,12 @@ def _get_listing(cursor, item_id: str, listing_id: int | None):
     # range bounds. The parsed public item ID is verified on the projection.
     cursor.execute(
         """
-        SELECT * FROM public.listing_inspection_v
-        WHERE item_id = %s AND (
-            external_id = %s OR external_id BETWEEN %s AND %s
-        ) AND (%s::integer IS NULL OR listing_id = %s)
-        ORDER BY last_seen_at DESC NULLS LAST, listing_id DESC LIMIT 11
+        SELECT v.*, a.time_left_s FROM public.listing_inspection_v AS v
+        JOIN public.auction_listings AS a ON a.id = v.listing_id
+        WHERE v.item_id = %s AND (
+            v.external_id = %s OR v.external_id BETWEEN %s AND %s
+        ) AND (%s::integer IS NULL OR v.listing_id = %s)
+        ORDER BY v.last_seen_at DESC NULLS LAST, v.listing_id DESC LIMIT 11
         """,
         (item_id, item_id, prefix + "0", prefix + "999999999999", listing_id, listing_id),
     )
@@ -315,11 +318,9 @@ def listing_detail(item_id, section, after, limit, listing_id=None):
             if name in EVIDENCE_SECTIONS:
                 result = _evidence(cursor, name, listing, after, count, budget, inventory)
                 if name == "checks":
-                    if not after and not result["rows"] and (
-                        any(check["status"] == "checked" for check in checks.values())
-                        or review["status"] == "recorded"
-                    ):
-                        result["status"] = "available"
+                    if not after and not result["rows"]:
+                        checked = any(check["status"] == "checked" for check in checks.values())
+                        result["status"] = "available" if checked or review["status"] == "recorded" else "not_checked"
                     result |= {"latest_assessments": checks, "latest_operator_review": review}
                 return result
             if name == "comparables":

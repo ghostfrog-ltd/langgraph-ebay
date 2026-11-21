@@ -116,6 +116,11 @@ class ListingInspectionIntegrationTests(unittest.TestCase):
                  "https://www.ebay.co.uk@private.invalid/itm/123456789012"),
             )
             self.assertEqual(cursor.fetchone(), ("https://www.ebay.co.uk/itm/item-abc/123456789012?var=42", None))
+            cursor.execute(
+                "SELECT public.ghostfrog_marketplace_url(%s,false)",
+                ("https://www.ebay.co.uk/itm/device-ghp_privateToken987654321/123456789012",),
+            )
+            self.assertEqual(cursor.fetchone(), (None,))
         by_field = defaultdict(list)
         for section, field, path, part, count, value, withheld in rows:
             by_field[field].append((path, part, count, value, withheld))
