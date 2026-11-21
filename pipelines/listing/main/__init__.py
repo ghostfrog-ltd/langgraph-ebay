@@ -15,7 +15,7 @@ from langgraph.graph import StateGraph, END
 
 from utils.logger import get_logger
 from utils.auth import get_auth
-from utils.ebay_api_accounting import SERVICE_LIMIT_DEFAULTS, build_api_accounting
+from utils.ebay_api_accounting import SERVICE_LIMIT_DEFAULTS, build_api_accounting, get_bucket_limit
 from utils.usage_tracker import get_all_api_usage_today
 from utils.db_schema import connection
 from utils.pipeline_control import is_heartbeat_paused
@@ -55,7 +55,7 @@ logger = get_logger(__name__)
 
 # Local service counters are grouped into real eBay quota buckets by
 # utils.ebay_api_accounting before anything is blocked.
-DEFAULT_DAILY_LIMIT = 5000
+DEFAULT_DAILY_LIMIT = get_bucket_limit("trading")
 
 
 # ---------------------------------------------------------------------------
@@ -77,12 +77,13 @@ ASSESS_LIMIT_DEFAULT = int(os.getenv("GF_ASSESS_LIMIT_DEFAULT", "3"))
 BACKFILL_ENABLED = os.getenv("GF_BACKFILL_ENABLED", "1") == "1"
 BACKFILL_LIMIT_PER_TICK = int(os.getenv("GF_BACKFILL_LIMIT_PER_TICK", "50"))
 BACKFILL_DAILY_BUDGET = int(os.getenv("GF_BACKFILL_DAILY_BUDGET", "1000"))
-BACKFILL_DAILY_CAP = int(os.getenv("GF_BACKFILL_DAILY_CAP", "5000"))
+BACKFILL_DAILY_CAP = int(os.getenv("GF_BACKFILL_DAILY_CAP", str(get_bucket_limit("trading"))))
 BACKFILL_SAFETY_RESERVE = int(os.getenv("GF_BACKFILL_SAFETY_RESERVE", "500"))
 BACKFILL_INCLUDE_VEHICLE_SOURCES = os.getenv("GF_BACKFILL_INCLUDE_VEHICLE_SOURCES", "0") == "1"
 HEARTBEAT_MODEL_KEYS_PER_MARKET = int(os.getenv("GF_HEARTBEAT_MODEL_KEYS_PER_MARKET", "80"))
 
 HEARTBEAT_EMAIL_NAME = "listing_system_hourly_heartbeat"
+HEARTBEAT_EMAIL_ENABLED = os.getenv("GF_HEARTBEAT_EMAIL_ENABLED", "0") == "1"
 HEARTBEAT_EMAIL_INTERVAL = timedelta(hours=int(os.getenv("GF_HEARTBEAT_EMAIL_HOURS", "1")))
 HEARTBEAT_EMAIL_RECIPIENTS = [
     email.strip()
@@ -107,11 +108,14 @@ HEARTBEAT_LAUNCHD_LABEL = os.getenv(
 HEARTBEAT_SCHEDULE_MINUTES = int(os.getenv("GF_HEARTBEAT_SCHEDULE_MINUTES", "5"))
 HEARTBEAT_STAGE_WARN_SECONDS = float(os.getenv("GF_HEARTBEAT_STAGE_WARN_SECONDS", "30"))
 HEARTBEAT_EMAIL_REPORT_LIMIT = 0
+HEARTBEAT_CANDIDATE_REFRESH_ENABLED = (
+    os.getenv("GF_HEARTBEAT_CANDIDATE_REFRESH_ENABLED", "0") == "1"
+)
 HEARTBEAT_CANDIDATE_REFRESH_LIMIT = int(
     os.getenv("GF_HEARTBEAT_CANDIDATE_REFRESH_LIMIT", str(HEARTBEAT_EMAIL_REPORT_LIMIT))
 )
+HEARTBEAT_BUY_SIGNAL_MIN_COMPS = int(os.getenv("GF_HEARTBEAT_BUY_SIGNAL_MIN_COMPS", "50"))
 HEARTBEAT_POKEMON_PROFIT_GBP = float(os.getenv("GF_HEARTBEAT_POKEMON_PROFIT_GBP", "20"))
-HEARTBEAT_POKEMON_MIN_COMPS = int(os.getenv("GF_HEARTBEAT_POKEMON_MIN_COMPS", "3"))
 REVIEW_SERVER_URL = os.getenv("GF_REVIEW_SERVER_URL", "http://127.0.0.1:8765")
 
 
@@ -761,7 +765,7 @@ def _heartbeat_metrics() -> dict[str, Any]:
     metrics = build_operator_metrics(
         include_model_key_inventory=True,
         model_keys_per_market=HEARTBEAT_MODEL_KEYS_PER_MARKET,
-        backfill_daily_cap=5000,
+        backfill_daily_cap=get_bucket_limit("trading"),
         backfill_safety_reserve=500,
         backfill_max_per_day=1000,
         include_vehicle_sources=False,
@@ -797,7 +801,7 @@ def _heartbeat_metrics() -> dict[str, Any]:
         market_discovery = run_market_discovery(
             limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
             min_profit=50.0,
-            min_comps=MIN_CANDIDATE_COMPS,
+            min_comps=HEARTBEAT_BUY_SIGNAL_MIN_COMPS,
             include_future_unknown=True,
         )
     except Exception as exc:
@@ -807,7 +811,7 @@ def _heartbeat_metrics() -> dict[str, Any]:
         market_discovery_punt = run_market_discovery(
             limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
             min_profit=25.0,
-            min_comps=MIN_CANDIDATE_COMPS,
+            min_comps=HEARTBEAT_BUY_SIGNAL_MIN_COMPS,
             include_future_unknown=True,
         )
     except Exception as exc:
@@ -816,7 +820,7 @@ def _heartbeat_metrics() -> dict[str, Any]:
         market_discovery_pokemon = run_market_discovery(
             limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
             min_profit=HEARTBEAT_POKEMON_PROFIT_GBP,
-            min_comps=HEARTBEAT_POKEMON_MIN_COMPS,
+            min_comps=HEARTBEAT_BUY_SIGNAL_MIN_COMPS,
             include_future_unknown=True,
             source="ebay-pokemon",
         )
@@ -853,7 +857,7 @@ def _heartbeat_metrics() -> dict[str, Any]:
             market_discovery = run_market_discovery(
                 limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
                 min_profit=50.0,
-                min_comps=MIN_CANDIDATE_COMPS,
+                min_comps=HEARTBEAT_BUY_SIGNAL_MIN_COMPS,
             )
         except Exception as exc:
             market_discovery = {"error": str(exc), "top_lanes": [], "status_counts": {}}
@@ -861,7 +865,7 @@ def _heartbeat_metrics() -> dict[str, Any]:
             market_discovery_punt = run_market_discovery(
                 limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
                 min_profit=25.0,
-                min_comps=MIN_CANDIDATE_COMPS,
+                min_comps=HEARTBEAT_BUY_SIGNAL_MIN_COMPS,
             )
         except Exception as exc:
             market_discovery_punt = {"error": str(exc), "potentials": [], "closest": []}
@@ -869,7 +873,7 @@ def _heartbeat_metrics() -> dict[str, Any]:
             market_discovery_pokemon = run_market_discovery(
                 limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
                 min_profit=HEARTBEAT_POKEMON_PROFIT_GBP,
-                min_comps=HEARTBEAT_POKEMON_MIN_COMPS,
+                min_comps=HEARTBEAT_BUY_SIGNAL_MIN_COMPS,
                 source="ebay-pokemon",
             )
         except Exception as exc:
@@ -903,9 +907,12 @@ def _heartbeat_metrics() -> dict[str, Any]:
 def _candidate_rows_for_refresh(*reports: dict[str, Any], limit: int) -> list[dict[str, Any]]:
     """Collect unique rows worth spending a pre-email getItem call on."""
 
+    capped_limit = max(0, int(limit or 0))
+    if capped_limit <= 0:
+        return []
+
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
-    capped_limit = max(0, int(limit or 0))
 
     def add_row(row: dict[str, Any]) -> bool:
         external_id = str(row.get("external_id") or "").strip()
@@ -958,6 +965,15 @@ def _refresh_candidate_prices_for_email(*reports: dict[str, Any]) -> dict[str, A
     the normal adapter upsert update price/bids/end time, and then callers rerun
     the deterministic potential query.
     """
+
+    if not HEARTBEAT_CANDIDATE_REFRESH_ENABLED:
+        return {
+            "status": "skipped",
+            "reason": "disabled",
+            "requested": 0,
+            "refreshed": 0,
+            "refreshed_sources": {},
+        }
 
     rows = _candidate_rows_for_refresh(
         *reports,
@@ -1241,7 +1257,7 @@ def _potential_rows_for_email(
     item_key: str = "potentials",
     exclude_external_ids: set[str] | None = None,
     limit: int = 8,
-    min_comps: int = MIN_CANDIDATE_COMPS,
+    min_comps: int | None = HEARTBEAT_BUY_SIGNAL_MIN_COMPS,
     empty_message: str = "No live candidates cleared this gate.",
 ) -> tuple[list[list[str]], set[str]]:
     """Render live potential or closest-miss rows for the heartbeat email."""
@@ -1259,8 +1275,9 @@ def _potential_rows_for_email(
     ]
     items.sort(key=_email_end_sort_key)
 
+    effective_min_comps = HEARTBEAT_BUY_SIGNAL_MIN_COMPS if min_comps is None else int(min_comps)
     for item in items:
-        if int(item.get("comp_samples") or 0) < min_comps:
+        if int(item.get("comp_samples") or 0) < effective_min_comps:
             continue
         external_id = str(item.get("external_id") or "")
         if external_id and external_id in exclude_external_ids:
@@ -1541,7 +1558,7 @@ def _slack_rows_from_report(
     item_key: str = "potentials",
     exclude_external_ids: set[str] | None = None,
     limit: int = HEARTBEAT_SLACK_REPORT_LIMIT,
-    min_comps: int = MIN_CANDIDATE_COMPS,
+    min_comps: int | None = HEARTBEAT_BUY_SIGNAL_MIN_COMPS,
 ) -> tuple[list[str], set[str]]:
     exclude_external_ids = exclude_external_ids or set()
     used_external_ids: set[str] = set()
@@ -1555,8 +1572,9 @@ def _slack_rows_from_report(
         if isinstance(item, dict)
     ]
     items.sort(key=_email_end_sort_key)
+    effective_min_comps = HEARTBEAT_BUY_SIGNAL_MIN_COMPS if min_comps is None else int(min_comps)
     for index, item in enumerate(items, start=1):
-        if int(item.get("comp_samples") or 0) < min_comps:
+        if int(item.get("comp_samples") or 0) < effective_min_comps:
             continue
         external_id = str(item.get("external_id") or "")
         if external_id and external_id in exclude_external_ids:
@@ -1832,9 +1850,6 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
     roi = metrics["high_risk_roi"]
     serious_report = metrics.get("market_discovery") or {}
     punt_report = metrics.get("market_discovery_punt") or {}
-    pokemon_report = metrics.get("market_discovery_pokemon") or {}
-    model_key_inventory = metrics.get("model_key_inventory") or []
-    favourites = metrics.get("listing_favourites") or []
 
     unknown_unfinalized = int(counts.get("unknown_unfinalized") or 0)
     unknown_backfill_due = (
@@ -1856,45 +1871,11 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
         serious_report,
         limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
     )
-    serious_near_misses = useful_near_misses(
-        serious_report.get("closest") if isinstance(serious_report.get("closest"), list) else [],
-        min_profit=50.0,
-        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
-    )
-    serious_miss_rows, _serious_miss_ids = _potential_rows_for_email(
-        {"closest": serious_near_misses},
-        item_key="closest",
-        exclude_external_ids=serious_ids,
-        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
-        empty_message="No actionable near misses at or below max buy for the GBP 50 gate.",
-    )
     punt_rows, _punt_ids = _potential_rows_for_email(
         punt_report,
         exclude_external_ids=serious_ids,
         limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
     )
-    pokemon_rows, _pokemon_ids = _potential_rows_for_email(
-        pokemon_report,
-        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
-        min_comps=HEARTBEAT_POKEMON_MIN_COMPS,
-        empty_message=(
-            "No live Pokemon candidates cleared the GBP "
-            f"{HEARTBEAT_POKEMON_PROFIT_GBP:.0f} gate."
-        ),
-    )
-    punt_near_misses = useful_near_misses(
-        punt_report.get("closest") if isinstance(punt_report.get("closest"), list) else [],
-        min_profit=25.0,
-        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
-    )
-    punt_miss_rows, _punt_miss_ids = _potential_rows_for_email(
-        {"closest": punt_near_misses},
-        item_key="closest",
-        exclude_external_ids=serious_ids.union(_punt_ids),
-        limit=HEARTBEAT_EMAIL_REPORT_LIMIT,
-        empty_message="No actionable near misses at or below max buy for the GBP 25 gate.",
-    )
-    favourite_rows = _favourite_rows_for_email(favourites)
 
     lead = (
         "Pipeline is running from live PostgreSQL data. Backfill is incremental; "
@@ -1932,21 +1913,9 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
         {_metric_card("Current ROI rows", _fmt_int(roi.get("live_roi_gt_15")), f"{_fmt_int(roi.get('live_roi_gt_100'))} above 100% ROI", "warn" if int(roi.get("live_roi_gt_100") or 0) else "neutral")}
       </tr></table>
 
-      {_section("How To Read Listing Rows", _listing_column_explainer())}
-
       {_section("GBP 50 Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], serious_rows))}
 
       {_section("GBP 25 Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], punt_rows))}
-
-      {_section(f"Pokemon GBP {HEARTBEAT_POKEMON_PROFIT_GBP:.0f} Profit Candidates", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], pokemon_rows))}
-
-      {_section("GBP 50 Closest Misses", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], serious_miss_rows))}
-
-      {_section("GBP 25 Closest Misses", _table(["Source", "Listing", "Type", "Ends", "Current", "Max buy", "Profit", "Sold median", "Comps / grade", "Next", "Review"], punt_miss_rows))}
-
-      {_section("Favourites", _table(["Source", "Listing", "Status", "Current", "Model key", "Review"], favourite_rows))}
-
-      {_section("Model Keys By Market", _model_key_inventory_for_email(model_key_inventory))}
     </div>
   </div>
 </body>
@@ -1954,6 +1923,13 @@ def _build_heartbeat_email_html(state: MainState, metrics: dict[str, Any], now: 
 
 
 def hourly_status_email(state: MainState) -> MainState:
+    if not HEARTBEAT_EMAIL_ENABLED:
+        state["heartbeat_email_out"] = {
+            "status": "skipped",
+            "reason": "disabled",
+        }
+        return state
+
     if state.get("maintenance_skip"):
         state["heartbeat_email_out"] = {
             "status": "skipped_due_to_maintenance",
@@ -1990,6 +1966,12 @@ def send_heartbeat_email_now(
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Send the current heartbeat email immediately, bypassing hourly throttle."""
+
+    if not HEARTBEAT_EMAIL_ENABLED:
+        return {
+            "status": "skipped",
+            "reason": "disabled",
+        }
 
     state = state or {}
     now = now or datetime.now(timezone.utc)

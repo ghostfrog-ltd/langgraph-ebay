@@ -6,12 +6,73 @@ import requests
 from pipelines.listing.ended.graph import _parse_trading_get_item
 from pipelines.listing.point_zero.backfill_apply import (
     _classify_trading_snapshot,
+    _fetch_table_order_backfill_candidates,
     run_backfill,
 )
 
 
 class PointZeroBackfillApplyTests(unittest.TestCase):
-    """Classifier tests for safe unknown-listing finalization backfills."""
+    """Classifier tests for safe historic-listing finalization backfills."""
+
+    def test_table_order_candidates_include_unchecked_old_rows_regardless_of_status(self):
+        class CaptureCursor:
+            def __init__(self):
+                self.calls = []
+
+            def execute(self, sql, params):
+                self.sql = sql
+                self.params = params
+                self.calls.append((sql, params))
+
+            def fetchall(self):
+                return []
+
+        cur = CaptureCursor()
+
+        rows = _fetch_table_order_backfill_candidates(cur, limit=10000)
+
+        self.assertEqual(rows, [])
+        self.assertEqual(len(cur.calls), 2)
+        combined_sql = "\n".join(sql for sql, _params in cur.calls)
+        self.assertNotIn("WHERE status = 'unknown'", combined_sql)
+        self.assertNotIn("COALESCE(finalized, FALSE) = FALSE", combined_sql)
+        self.assertIn("(final_price IS NULL OR final_price <= 0)", combined_sql)
+        self.assertIn("external_id ~ '[0-9]'", combined_sql)
+        self.assertIn("ORDER BY id ASC", combined_sql)
+        self.assertIn("backfill_checked_at IS NULL", cur.calls[0][0])
+        self.assertIn("backfill_checked_at IS NOT NULL", cur.calls[1][0])
+        self.assertIn("backfill_checked_at <= CURRENT_TIMESTAMP - interval '1 day'", cur.calls[1][0])
+        self.assertIn("NOT (status = 'ended' AND COALESCE(finalized, FALSE) = TRUE)", cur.calls[1][0])
+        self.assertIn("COALESCE(backfill_last_reason, '') <> 'invalid_external_id'", cur.calls[1][0])
+        self.assertNotIn("external_id LIKE 'v1|", combined_sql)
+        self.assertEqual(cur.calls[0][1], (10000,))
+        self.assertEqual(cur.calls[1][1], (10000,))
+
+    def test_table_order_candidates_skip_retry_query_when_unchecked_rows_fill_limit(self):
+        class CaptureCursor:
+            def __init__(self):
+                self.calls = []
+
+            def execute(self, sql, params):
+                self.calls.append((sql, params))
+
+            def fetchall(self):
+                return [
+                    {
+                        "id": 1,
+                        "external_id": "v1|111111111111|0",
+                        "source": "ebay-apple",
+                        "model_key": "unknown",
+                        "title": "Old row",
+                    }
+                ]
+
+        cur = CaptureCursor()
+
+        rows = _fetch_table_order_backfill_candidates(cur, limit=1)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(cur.calls), 1)
 
     def _classify(self, parsed):
         return _classify_trading_snapshot(
@@ -206,7 +267,7 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
             "pipelines.listing.point_zero.backfill_apply.backfill_checks_today",
             return_value=0,
         ), patch(
-            "pipelines.listing.point_zero.backfill_apply._load_candidates_from_plan",
+            "pipelines.listing.point_zero.backfill_apply._load_candidates_in_table_order",
             return_value=(candidates, {"api_budget": {}}),
         ), patch(
             "pipelines.listing.point_zero.backfill_apply.increment_api_usage",
@@ -264,7 +325,7 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
             "pipelines.listing.point_zero.backfill_apply.backfill_checks_today",
             return_value=0,
         ), patch(
-            "pipelines.listing.point_zero.backfill_apply._load_candidates_from_plan",
+            "pipelines.listing.point_zero.backfill_apply._load_candidates_in_table_order",
             return_value=(candidates, {"api_budget": {}}),
         ), patch(
             "pipelines.listing.point_zero.backfill_apply.increment_api_usage",
@@ -287,6 +348,48 @@ class PointZeroBackfillApplyTests(unittest.TestCase):
         self.assertEqual(trading_call.call_count, 1)
         self.assertEqual(captured_outcomes[0].reason, "trading_usage_limit_518")
         self.assertIn("skip:error:trading_usage_limit_518", summary["counts"])
+
+    def test_large_backfill_commits_outcomes_in_small_chunks(self):
+        committed_chunk_sizes = []
+        candidates = [
+            {
+                "id": index,
+                "external_id": f"v1|{100000000000 + index}|0",
+                "source": "ebay-apple",
+                "model_key": "apple-iphone-15-128gb",
+                "title": f"Candidate {index}",
+            }
+            for index in range(1, 52)
+        ]
+
+        with patch(
+            "pipelines.listing.point_zero.backfill_apply.backfill_checks_today",
+            return_value=0,
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._load_candidates_in_table_order",
+            return_value=(candidates, {"api_budget": {}}),
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply.increment_api_usage",
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._call_trading_get_item",
+            return_value=SimpleNamespace(text="<xml/>"),
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._parse_trading_get_item",
+            return_value={
+                "ended": True,
+                "sold_flag": True,
+                "final_price": 199.99,
+                "bid_count": 3,
+            },
+        ), patch(
+            "pipelines.listing.point_zero.backfill_apply._apply_outcomes",
+            side_effect=lambda outcomes: committed_chunk_sizes.append(len(outcomes)) or len(outcomes),
+        ):
+            summary = run_backfill(limit=51, apply=True, daily_backfill_budget=100)
+
+        self.assertEqual(committed_chunk_sizes, [50, 1])
+        self.assertEqual(summary["applied"], 51)
+        self.assertEqual(summary["outcome_count"], 51)
 
 
 if __name__ == "__main__":

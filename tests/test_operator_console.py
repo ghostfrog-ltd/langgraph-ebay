@@ -100,6 +100,7 @@ class OperatorConsoleTests(unittest.TestCase):
             "known_model_keys": 81854,
             "unknown_model_keys": 44687,
             "confirmed_final_prices": 13126,
+            "listings_without_final_price": 113415,
             "final_prices_with_known_model_key": 9270,
             "comp_buckets": 2136,
             "comp_samples": 7081,
@@ -112,7 +113,10 @@ class OperatorConsoleTests(unittest.TestCase):
             "live_with_3plus_same_grade_comps": 93,
             "today_calls": 4337,
             "planned_normal_calls": 4337,
-            "spare_calls": 163,
+            "spare_calls": 45663,
+            "backfill_daily_limit": 2000,
+            "backfill_daily_remaining": 499,
+            "backfill_left_today": 499,
             "backfill_checked_today": 1501,
             "backfill_sold_today": 577,
             "current_roi_rows": 7,
@@ -122,8 +126,8 @@ class OperatorConsoleTests(unittest.TestCase):
                     "trading": {
                         "label": "Trading API",
                         "used": 2100,
-                        "limit": 5000,
-                        "remaining": 2900,
+                        "limit": 50000,
+                        "remaining": 47900,
                         "blocked": False,
                     },
                     "browse": {
@@ -159,6 +163,10 @@ class OperatorConsoleTests(unittest.TestCase):
         self.assertEqual(code, 0)
         text = out.getvalue()
         self.assertIn("GhostFrog eBay stats", text)
+        self.assertIn("Total listings: 126,541", text)
+        self.assertIn("Total listings closed with price: 13,126", text)
+        self.assertIn("Backfill-eligible rows: 89,818", text)
+        self.assertIn("Rows without final price: 113,415", text)
         self.assertIn("LIVE LISTINGS", text)
         self.assertIn("CONFIRMED COMPS", text)
         self.assertIn("LIVE COMP COVERAGE", text)
@@ -166,14 +174,29 @@ class OperatorConsoleTests(unittest.TestCase):
         self.assertIn("13,126", text)
         self.assertIn("7,081 final-price samples", text)
         self.assertIn("93 of 1,504 have 3+ comps", text)
-        self.assertIn("T 2,100/5,000 | B 2,237/5,000", text)
+        self.assertIn("T 2,100/50,000 | B 2,237/5,000", text)
         self.assertIn("577 sold confirmed", text)
+        self.assertIn("BACKFILL LEFT TODAY", text)
+        self.assertIn("499", text)
+        self.assertIn("== Backfill Budget ==", text)
+        self.assertIn("Can backfill today", text)
         self.assertIn("== Data Quality ==", text)
         self.assertIn("Total listings", text)
         self.assertIn("126,541", text)
         self.assertIn("== Comps And Live Coverage ==", text)
         self.assertIn("== API Buckets ==", text)
         self.assertIn("Trading API", text)
+
+    def test_stats_prints_no_estimates_when_exact_counts_fail(self):
+        with patch("pipelines.listing.operator_console.build_stats", side_effect=RuntimeError("lock timeout")):
+            with patch("sys.stdout", new_callable=StringIO) as out:
+                code = operator_console.main(["stats"])
+
+        self.assertEqual(code, 2)
+        text = out.getvalue()
+        self.assertIn("Exact stats unavailable: lock timeout", text)
+        self.assertIn("No estimated counts printed.", text)
+        self.assertNotIn("Estimated listings", text)
 
     def test_explain_prints_listing_evidence(self):
         with patch("pipelines.listing.explain.explain_listing", return_value="explanation text") as explain:
@@ -199,12 +222,52 @@ class OperatorConsoleTests(unittest.TestCase):
             "366586504122",
         )
 
+    def test_visual_condition_can_grade_all_live_rows(self):
+        with patch("pipelines.listing.operator_console._python_module", return_value=0) as run:
+            code = operator_console.main(
+                [
+                    "visual-condition",
+                    "--source",
+                    "ebay-apple",
+                    "--product",
+                    "iphone",
+                    "--limit",
+                    "10",
+                    "--model",
+                    "minicpm-v:8b",
+                    "--all-live",
+                    "--apply",
+                ]
+            )
+
+        self.assertEqual(code, 0)
+        run.assert_called_once_with(
+            "pipelines.listing.visual_condition",
+            "--model",
+            "minicpm-v:8b",
+            "--limit",
+            "10",
+            "--source",
+            "ebay-apple",
+            "--product",
+            "iphone",
+            "--min-profit",
+            "25.0",
+            "--max-images",
+            "6",
+            "--title",
+            "Apple iPhone listing",
+            "--all-live",
+            "--apply",
+        )
+
     def test_stats_are_mapped_from_shared_heartbeat_metrics(self):
         metrics = {
             "listing_counts": {
                 "total": 100,
                 "unknown": 20,
                 "unknown_unfinalized": 18,
+                "direct_backfill_due": 6,
                 "missing_model_key": 30,
                 "final_prices": 12,
                 "final_prices_with_known_model_key": 9,
@@ -226,6 +289,7 @@ class OperatorConsoleTests(unittest.TestCase):
                 "api_budget": {
                     "planned_normal_calls": 30,
                     "theoretical_spare": 4470,
+                    "max_backfill_per_day": 100,
                 },
             },
             "backfill_activity": {
@@ -245,16 +309,20 @@ class OperatorConsoleTests(unittest.TestCase):
         self.assertEqual(stats["known_model_keys"], 70)
         self.assertEqual(stats["unknown_model_keys"], 30)
         self.assertEqual(stats["confirmed_final_prices"], 12)
+        self.assertEqual(stats["listings_without_final_price"], 88)
         self.assertEqual(stats["final_prices_with_known_model_key"], 9)
         self.assertEqual(stats["live_with_known_key"], 7)
         self.assertEqual(stats["live_with_3plus_same_grade_comps"], 4)
         self.assertEqual(stats["today_calls"], 22)
         self.assertEqual(stats["planned_normal_calls"], 30)
         self.assertEqual(stats["spare_calls"], 4470)
+        self.assertEqual(stats["backfill_daily_limit"], 100)
+        self.assertEqual(stats["backfill_daily_remaining"], 89)
+        self.assertEqual(stats["backfill_left_today"], 6)
 
-    def test_backfill_apply_defaults_to_useful_batch_size(self):
+    def test_backfill_defaults_to_useful_batch_size(self):
         with patch("pipelines.listing.operator_console._python_module", return_value=0) as run:
-            code = operator_console.main(["backfill-apply"])
+            code = operator_console.main(["backfill"])
 
         self.assertEqual(code, 0)
         run.assert_called_once_with(
@@ -266,9 +334,9 @@ class OperatorConsoleTests(unittest.TestCase):
             "--apply",
         )
 
-    def test_backfill_apply_forwards_daily_limit_override(self):
+    def test_backfill_forwards_daily_limit_override(self):
         with patch("pipelines.listing.operator_console._python_module", return_value=0) as run:
-            code = operator_console.main(["backfill-apply", "--limit", "250", "--daily-limit", "5000"])
+            code = operator_console.main(["backfill", "--limit", "250", "--daily-limit", "5000"])
 
         self.assertEqual(code, 0)
         run.assert_called_once_with(

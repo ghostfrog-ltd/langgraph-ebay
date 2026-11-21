@@ -11,12 +11,13 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime
+import os
 from typing import Any, Mapping
 
 from psycopg2.extras import RealDictCursor
 
 import utils.db_schema as schema
-from utils.condition import has_investible_product_identity
+from utils.condition import effective_condition_grade, has_investible_product_identity
 from pipelines.listing.review_actions import ensure_review_table
 
 FEE_RATE = 0.13
@@ -27,7 +28,23 @@ SELLING_RESERVE_GBP = 3.0
 MIN_PROFIT_GBP = 50.0
 MIN_ROI = 0.0
 MIN_CANDIDATE_COMPS = 15
+DEFAULT_LIVE_LISTING_MAX_AGE_HOURS = 24
+CATEGORY_MIN_CANDIDATE_COMPS: dict[str, int] = {
+    "ebay-apple": 10,
+    "ebay-samsung": 5,
+    "ebay-graphics-cards": 5,
+    "ebay-consoles": 15,
+    "ebay-actioncams": 15,
+    "ebay-lego": 15,
+}
 NEAR_MISS_WINDOW_GBP = 10.0
+
+
+def live_listing_max_age_hours() -> int:
+    try:
+        return max(1, int(os.getenv("GHOSTFROG_REMOTE_SYNC_LIVE_MAX_AGE_HOURS", DEFAULT_LIVE_LISTING_MAX_AGE_HOURS)))
+    except ValueError:
+        return DEFAULT_LIVE_LISTING_MAX_AGE_HOURS
 
 
 @dataclass
@@ -40,6 +57,19 @@ class ListingPotential:
     url: str
     model_key: str
     condition_grade: str
+    text_condition_grade: str
+    text_scan_grade: str | None
+    text_scan_checked: bool
+    text_scan_review_required: bool
+    text_scan_risk_flags: list[str]
+    text_scan_model_name: str | None
+    text_scan_checked_at: Any
+    visual_condition_grade: str | None
+    visual_condition_checked: bool
+    visual_review_required: bool
+    visual_damage_flags: list[str]
+    visual_model_name: str | None
+    visual_checked_at: Any
     sale_type: str
     end_time: Any
     current_price: float
@@ -49,6 +79,7 @@ class ListingPotential:
     expected_profit: float
     expected_roi: float
     price_gap_to_max_buy: float
+    effective_min_comps: int
     signal: str
 
 
@@ -78,10 +109,17 @@ def _max_safe_buy(*, sold_median: float, min_profit: float) -> float:
     )
 
 
+def effective_min_comps_for_source(source: str | None, *, override: int | None = None) -> int:
+    if override is not None:
+        return max(int(override), 1)
+    return CATEGORY_MIN_CANDIDATE_COMPS.get(str(source or "").strip().lower(), MIN_CANDIDATE_COMPS)
+
+
 def potential_from_row(
     row: dict[str, Any],
     *,
     min_profit: float = MIN_PROFIT_GBP,
+    min_comps_override: int | None = None,
 ) -> ListingPotential:
     """
     Convert one live listing + comp row into deterministic buy maths.
@@ -91,6 +129,7 @@ def potential_from_row(
     current_price = float(row.get("price_current") or 0.0)
     sold_median = float(row.get("median_final_price") or 0.0)
     comp_samples = int(row.get("samples") or 0)
+    effective_min_comps = effective_min_comps_for_source(row.get("source"), override=min_comps_override)
     profit = _expected_profit(current_price=current_price, sold_median=sold_median)
     roi = 0.0 if current_price <= 0 else profit / current_price
     max_buy = _max_safe_buy(sold_median=sold_median, min_profit=min_profit)
@@ -102,7 +141,40 @@ def potential_from_row(
         title=str(row.get("title") or ""),
         url=str(row.get("url") or ""),
         model_key=str(row.get("model_key") or ""),
-        condition_grade=str(row.get("condition_grade") or "B"),
+        condition_grade=effective_condition_grade(
+            row.get("condition_grade") or row.get("text_condition_grade") or "B",
+            row.get("visual_condition_grade"),
+            row.get("text_scan_grade"),
+        ),
+        text_condition_grade=str(row.get("text_condition_grade") or row.get("condition_grade") or "B"),
+        text_scan_grade=(
+            str(row.get("text_scan_grade"))
+            if row.get("text_scan_grade") is not None
+            else None
+        ),
+        text_scan_checked=bool(row.get("text_scan_checked", row.get("text_scan_checked_at") is not None)),
+        text_scan_review_required=bool(row.get("text_scan_review_required", False)),
+        text_scan_risk_flags=list(row.get("text_scan_risk_flags") or []),
+        text_scan_model_name=(
+            str(row.get("text_scan_model_name"))
+            if row.get("text_scan_model_name") is not None
+            else None
+        ),
+        text_scan_checked_at=row.get("text_scan_checked_at"),
+        visual_condition_grade=(
+            str(row.get("visual_condition_grade"))
+            if row.get("visual_condition_grade") is not None
+            else None
+        ),
+        visual_condition_checked=bool(row.get("visual_condition_checked", row.get("visual_checked_at") is not None)),
+        visual_review_required=bool(row.get("visual_review_required", False)),
+        visual_damage_flags=list(row.get("visual_damage_flags") or []),
+        visual_model_name=(
+            str(row.get("visual_model_name"))
+            if row.get("visual_model_name") is not None
+            else None
+        ),
+        visual_checked_at=row.get("visual_checked_at"),
         sale_type=str(row.get("sale_type") or ""),
         end_time=row.get("end_time"),
         current_price=_money(current_price),
@@ -112,9 +184,11 @@ def potential_from_row(
         expected_profit=profit,
         expected_roi=round(roi, 4),
         price_gap_to_max_buy=gap,
+        effective_min_comps=effective_min_comps,
         signal=(
             f"current £{_money(current_price)} vs max buy £{max_buy}; "
-            f"sold median £{_money(sold_median)} from {comp_samples} same-grade comps; "
+            f"sold median £{_money(sold_median)} from {comp_samples} same-grade comps "
+            f"(floor {effective_min_comps}); "
             f"expected profit £{profit}"
         ),
     )
@@ -140,7 +214,7 @@ def _fetch_live_listing_comp_rows(
         """
 
     source_predicate = ""
-    params: list[Any] = []
+    params: list[Any] = [str(live_listing_max_age_hours())]
     if source:
         source_predicate = "AND a.source = %s"
         params.append(source)
@@ -153,7 +227,20 @@ def _fetch_live_listing_comp_rows(
             a.title,
             a.url,
             a.model_key,
-            COALESCE(a.condition_grade, 'B') AS condition_grade,
+            grade.effective_condition_grade AS condition_grade,
+            grade.text_condition_grade,
+            tc.text_grade AS text_scan_grade,
+            (tc.id IS NOT NULL) AS text_scan_checked,
+            COALESCE(tc.review_required, false) AS text_scan_review_required,
+            COALESCE(tc.risk_flags, ARRAY[]::text[]) AS text_scan_risk_flags,
+            tc.model_name AS text_scan_model_name,
+            tc.checked_at AS text_scan_checked_at,
+            vc.visual_grade AS visual_condition_grade,
+            (vc.id IS NOT NULL) AS visual_condition_checked,
+            COALESCE(vc.review_required, false) AS visual_review_required,
+            COALESCE(vc.damage_flags, ARRAY[]::text[]) AS visual_damage_flags,
+            vc.model_name AS visual_model_name,
+            vc.checked_at AS visual_checked_at,
             a.sale_type,
             a.raw_attrs,
             a.end_time,
@@ -161,10 +248,25 @@ def _fetch_live_listing_comp_rows(
             lc.samples,
             lc.median_final_price
         FROM auction_listings AS a
+        LEFT JOIN latest_listing_visual_conditions AS vc
+          ON vc.listing_id = a.id
+        LEFT JOIN latest_listing_text_conditions AS tc
+          ON tc.listing_id = a.id
+        CROSS JOIN LATERAL (
+            SELECT
+                COALESCE(a.condition_grade, 'B') AS text_condition_grade,
+                CASE
+                    WHEN 'D' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'D'
+                    WHEN 'C' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'C'
+                    WHEN 'B' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'B'
+                    ELSE 'A'
+                END AS effective_condition_grade
+        ) AS grade
         JOIN latest_comps AS lc
           ON lc.model_key = a.model_key
-         AND lc.condition_grade = COALESCE(a.condition_grade, 'B')
+         AND lc.condition_grade = grade.effective_condition_grade
         WHERE {status_predicate}
+          AND COALESCE(a.last_seen_at, a.first_seen) >= now() - (%s || ' hours')::interval
           {source_predicate}
           AND a.price_current IS NOT NULL
           AND a.price_current > 0
@@ -196,14 +298,15 @@ def build_potentials(
     *,
     min_profit: float = MIN_PROFIT_GBP,
     min_roi: float = MIN_ROI,
-    min_comps: int = MIN_CANDIDATE_COMPS,
+    min_comps: int | None = None,
     now: datetime | None = None,
 ) -> tuple[list[ListingPotential], list[ListingPotential], dict[str, int]]:
     """
     Return rows that clear the buy maths, plus closest misses for debugging.
 
     `potentials` are live rows where current price is below max safe buy,
-    expected profit clears `min_profit`, and comp depth is at least `min_comps`.
+    expected profit clears `min_profit`, and comp depth clears the category floor
+    unless an explicit `min_comps` override is supplied.
     ROI is returned for context and can be used as an optional extra gate.
     """
     stats = {
@@ -227,8 +330,8 @@ def build_potentials(
             stats["blocked_identity"] += 1
             continue
 
-        potential = potential_from_row(row, min_profit=min_profit)
-        if potential.comp_samples < min_comps:
+        potential = potential_from_row(row, min_profit=min_profit, min_comps_override=min_comps)
+        if potential.comp_samples < potential.effective_min_comps:
             stats["below_min_comps"] += 1
             continue
 
@@ -286,7 +389,7 @@ def run(
     min_score: float = 0.0,
     min_profit: float = MIN_PROFIT_GBP,
     min_roi: float = MIN_ROI,
-    min_comps: int = MIN_CANDIDATE_COMPS,
+    min_comps: int | None = None,
     include_future_unknown: bool = False,
     source: str | None = None,
 ) -> dict[str, Any]:
@@ -324,6 +427,9 @@ def run(
             "min_profit_gbp": min_profit,
             "min_roi": min_roi,
             "min_comps": min_comps,
+            "min_comps_mode": "override" if min_comps is not None else "category",
+            "category_min_comps": dict(CATEGORY_MIN_CANDIDATE_COMPS),
+            "default_min_comps": MIN_CANDIDATE_COMPS,
             "source": source,
             "fee_rate": FEE_RATE,
             "outbound_shipping_gbp": OUTBOUND_SHIP_GBP,

@@ -415,6 +415,33 @@ class ModelKeyRepairTests(unittest.TestCase):
 
         self.assertEqual(key, "samsung-galaxy-z-fold6-512gb")
 
+    def test_samsung_fold7_256gb_storage(self):
+        key = normalise_model(
+            title="Samsung Galaxy Z Fold 7 256GB, Unlocked, Blue",
+            attrs={"Brand": "Samsung", "Model": "Samsung Galaxy Z Fold 7", "Storage Capacity": "256 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-z-fold7-256gb")
+
+    def test_samsung_fold7_512gb_storage(self):
+        key = normalise_model(
+            title="Samsung Galaxy Z Fold 7 512GB, Unlocked, Blue",
+            attrs={"Brand": "Samsung", "Model": "Samsung Galaxy Z Fold 7", "Storage Capacity": "512 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "samsung-galaxy-z-fold7-512gb")
+
+    def test_samsung_conflicting_title_and_structured_storage_is_unknown(self):
+        key = normalise_model(
+            title="Samsung Galaxy Z Fold 7 256GB, Unlocked, Blue",
+            attrs={"Brand": "Samsung", "Model": "Samsung Galaxy Z Fold 7", "Storage Capacity": "512 GB"},
+            source="ebay-samsung",
+        )
+
+        self.assertEqual(key, "unknown")
+
     def test_samsung_z_flip_model_number_maps_generation(self):
         key = normalise_model(
             title="Samsung Galaxy Z Flip 256GB",
@@ -567,6 +594,94 @@ class ModelKeyRepairTests(unittest.TestCase):
         )
 
         self.assertEqual(key, "nintendo-switch-oled")
+
+    def test_switch_year_and_bundle_counts_do_not_become_switch_2(self):
+        examples = [
+            "Nintendo Switch 2018 Console",
+            "Nintendo Switch Console with 2 Games",
+            "Nintendo Switch Console with 2 Controllers",
+            "Nintendo Switch 2018 Console with Fifa 21, 128GB Memory Card and Carry Case.",
+        ]
+
+        for title in examples:
+            with self.subTest(title=title):
+                self.assertEqual(
+                    normalise_model(
+                        title=title,
+                        attrs={
+                            "Model": "Nintendo Switch",
+                            "Platform": "Nintendo Switch",
+                            "Type": "Home Console",
+                        },
+                        source="ebay-consoles",
+                    ),
+                    "nintendo-switch-base",
+                )
+
+    def test_switch_lite_identity_beats_bundle_counts(self):
+        examples = [
+            "Nintendo Switch Lite Console",
+            "Nintendo Switch Lite with 2 Games",
+        ]
+
+        for title in examples:
+            with self.subTest(title=title):
+                self.assertEqual(
+                    normalise_model(
+                        title=title,
+                        attrs={"Platform": "Nintendo Switch"},
+                        source="ebay-consoles",
+                    ),
+                    "nintendo-switch-lite",
+                )
+
+    def test_switch_oled_identity_beats_bundle_counts(self):
+        examples = [
+            "Nintendo Switch OLED Console",
+            "Nintendo Switch OLED with 2 Controllers",
+        ]
+
+        for title in examples:
+            with self.subTest(title=title):
+                self.assertEqual(
+                    normalise_model(
+                        title=title,
+                        attrs={"Platform": "Nintendo Switch"},
+                        source="ebay-consoles",
+                    ),
+                    "nintendo-switch-oled",
+                )
+
+    def test_switch_2_requires_title_or_structured_identity_signal(self):
+        examples = [
+            (
+                "Nintendo Switch 2 Console",
+                {"Model": "Nintendo Switch", "Platform": "Nintendo Switch"},
+            ),
+            (
+                "Nintendo Switch 2 Console with Controller",
+                {"Model": "Nintendo Switch", "Platform": "Nintendo Switch"},
+            ),
+            (
+                "Nintendo Switch Console",
+                {"Model": "Nintendo Switch 2", "Platform": "Nintendo Switch"},
+            ),
+            (
+                "Nintendo Switch Console",
+                {"Model": "Nintendo Switch", "Platform": "Nintendo Switch 2"},
+            ),
+        ]
+
+        for title, attrs in examples:
+            with self.subTest(title=title, attrs=attrs):
+                self.assertEqual(
+                    normalise_model(
+                        title=title,
+                        attrs={**attrs, "Type": "Home Console"},
+                        source="ebay-consoles",
+                    ),
+                    "nintendo-switch-2",
+                )
 
     def test_ps4_slim_storage_gets_separate_key(self):
         key = normalise_model(
@@ -1097,6 +1212,18 @@ class ModelKeyRepairTests(unittest.TestCase):
                 {"Type": "Carry Case", "Compatible Product": "Nintendo Switch 2 Console"},
             ),
             (
+                "3D Nintendo Switch 2 Hard Case Minecraft Travel Cover Game Storage",
+                {"Type": "Carrying Cases", "Compatible Product": "Console"},
+            ),
+            (
+                "Samsung 256GB MicroSD Express Card Super Mario Edition for Nintendo Switch 2",
+                {"Type": "Memory Card", "Platform": "Nintendo Switch 2"},
+            ),
+            (
+                "Power A Nintendo Switch/Switch OLED Travel Case",
+                {"Type": "Travel Case", "Compatible Product": "Console"},
+            ),
+            (
                 "Nintendo Switch Console Game - Let's Build a Zoo -",
                 {},
             ),
@@ -1119,6 +1246,36 @@ class ModelKeyRepairTests(unittest.TestCase):
     def test_lego_promo_set_is_unknown_not_full_set_key(self):
         self.assertEqual(
             normalise_model("LEGO Castle Byers Exclusive Promo Set 75810", {}, "ebay-lego"),
+            "unknown",
+        )
+
+    def test_lego_castle_byers_sub_build_is_unknown_not_full_set_key(self):
+        self.assertEqual(
+            normalise_model(
+                "Lego Stranger Things - Upside Down Castle Byers Set 75810",
+                {},
+                "ebay-lego",
+            ),
+            "unknown",
+        )
+
+    def test_complete_lego_75810_keeps_full_set_key(self):
+        self.assertEqual(
+            normalise_model(
+                "LEGO Stranger Things The Upside Down 75810 Complete Set",
+                {},
+                "ebay-lego",
+            ),
+            "lego-set-75810",
+        )
+
+    def test_lego_instructions_and_stickers_only_is_unknown(self):
+        self.assertEqual(
+            normalise_model(
+                "Lego Upside Down Instructions and Stickers ONLY Mint Condition",
+                {"LEGO Set Number": "75810"},
+                "ebay-lego",
+            ),
             "unknown",
         )
 

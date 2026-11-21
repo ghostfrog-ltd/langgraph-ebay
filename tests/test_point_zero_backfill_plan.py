@@ -1,10 +1,38 @@
 import unittest
 from unittest.mock import patch
 
-from pipelines.listing.point_zero.backfill_plan import unknown_backfill_candidates
+from pipelines.listing.point_zero.backfill_plan import (
+    _fetch_unknown_backfill_candidate_page,
+    unknown_backfill_candidates,
+)
 
 
 class PointZeroBackfillPlanTests(unittest.TestCase):
+    def test_candidates_prioritize_sale_likelihood_before_comp_tier(self):
+        class CaptureCursor:
+            def execute(self, sql, params):
+                self.sql = sql
+                self.params = params
+
+            def fetchall(self):
+                return []
+
+        cur = CaptureCursor()
+
+        rows = _fetch_unknown_backfill_candidate_page(
+            cur,
+            limit=50,
+            offset=0,
+            excluded_sources=("ebay-motors",),
+        )
+
+        self.assertEqual(rows, [])
+        order_by = cur.sql.split("FROM eligible", 1)[1].split("LIMIT %s", 1)[0]
+        self.assertLess(order_by.index("stale_end_rank"), order_by.index("sale_likelihood_rank"))
+        self.assertLess(order_by.index("sale_likelihood_rank"), order_by.index("tier_rank"))
+        self.assertIn("WHEN COALESCE(l.bids_count, 0) > 0 THEN 0", cur.sql)
+        self.assertIn("WHEN l.sale_type IN ('bin', 'both') THEN 1", cur.sql)
+
     def test_backfill_uses_known_key_queue_not_live_buy_guard(self):
         rows = [
             {

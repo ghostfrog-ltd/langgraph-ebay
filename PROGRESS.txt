@@ -10,6 +10,40 @@ Active priority:
 5. Show potentials and closest misses so the human can decide whether to punt.
 
 Current known issues:
+- Comps recompute is now idempotent for repeated heartbeat runs: the daily
+  aggregate write upserts on `(model_key, condition_grade)` so an existing
+  snapshot such as `akaso-brave-7 / B` is refreshed instead of raising
+  `comps_pkey` duplicate-key failures.
+- Local Laravel buy-desk UI now uses an explicit GhostFrog source catalog for
+  sidebar/source navigation instead of deriving the sidebar only from currently
+  published rows. The source pages still list all rows for that source ordered
+  by ending soonest, with no profit or minimum evidence gate.
+- Laravel web sync now mirrors all live priced local listings, not just the
+  profit shortlist. The signed sync posts in chunks, bulk-upserts listings and
+  comps, accepts empty comp arrays for browse-only rows, and finalizes the
+  snapshot only on the final chunk. Local OrbStack state after launchd run:
+  7,623 listings, 47,238 comp rows, 20 sources. A user LaunchAgent
+  `com.ghostfrog.langgraph-ebay.web-sync` now runs the sync at load and every
+  3,600 seconds.
+- Added a signed 3D print seller leaderboard mirror and Laravel page under
+  Links. The root publisher samples eBay GB business sellers for 3D-print
+  keyword clusters, ranks active inventory depth/value, and the web-sync script
+  refreshes it at most once every 24 hours. On 2026-08-22 the Laravel app was
+  redeployed to production with the leaderboard route live at
+  `/links/3d-print-leaderboard`; production holds 200 ranked sellers from the
+  latest snapshot, and the hourly LaunchAgent completed a full prod run with
+  sold evidence, the 3D print leaderboard, and 7,600 live listings / 55,239 comp
+  rows published.
+- Laravel listing filters now include a URL-backed condition grade selector on
+  both the main Potentials page and source listing pages, alongside the existing
+  profit/gate, sale type, search, and market/source filters. `All grades` is the
+  default; choosing a grade filters rows by exact `condition_grade`, and Clear
+  resets the grade filter too.
+- Laravel source navigation/list pages now hide browse noise: non-Motomine
+  source pages require at least one sold comp, Motomine can still show rows
+  before comps, and vehicle/motor sources (`ebay-honda-nc750`,
+  `ebay-honda-msx125`, `ebay-mini-cooper`, `ebay-motors`) are hidden from UI
+  source navigation and dashboard filters while remaining in the mirrored DB.
 - Heartbeat email now includes a source-scoped `Pokemon GBP 20 Profit Candidates`
   section. It uses the same deterministic resale math as the normal potentials
   report, but filters to `ebay-pokemon` and lowers the gate to £20 profit with
@@ -22,10 +56,11 @@ Current known issues:
   samples rose from 2 to 39, and live Pokémon rows with 3+ comps rose from 1 to
   22. Current Pokémon buy-gate check still has 0 rows clearing the default £50
   profit gate.
-- Slack review polling now has a launchd agent
-  `com.ghostfrog.langgraph-ebay.slack-review`, running `ebay slack-review-once`
-  every 15 seconds. It is installed and healthy with inbound bot token/channel
-  settings enabled.
+- As of 2026-11-19, eBay Slack notifications and review commands are paused
+  via `SLACK_NOTIFICATIONS_ENABLED=0` and `SLACK_REVIEW_COMMANDS_ENABLED=0`
+  in `.env`. The Slack review LaunchAgent exits before contacting Slack.
+  The separate `ghostfrog-alerts-hyva` Slack reminder is commented out in the
+  user crontab. Re-enable either only on request.
 - Heartbeat could stall on slow `auction_listings` queries; migration
   `20260721_001_add_heartbeat_performance_indexes.sql` adds targeted indexes
   for the worst heartbeat reads. Verification after apply: missing-attributes
@@ -120,6 +155,15 @@ Current known issues:
   Apple `512gb-512gb` keys are now 0. Current simple potentials run after the
   rebuild: at £50 profit gate, 165 live rows with comps, 88 checked, 2
   potentials; at £25 punt gate, 5 potentials.
+- Added the direct `ebay backfill --limit N --daily-limit M` command. It applies
+  immediately and drains the actual unknown past-end, missing-final-price queue
+  in `auction_listings.id` order instead of using planner/source priorities,
+  cooldowns, or dry-run defaults. `backfill-apply` remains as a compatibility
+  alias; `backfill-plan` remains read-only diagnostics.
+- Broadened direct backfill candidate selection from only `v1|item|...`
+  external IDs to any row with an extractable numeric eBay item id, and made
+  large CLI runs print resolved progress counts plus compact final JSON by
+  default. Use `--verbose-outcomes` only when every per-row outcome is needed.
 - Heartbeat bottleneck check: the review-only auction digest was doing an
   uncapped live-like view scan and filtering freshness in Python, taking over a
   minute in a local timing run. It now pushes `status='live'`, future `end_time`,
@@ -207,9 +251,8 @@ Current known issues:
   `core-i*`/`core-m*` keys as well as Apple Silicon, Apple title-only rows and
   storage/RAM/screen/chip parsing are stricter, screen-damaged and fair-condition
   rows are graded/blocked correctly, and PS3 game listings no longer become
-  console comps. Apple live collection is now auction-only, and successful
-  auction-only scrapes clear old live BIN rows to `unknown`; applied the Apple
-  cleanup once, leaving Apple live rows auction-only.
+  console comps. Apple collection was later reopened to both BIN and auction
+  feeds for deal discovery.
 - Fixed the live auction discovery bug: category searches now use Browse API
   `buyingOptions:{AUCTION|FIXED_PRICE}` filters instead of the wrong
   `listingType` filter. A focused refresh immediately lifted Apple live auction
@@ -316,3 +359,554 @@ Current known issues:
 
 Boundary: no autonomous bids, buys, messages, relists, refunds, shipping marks,
 or other marketplace writes.
+
+WEBSITE_STATE_2026_08_17:
+
+- Added a private Laravel 13 + Livewire 4 evidence desk under `web/`, with
+  authenticated live-listing filters, serious/punt profit gates, closest
+  misses, and per-listing confirmed sold-comp evidence plus deterministic
+  resale maths.
+- Added an OrbStack Docker Compose stack for the Laravel app and its own
+  PostgreSQL database. Local app is bound to `127.0.0.1:8080`; public
+  registration defaults off outside the explicitly local compose setup.
+- Added `ebay web-sync`: a read-only local publisher that keeps the operational
+  PostgreSQL database private, allow-lists decision fields, excludes raw/seller
+  data and credentials, attaches same-key/same-grade sold evidence in one bulk
+  query, and sends an HMAC-signed complete snapshot to Laravel.
+- Local smoke state: 197 decision-relevant listings and 4,295 confirmed sold
+  evidence rows published into the isolated OrbStack PostgreSQL database.
+- Verification: 376 Python tests pass; Laravel Pint, PHPStan, 36 feature/unit
+  tests, Vite production build, migrations, signed sync endpoint, and OrbStack
+  container health all pass.
+
+WEBSITE_GOOGLE_AUTH_2026_08_17:
+
+- Added Google login/register support to the Laravel evidence desk with
+  `laravel/socialite`, guest auth routes, a Google OAuth callback controller,
+  nullable `google_id` / `google_avatar` user fields, and auth-screen buttons.
+- Google sign-in is configuration-gated: without `GOOGLE_CLIENT_ID` and
+  `GOOGLE_CLIENT_SECRET`, the button returns to login with a clear status
+  message. Local callback URL is
+  `http://127.0.0.1:8080/auth/google/callback`.
+- Verification: Laravel Pint, PHPStan, 42 PHPUnit tests, Vite production build,
+  OrbStack rebuild, migration status, and local login-page smoke check all pass.
+
+WEBSITE_UI_CLEANUP_2026_08_17:
+
+- Removed the oversized dashboard hero panel and changed the listing filter
+  strip from black to the same white bordered treatment as the rest of the buy
+  desk. Rebuilt the OrbStack app image; focused DashboardTest and Vite
+  production build pass.
+
+WEBSITE_BUY_SIGNAL_FILTER_2026_08_17:
+
+- Matched the Laravel evidence desk to the heartbeat email buy-signal floor:
+  visible dashboard rows now require `GF_HEARTBEAT_BUY_SIGNAL_MIN_COMPS`
+  confirmed sold comps, defaulting to 50, instead of showing thin category-floor
+  evidence rows. Potentials and near misses are ordered by ending soonest first
+  with undated rows last. Runtime local state now shows 46 visible rows from 197
+  published rows.
+- Verification: Laravel Pint, PHPStan, 43 PHPUnit tests, OrbStack rebuild, and
+  runtime query smoke checks pass.
+
+WEBSITE_PROFIT_BANDS_2026_08_17:
+
+- Matched the dashboard Serious/Punt split to the heartbeat email behavior:
+  Serious is GBP 50+ and Punt excludes rows already qualifying for Serious, so
+  the local Punt view is GBP 25-49 after the buy-signal comp floor. Runtime
+  local counts are 11 Serious rows and 7 Punt-only rows.
+- Verification: Laravel Pint, PHPStan, 44 PHPUnit tests, Vite production build,
+  OrbStack rebuild, and runtime count smoke check pass.
+
+WEBSITE_FONT_CLEANUP_2026_08_17:
+
+- Removed the custom serif display font treatment from listing dashboard and
+  detail pages. Money values and section titles now use the app sans font with
+  stronger weights and tabular numbers for faster scanning.
+- Verification: Laravel Pint, PHPStan, 44 PHPUnit tests, Vite production build,
+  git diff whitespace check, and OrbStack rebuild pass.
+
+WEBSITE_SOURCE_LISTS_2026_08_17:
+
+- Added sidebar source links for every published source. Each source page lists
+  that source's published rows ordered by ending soonest, with no profit gate
+  and no minimum evidence/comps filter. Source-list cards use a neutral
+  `Listing` badge instead of `Clears gate`.
+- Verification: Laravel Pint, PHPStan, 45 PHPUnit tests, Vite production build,
+  git diff whitespace check, OrbStack rebuild, route-list check, and runtime
+  source-link query pass.
+
+WEBSITE_REMOTE_DEPLOY_2026_08_17:
+
+- Deployed the Laravel evidence desk to the GhostFrog VPS at
+  `https://ebay.ghostfrog.co.uk`, behind Nginx and Cloudflare, with a Let's
+  Encrypt certificate expiring 2026-11-15 and Docker Compose services for the
+  Laravel app plus isolated PostgreSQL.
+- Registration is disabled in production. A password admin user exists; Google
+  OAuth remains config-gated until production Google client credentials are
+  added.
+- Published the first remote full mirror from the local PostgreSQL source of
+  truth and repointed the macOS LaunchAgent hourly sync to the public URL. Last
+  verified LaunchAgent batch posted 7,918 listings and 53,431 confirmed sold
+  evidence rows.
+- Deployment fix: Docker image now creates Laravel runtime cache/session/view
+  directories before Composer package discovery so clean source builds work.
+- Mixed-content fix: production Laravel now trusts upstream proxies and forces
+  generated URLs to the HTTPS `APP_URL`, so Livewire assets load from
+  `https://ebay.ghostfrog.co.uk` behind Cloudflare/Nginx.
+
+WEBSITE_SEARCH_FILTERS_2026_08_18:
+
+- Added tokenized listing search to the buy-desk potentials filters and source
+  listing pages. Searches such as `apple m1` now match terms across title,
+  model key, source, and item ID instead of requiring one exact phrase.
+- Sidebar source navigation now shows visible-row counts and hides sources with
+  zero visible rows. The dashboard Market filter uses the same non-empty source
+  list, so dead source options are not shown there either.
+- Added user-specific Laravel favourites. Listing cards can add/remove
+  favourites, the sidebar has a Saved listings count/link, and favourites store
+  a durable listing plus sold-evidence snapshot so saved rows remain available
+  after an auction ends or the live sync removes the listing.
+- Source listing pages now hide rows where `max_safe_buy` is below zero. Those
+  rows mean the resale maths cannot clear the fixed cost/profit assumptions even
+  at a free/negative buy price, so they are noise for browsing. Zero remains
+  allowed, including Motomine browse rows before sold evidence is attached.
+- Source listing pages now default to a `Clears gate` view where current price
+  is at or below max safe buy, with an `All` toggle to reopen the broader
+  comp-backed source list when needed.
+- Added a separate broad Search page in the sidebar. It searches live listings,
+  sold evidence, and the signed-in user's favourites without applying the
+  buy-desk/source hiding rules, then labels rows as clears gate, too expensive,
+  low evidence, no comps, cost blocked, or hidden source.
+- Listing evidence/detail pages now include the same add/remove favourite
+  control as the list cards, so an operator can save a row while inspecting the
+  maths and comps.
+- Rebuilt the local OrbStack Laravel container and deployed the same change to
+  `https://ebay.ghostfrog.co.uk`.
+- Verification: DashboardTest, PHPStan, Vite production build, git diff
+  whitespace check, local container rebuild, and production container rebuild
+  pass.
+
+WEBSITE_AUTH_CLEANUP_2026_08_19:
+
+- Removed passkey sign-in and passkey management from the Laravel evidence desk.
+  Login and password confirmation now use Google/password only, and Fortify no
+  longer registers passkey features or passkey discovery endpoints.
+- Verification: SecurityTest, DashboardTest, PHPStan, Vite production build,
+  git diff whitespace check, local and production container rebuilds, and local
+  plus production passkey route/login-text checks pass.
+
+WEB_SYNC_OPERATOR_SHORTCUTS_2026_08_19:
+
+- Updated `ebay push <model_key>` to publish model-key comp summaries to local
+  Laravel first and then production. The shortcut uses explicit prod sync
+  secret environment variables when set, otherwise it reads the deployed
+  Laravel sync secret from the deployed environment over the configured SSH
+  deploy connection without printing it.
+- Verification: `zsh -n ./ebay`, git diff whitespace check, and a real
+  `./ebay push apple-macbook-pro-a2442-14in-m1pro-16gb-512gb` run published 2
+  comp summaries / 96 comp rows to both local and production.
+
+WEBSITE_LISTING_PRICE_CALCULATOR_2026_08_19:
+
+- Listing detail pages now show the current price as an adjustable number input
+  for quick bid/offer what-if checks. Changing it recalculates expected profit,
+  ROI, current buy price in the maths panel, and the under/over max-safe-buy
+  note without changing the stored listing price.
+- Verification: DashboardTest, PHPStan, Vite production build, and git diff
+  whitespace check pass.
+
+WEBSITE_SOLD_EVIDENCE_MIRROR_2026_08_19:
+
+- Added a separate Laravel `published_sold_evidence` mirror for all confirmed
+  local final-price rows, independent of the filtered buy-desk listing snapshot.
+  The broad Search page now uses this mirror for historical sold evidence
+  results instead of only showing comps attached to current live rows.
+- Added signed `/api/v1/sync/sold-evidence` ingestion plus `ebay evidence-sync`
+  for local + production pushes. The hourly web-sync runner now publishes the
+  sold-evidence mirror before live listings.
+- Verification: Python remote-sync payload tests, ListingSyncTest,
+  DashboardTest, PHPStan, Vite production build, local/prod container rebuilds,
+  local/prod login smoke checks, and a real `./ebay evidence-sync` run pass.
+  Local and production both now hold 30,456 mirrored sold evidence rows; top
+  sources include Apple 12,887, consoles 3,733, Lego 2,839, Pokémon 2,060,
+  motors 1,737, watches 1,708, Motomine 1,587, and Samsung 1,526.
+
+WEBSITE_SOURCE_CARD_PROFIT_METRIC_2026_08_19:
+
+- Source listing cards now use expected profit as the large right-side metric,
+  matching the potentials list, with current price retained in the detail grid.
+- Verification: DashboardTest, PHPStan, Vite production build, local container
+  rebuild, production container rebuild, and local/prod login smoke checks pass.
+
+WEBSITE_LISTING_CARD_FAVOURITE_HEART_2026_08_19:
+
+- Potentials and source/search listing cards now place the favourite control
+  beside the expected-profit metric, with the profit value and ROI to the left
+  of the heart icon. Saved rows show a red filled heart; unsaved rows show an
+  outline heart. The duplicate listing-card footer add/remove favourite text
+  link is removed, while the listing detail page keeps its existing add/remove
+  favourite button.
+- Verification: DashboardTest, PHPStan, Vite production build, git diff
+  whitespace check, local container rebuild, production container rebuild, and
+  local/prod login smoke checks pass.
+
+WEBSITE_SALE_TYPE_FILTERS_2026_08_20:
+
+- Added a `Type` filter to the live-listing potentials page and source listing
+  pages. The default `Both` view keeps current behaviour; `BIN` and `Auction`
+  restrict rows by `sale_type` and are preserved in the page URL.
+- Verification: DashboardTest, PHPStan, Vite production build, git diff
+  whitespace check, local container rebuild, production container rebuild, and
+  local/prod login smoke checks pass.
+
+LOCAL_VISUAL_CONDITION_CHECKS_2026_08_26:
+
+- Added Browse image URL capture plus a local Ollama visual-condition checker
+  for eBay listing photos. Assessments are stored in
+  `listing_visual_conditions`, with a latest-view for operator/reporting use.
+- Pulled local vision models `qwen2.5vl:7b` and `minicpm-v:8b`; existing local
+  `gemma3:12b` and `gemma3:27b` also report vision support. No paid AI API is
+  needed for this path.
+- Real iPhone 12 smoke check exposed the useful risk pattern: Qwen graded the
+  listing B/clean, while MiniCPM flagged `chipped_corner`, grade C, and review
+  required. Treat model disagreement or any C/D/unknown visual result as human
+  review before buying.
+- The effective comp grade now follows the conservative rule: text grade plus
+  visual grade resolves to the worst known grade, and unknown visual output does
+  not downgrade until image coverage is good enough. The website mirror carries
+  the original text grade, visual grade/check status, visual flags, and the
+  effective grade used for comps.
+- Automatic visual grading now has its own continuous queue worker:
+  `listing_visual_condition_queue` tracks pending rows with `priority_flag`
+  values such as `new_listing` and `backfill`. New image-backed phone listings
+  jump ahead of older backlog rows; the worker only reads stored Browse image
+  URLs and does not spend eBay API calls. When a batch saves visual grades,
+  comps are rebuilt immediately.
+- Verification: targeted Python suite covering condition guardrails, market
+  discovery, remote sync, operator console, visual condition, and comps passes;
+  Laravel `ListingSyncTest|DashboardTest` passes.
+
+PROD_VISUAL_DISPLAY_DEPLOY_2026_08_26:
+
+- Deployed the Laravel display/UI side of the visual-condition and buy-desk
+  prioritisation work to `ebay.ghostfrog.co.uk`. Production remains display-only:
+  Ollama, image grading, and the queue worker stay on the local Mac/operator
+  side, not on the VPS.
+- Applied the Laravel visual-condition published-listing schema and republished
+  the latest snapshots to production: 7,600 live listing rows, 57,521 attached
+  comp rows, 32,639 all-time sold-evidence rows, and 200 3D-print leaderboard
+  sellers.
+- Local visual worker status checked: LaunchAgent is running, `minicpm-v:8b` is
+  available locally, and 90 local visual condition rows are present.
+- Verification: production route smoke checks return over HTTPS and protected
+  pages redirect to login as expected.
+
+WEB_VISUAL_EVIDENCE_BADGES_2026_08_26:
+
+- Favourites now preserve and show listing-level visual status, and saved comp
+  snapshots include visual grade/check/review metadata for future favourites.
+- Listing detail, favourite detail, broad search sold evidence, and model-key
+  evidence rows now display a visual checked/unchecked badge and sort checked,
+  non-review evidence ahead of unchecked evidence before the normal median
+  distance ordering.
+- Published comp rows, broad sold-evidence rows, and model-key comp rows now
+  accept visual metadata through the signed Laravel sync endpoints.
+- Deployed to `https://ebay.ghostfrog.co.uk`, applied the Laravel migration, and
+  forced a clean prod sync: 7,681 listings and 58,685 attached comp rows. Local
+  visual grading currently has 125 checked rows, all live listings; sold comp
+  rows are therefore expected to show `Visual unchecked` until sold rows are
+  visually graded.
+- Verification: Laravel `ListingSyncTest|DashboardTest`, Python
+  `tests.test_remote_sync`, production HTTPS login smoke check, and prod DB
+  schema/count checks pass.
+
+WEB_SYNC_FAST_LOCAL_PROD_CADENCE_2026_08_26:
+
+- Added `ebay web-sync-all` for full live-listing snapshots to local Docker
+  Laravel first, then production, using the same SSH-backed production secret
+  lookup pattern as the focused `ebay push` and `ebay evidence-sync` commands.
+- Updated the scheduled web-sync runner to keep visual grading separate from
+  web publishing. Live listing snapshots now run every 5 minutes; the broad
+  historical sold-evidence mirror is throttled to once per hour; the 3D print
+  leaderboard remains throttled to once per 24 hours.
+- Installed the updated `com.ghostfrog.langgraph-ebay.web-sync` LaunchAgent
+  with a 300-second interval and an overlap lock. The kicked verification run
+  exited 0 after publishing 7,626 live listings and 58,221 attached comp rows
+  to both local Docker Laravel and production.
+
+HEARTBEAT_EMAIL_BUY_SIGNAL_2026_08_28:
+
+- Halved the heartbeat email buy-signal comp floor to match the web dashboard:
+  `GF_HEARTBEAT_BUY_SIGNAL_MIN_COMPS` now defaults to 50 in Python and Laravel
+  web config/Compose fallbacks. Current live email selection renders 55 result
+  rows at the 50-comp floor instead of the single 100-comp survivor.
+- Slimmed the heartbeat email body to the actionable buy rows: GBP 50 profit
+  candidates and GBP 25 profit candidates. Removed the email sections for
+  favourites, model-key inventory, Pokemon, GBP 50/25 closest misses, and the
+  listing-row explainer. Slack reporting is unchanged.
+- Verification: `python -m unittest tests.test_heartbeat_email_report
+  tests.test_heartbeat_slack_market_discovery` passes.
+
+LOCAL_TEXT_CONDITION_CHECKS_2026_08_28:
+
+- Added `listing_text_conditions` plus `latest_listing_text_conditions` for
+  local Ollama text-condition evidence. The checker reads already-captured
+  title/raw_attrs text and stores `text_grade`, risk flags, confidence, review
+  requirement, model name, and raw assessment without overwriting the coded
+  `auction_listings.condition_grade`.
+- Effective grade logic now combines coded grade, local LLM text grade, and
+  visual grade using the worst known grade for comps, market discovery, remote
+  sync, listing explanations, heartbeat comp coverage, visual-check candidate
+  selection, and point-zero backfill planning.
+- Added a dry-run/apply CLI:
+  `.venv-mac/bin/python -m pipelines.listing.text_condition --status sold --source ebay-apple --product iphone --limit 25 --apply`.
+- Verification: `py_compile` passes for edited Python files; focused unittest
+  suite passes for condition guardrails, text condition, visual condition,
+  market discovery, remote sync, and comps SQL tests. The broader
+  `tests.test_comps_graph` file still has a date-sensitive fixture whose
+  `2026-08-28T22:16:00Z` listing is now in the past.
+
+TEXT_SCAN_QUEUE_AND_BADGES_2026_08_29:
+
+- Added `listing_text_condition_queue` and `--queue-worker/--queue-once` support
+  to the local text-condition checker. The worker enqueues unchecked rows by
+  priority (`new_listing`, `live`, `sold_comp`, then `backfill`) and drains in
+  bounded batches while rebuilding comps after saved checks.
+- Added `scripts/run_text_condition_once.sh` and an optional
+  `scripts/install_text_condition_launch_agent.sh` runner. Defaults process all
+  statuses with `GHOSTFROG_TEXT_CONDITION_BATCH_SIZE=4` and
+  `GHOSTFROG_TEXT_CONDITION_ENQUEUE_LIMIT=1000`; env vars can narrow source,
+  product, or status if the Mac needs a lighter workload.
+- Visual grading defaults now enqueue all image-backed live rows (`all:all`) and
+  use a product-agnostic condition prompt instead of only phone wording.
+- Website sync now carries `text_scan_*` metadata for live listings, attached
+  comps, broad sold evidence, model-key comp rows, and favourites. Added the
+  `Text scan` badge beside every existing visual badge on listing cards,
+  listing detail evidence rows, favourites, search sold evidence, and model-key
+  evidence pages.
+- Deployed the text-scan web files to `https://ebay.ghostfrog.co.uk`, rebuilt
+  local and production Laravel containers, ran the Laravel migration, and
+  published a fresh full snapshot. Production now has 7,437 published listings;
+  1 listing has a completed text scan (`Text scan A`) and 24 queued local text
+  jobs remain pending for continued backfill.
+- Added URL-backed `Text scan` filters (`all`, `checked`, `unchecked`) beside
+  the existing Visual filter on the dashboard and source listing pages, deployed
+  the change to production, and rebuilt local plus production Laravel apps.
+- Verification: Python focused unittest suite for text condition, visual
+  condition, guardrails, market discovery, remote sync, and point-zero backfill
+  planning passes; Laravel `ListingSyncTest|DashboardTest` passes.
+
+TEXT_SCAN_PRIORITY_AND_PROD_REPAIR_2026_08_29:
+
+- Changed text-scan queue ordering so current dashboard potentials are scanned
+  first, followed by sold comp evidence that supports those potential
+  `model_key`/effective-grade pairs, then source-visible/live/new/backfill rows.
+- Confirmed local queue state after the first priority batches: 12 text scans
+  stored, with 70 dashboard potentials and 958 potential-comp-evidence rows
+  pending behind them.
+- Fixed `web-sync-all` and the web-sync LaunchAgent runner to share one repo
+  lock and recover stale PID locks, preventing overlapping chunked publishes
+  from leaving production on a partial batch.
+- Repaired production published mirror tables from the healthy local web
+  snapshot after overlapping/aborted chunked publishes left prod mixed across
+  batches. Production verification now shows 7,374 published listings, one
+  batch, 7 checked/graded text scans, 2 dashboard-visible checked rows, and 5
+  Apple source-visible checked rows.
+- Verification: `zsh -n` passes for `ebay`, `scripts/run_web_sync_once.sh`, and
+  `scripts/install_web_sync_launch_agent.sh`; `tests.test_text_condition`
+  passes.
+- Installed and started `com.ghostfrog.langgraph-ebay.text-condition`; it is
+  running `gemma3:12b` in small batches so the queue keeps draining while the
+  Mac is on.
+- Added a final website `Effective` grade badge everywhere the listing/evidence
+  grade stack is shown. The card/detail flow now distinguishes `Code`, `Text
+  scan`, `Visual`, and `Effective`, where `Effective` is the condition grade
+  actually used for comp matching and math.
+- Rebuilt and restarted the production Laravel app container so the updated
+  Blade views are present under `/app`; production migrations are clean and the
+  Laravel view/bootstrap caches were cleared.
+
+FILTER_DRAWER_UI_2026_08_29:
+
+- Replaced the wide inline buy-desk filter panels on the main listings dashboard
+  and per-source listing pages with a compact Filters button and right-side
+  slide-out drawer.
+- The drawer preserves the existing profit/gate, sort, sale type, visual,
+  text-scan, search, source, and grade filters, while the page header now shows
+  a small active-filter summary instead of a full-width control bar.
+- Updated clear-filter actions to return the pages to their real defaults,
+  including priority sort, £50 gate, and source-page clears gate.
+
+FAVOURITE_ENDING_SOON_EMAILS_2026_08_29:
+
+- Added an hourly Laravel notification flow for user-specific favourites that
+  are still live and ending within the next 24 hours.
+- Emails include the listing title, source, sale type, item id, current price,
+  expected profit/ROI, max safe buy, sold median, comp count, grade, the
+  favourite detail link, and the live eBay URL.
+- Added a per-user/listing/hour send-log table so the command can run hourly
+  without repeatedly sending the same reminder inside the same hour window.
+- Tightened the reminder guard so a saved favourite only emails while it still
+  has a current live published listing row with a future end time; stale
+  snapshots from ended/closed listings do not trigger emails.
+- Registered `ghostfrog:favourites-ending-soon` and the Laravel hourly schedule
+  entry; focused notification tests pass.
+
+API_REPORT_SEND_REDUCTION_2026_09_05:
+
+- Disabled heartbeat email sending by default with
+  `GF_HEARTBEAT_EMAIL_ENABLED=1` required to opt back in.
+- Disabled heartbeat candidate price refresh by default with
+  `GF_HEARTBEAT_CANDIDATE_REFRESH_ENABLED=1` required before report-building
+  can spend Browse getItem calls.
+- Changed candidate refresh limit `0` from unlimited to no refresh rows, so the
+  default report path cannot fan out into extra eBay listing refreshes.
+- Verification: `python -m unittest tests.test_heartbeat_email_report
+  tests.test_heartbeat_slack_market_discovery` passes in `.venv-mac`.
+
+PAPER_TRADING_DISABLED_2026_09_05:
+
+- Disabled the paper-trading runner and overdue outcome resolver by default with
+  `GF_PAPER_TRADING_ENABLED=1` required to opt back in.
+- Kept existing paper-trading code, tests, and stored history intact; disabled
+  mode returns a `paper_trading_disabled` summary without snapshotting,
+  updating observations, loading resolver candidates, or spending Trading calls.
+- Verification: `python -m unittest tests.test_paper_trading` passes in
+  `.venv-mac`.
+
+ALL_SOURCES_BIN_AND_AUCTION_2026_09_05:
+
+- Changed the collector default and the remaining auction-only adapters so all
+  eBay sources now request both Buy It Now (`bin`) and auction feeds.
+- Apple and Motomine now use `SALE_TYPE = ["bin", "auction"]`; future adapters
+  inherit the same default from `EbayAdapterBase` unless explicitly overridden.
+
+BIN_DISCOVERY_AND_WEBSITE_DEFAULT_2026_09_05:
+
+- Changed live eBay Browse discovery so `bin` searches use `sort=newlyListed`,
+  while auction/both searches keep `sort=endingSoon`.
+- Changed the main live-listings dashboard and per-source pages to default the
+  type filter to BIN, with Both and Auction still selectable from the filter
+  drawer.
+- Verification: `.venv-mac/bin/python -m unittest tests.test_comps_graph` and
+  `php artisan test --filter=DashboardTest` pass.
+
+CONSOLE_PROFIT_GATE_2026_09_06:
+
+- Added source-specific website profit gates and set `ebay-consoles` to £20.
+- The main live-listings dashboard default now uses source gates, so console
+  BIN rows can appear at £20+ while normal sources still use the £50 gate.
+- The Consoles source page `Clears` filter now means expected profit is at
+  least £20 instead of relying on the stored £50 max-safe-buy threshold.
+- Verification: `php artisan test --filter=DashboardTest` passes.
+
+LIVE_LISTING_FRESHNESS_GATE_2026_09_06:
+
+- Website publishing now requires live rows to have been seen by the collector
+  within the last 24 hours before they can appear as live opportunities.
+- Applied the freshness gate to both the potentials query and the full live
+  listing export, so stale remembered prices cannot be republished as bargain
+  BIN rows just because an old row still has `status='live'` and a future end
+  time.
+- Lowered the default web-sync chunk size to 50 to avoid local/prod sync
+  timeout pressure.
+- Verification: `.venv-mac/bin/python -m unittest tests.test_market_discovery
+  tests.test_remote_sync tests.test_comps_graph` and
+  `php artisan test --filter=DashboardTest` pass.
+
+DELTA_WEB_SYNC_2026_09_06:
+
+- Changed the normal live-listing website sync from chunked full-table
+  replacement to delta sync.
+- The Python publisher now keeps local per-endpoint listing hashes, sends full
+  listing/comps data only for new or changed publishable rows, and sends
+  expiry/prune IDs so Laravel removes rows that should no longer be visible.
+- On the first delta run for an endpoint with no local hash state, the publisher
+  sends current IDs only to prune stale website rows, then saves hashes so
+  subsequent runs send changed rows.
+- Delta mode builds a lightweight listing snapshot first and only fetches comp
+  evidence for rows that are actually being upserted.
+- The old chunked full snapshot remains available with `--full-snapshot` for
+  manual rescue/rebuild, but default `web-sync-all` now uses delta mode.
+- Verification: `.venv-mac/bin/python -m unittest tests.test_remote_sync
+  tests.test_market_discovery tests.test_comps_graph`,
+  `php artisan test --filter=ListingSyncTest`, and
+  `php artisan test --filter=DashboardTest` pass.
+
+WEB_SYNC_LAUNCH_AGENT_FIX_2026_09_06:
+
+- Fixed the scheduled web-sync runner so LaunchAgent uses a lock directory and
+  delta state directory under `~/Library/Logs/GhostFrog`, avoiding repeated
+  permission failures on the repo `logs/web-sync.lock` path.
+- Reordered the scheduled runner to publish the live website delta before the
+  heavier sold-evidence refresh, so dashboard freshness updates quickly.
+- Disabled sold-evidence pushing inside the 5-minute scheduled web-sync by
+  default with `GHOSTFROG_SOLD_EVIDENCE_SYNC_ENABLED=1` required to opt back
+  in, so evidence refreshes cannot hold the live-listing lock.
+- Added a forced delta upsert mode for repair/resync cases where the website
+  needs to be rehydrated without returning to full-table replacement.
+- Ran a one-off forced repair sync to prod: stale Switch row removed, 4,429
+  live listings republished, 35,661 comp rows linked.
+- Verified the restarted scheduler then completed a normal prod live-only delta
+  at `2026-09-06 08:48:05+00`: 4,562 published listings, 36,106 comps, 28
+  potentials, then skipped scheduled sold-evidence as intended.
+
+FINAL_PRICE_BACKFILL_EFFICIENCY_2026_09_20:
+
+- Backfill candidates now prefer trustworthy stored end times, listings with
+  bids, and fixed-price-capable listings before no-bid auctions; comp-coverage
+  and source priority break ties after sale likelihood.
+- Apply runs now commit every 50 outcomes instead of holding an entire large
+  batch in memory, so recovered prices become visible during the run and an
+  interrupted worker does not waste all completed Trading calls.
+- `ebay stats` headline and same-day sold count now use exact PostgreSQL counts
+  instead of stale planner estimates.
+- Verification: `.venv-mac/bin/python -m unittest
+  tests.test_point_zero_backfill_plan tests.test_point_zero_backfill_apply
+  tests.test_operator_console tests.test_heartbeat_email_report
+  tests.test_heartbeat_slack_market_discovery` passes.
+
+HISTORIC_FINAL_PRICE_BACKLOG_2026_10_02:
+
+- Fixed the direct backfill queue so legacy `ended`, `live`, `parse_failed`,
+  and `unknown` rows are eligible when they are past end, lack a confirmed
+  final price, and have never received a conclusive Trading check.
+- Previously checked confirmed no-sales stay excluded; transient Trading API
+  failures become retryable after one day.
+- Broadened outcome writes so Trading can correct legacy local statuses while
+  retaining the missing-final-price concurrency guard.
+- Replaced the slow full-table daily check count with the authoritative
+  `api_usage` Trading counter; measured startup query time fell from 52 seconds
+  to 0.05 seconds.
+- Live dry validation returned the full 10,000-row cap: 9,803 legacy `ended`,
+  196 `parse_failed`, and 1 `unknown` candidate.
+
+DIRECT_BACKFILL_QUEUE_INDEXES_2026_10_11:
+
+- Split the direct backfill candidate query into unchecked-first and retryable
+  unresolved passes, avoiding one broad `OR` path for normal queue drains.
+- Fixed the retry rule so checked-but-unresolved rows, such as unknown rows left
+  after non-conclusive Trading errors, become eligible again after cooldown
+  instead of being hidden forever behind `backfill_checked_at`.
+- Changed operator stats to report the direct backfill-eligible queue separately
+  from total rows without a final price, so confirmed no-sale rows are no longer
+  described as "remaining to be backfilled".
+- Added partial queue indexes for missing-final-price past-end rows ordered by
+  `id`, covering both never-checked and retryable unresolved rows.
+- Reworked `ebay stats` exact listing counts away from one wide sequential scan
+  into paged exact counts backed by narrow partial indexes; estimates are not
+  printed for operator stats, and locked secondary sections print
+  `unavailable` instead of fake zeroes.
+- Removed runtime `CREATE OR REPLACE VIEW` from the text/visual condition
+  workers so queue loops do not take repeated DDL locks on hot reporting views.
+- Verification: `.venv-mac/bin/python -m unittest
+  tests.test_operator_console tests.test_point_zero_backfill_apply
+  tests.test_text_condition tests.test_visual_condition` passes. Live migrations
+  `20261011_001_add_direct_backfill_queue_indexes.sql`,
+  `20261011_002_add_direct_backfill_count_index.sql`,
+  `20261011_003_add_final_price_known_key_count_index.sql`, and
+  `20261011_004_add_status_count_index.sql` are applied; `ebay stats` prints
+  exact headline counts from `/Users/garyconstable`, and
+  `ebay backfill-dry-run --limit 1000 --daily-limit 100000` returned
+  `candidate_count=1000`, `shortfall=0`.

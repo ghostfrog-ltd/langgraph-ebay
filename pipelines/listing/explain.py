@@ -59,7 +59,7 @@ def _fetch_target(cur: Any, external_id: str) -> dict[str, Any] | None:
             a.url,
             a.status,
             a.model_key,
-            COALESCE(a.condition_grade, 'B') AS condition_grade,
+            grade.effective_condition_grade AS condition_grade,
             a.sale_type,
             a.end_time,
             a.last_seen_at,
@@ -69,9 +69,21 @@ def _fetch_target(cur: Any, external_id: str) -> dict[str, Any] | None:
             lc.mean_final_price,
             lc.computed_at
         FROM auction_listings AS a
+        LEFT JOIN latest_listing_visual_conditions AS vc
+          ON vc.listing_id = a.id
+        LEFT JOIN latest_listing_text_conditions AS tc
+          ON tc.listing_id = a.id
+        CROSS JOIN LATERAL (
+            SELECT CASE
+                WHEN 'D' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'D'
+                WHEN 'C' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'C'
+                WHEN 'B' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'B'
+                ELSE 'A'
+            END AS effective_condition_grade
+        ) AS grade
         LEFT JOIN latest_comps AS lc
           ON lc.model_key = a.model_key
-         AND lc.condition_grade = COALESCE(a.condition_grade, 'B')
+         AND lc.condition_grade = grade.effective_condition_grade
         WHERE a.external_id = %s
         LIMIT 1
         """,

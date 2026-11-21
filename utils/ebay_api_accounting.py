@@ -9,7 +9,7 @@ from utils.usage_tracker import increment_api_usage
 
 
 BUCKET_LIMIT_DEFAULTS: dict[str, int] = {
-    "trading": 5000,
+    "trading": 50000,
     "browse": 5000,
     "identity": 5000,
     "developer_analytics": 5000,
@@ -33,13 +33,6 @@ SERVICE_BUCKETS: dict[str, str] = {
     "ebay_developer_analytics_v1": "developer_analytics",
 }
 
-SERVICE_LIMIT_DEFAULTS: dict[str, int] = {
-    service: BUCKET_LIMIT_DEFAULTS[bucket]
-    for service, bucket in SERVICE_BUCKETS.items()
-    if bucket != "unknown"
-}
-
-
 def _bucket_limit_env_key(bucket: str) -> str:
     cleaned = "".join(ch if ch.isalnum() else "_" for ch in bucket.upper())
     return f"EBAY_BUCKET_LIMIT_{cleaned}"
@@ -57,11 +50,33 @@ def get_bucket_limit(bucket: str) -> int:
     return BUCKET_LIMIT_DEFAULTS.get(bucket, 0)
 
 
+SERVICE_LIMIT_DEFAULTS: dict[str, int] = {
+    service: get_bucket_limit(bucket)
+    for service, bucket in SERVICE_BUCKETS.items()
+    if bucket != "unknown"
+}
+
+
 def service_bucket(service: str) -> str:
     return SERVICE_BUCKETS.get(service, "unknown")
 
 
-def build_api_accounting(raw_usage: Mapping[str, int] | None) -> dict[str, Any]:
+def _bucket_limit(bucket: str, overrides: Mapping[str, int] | None = None) -> int:
+    if overrides and bucket in overrides:
+        try:
+            value = int(overrides[bucket])
+            if value > 0:
+                return value
+        except (TypeError, ValueError):
+            pass
+    return get_bucket_limit(bucket)
+
+
+def build_api_accounting(
+    raw_usage: Mapping[str, int] | None,
+    *,
+    bucket_limit_overrides: Mapping[str, int] | None = None,
+) -> dict[str, Any]:
     """Group local service counters into eBay's real daily quota buckets."""
 
     usage = {str(k): int(v or 0) for k, v in (raw_usage or {}).items()}
@@ -73,8 +88,8 @@ def build_api_accounting(raw_usage: Mapping[str, int] | None) -> dict[str, Any]:
             "bucket": bucket,
             "label": BUCKET_LABELS.get(bucket, bucket),
             "used": 0,
-            "limit": get_bucket_limit(bucket),
-            "remaining": get_bucket_limit(bucket),
+            "limit": _bucket_limit(bucket, bucket_limit_overrides),
+            "remaining": _bucket_limit(bucket, bucket_limit_overrides),
             "blocked": False,
             "services": [],
         }
@@ -102,8 +117,8 @@ def build_api_accounting(raw_usage: Mapping[str, int] | None) -> dict[str, Any]:
                 "bucket": bucket,
                 "label": BUCKET_LABELS.get(bucket, bucket),
                 "used": 0,
-                "limit": get_bucket_limit(bucket),
-                "remaining": get_bucket_limit(bucket),
+                "limit": _bucket_limit(bucket, bucket_limit_overrides),
+                "remaining": _bucket_limit(bucket, bucket_limit_overrides),
                 "blocked": False,
                 "services": [],
             },
@@ -160,6 +175,43 @@ def build_api_accounting(raw_usage: Mapping[str, int] | None) -> dict[str, Any]:
         "blocked_services": sorted(set(blocked_services)),
         "unknown_services": sorted(unknown_services),
     }
+
+
+def bucket_limit_overrides_from_rate_limits(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """Map eBay Developer Analytics rows onto local daily quota buckets."""
+
+    overrides: dict[str, int] = {}
+    for row in rows:
+        try:
+            limit = int(row.get("limit") or 0)
+        except (TypeError, ValueError):
+            continue
+        if limit <= 0:
+            continue
+
+        try:
+            time_window = int(row.get("time_window") or 86400)
+        except (TypeError, ValueError):
+            time_window = 86400
+        if time_window != 86400:
+            continue
+
+        context = str(row.get("api_context") or "").lower()
+        api_name = str(row.get("api_name") or "").lower()
+        resource = str(row.get("resource") or "").lower()
+        bucket = ""
+        if api_name == "tradingapi" and resource == "getitem":
+            bucket = "trading"
+        elif context == "buy" and api_name == "browse":
+            bucket = "browse"
+        elif context == "commerce" and "identity" in api_name:
+            bucket = "identity"
+        elif context == "developer" and "analytics" in api_name:
+            bucket = "developer_analytics"
+
+        if bucket:
+            overrides[bucket] = max(int(overrides.get(bucket) or 0), limit)
+    return overrides
 
 
 def fetch_ebay_rate_limits(*, token: str, api_base: str) -> dict[str, Any]:

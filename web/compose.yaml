@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      APP_NAME: GhostFrog Evidence Desk
+      APP_ENV: local
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      APP_DEBUG: "true"
+      APP_URL: http://127.0.0.1:8080
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ghostfrog_web
+      DB_USERNAME: ghostfrog_web
+      DB_PASSWORD: ghostfrog_local
+      DB_SSLMODE: disable
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      ALLOW_REGISTRATION: "true"
+      GHOSTFROG_SYNC_SECRET: local-development-sync-secret-change-me
+      GF_HEARTBEAT_BUY_SIGNAL_MIN_COMPS: ${GF_HEARTBEAT_BUY_SIGNAL_MIN_COMPS:-50}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://127.0.0.1:8080/auth/google/callback}
+    ports:
+      - "127.0.0.1:8080:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ghostfrog_web
+      POSTGRES_USER: ghostfrog_web
+      POSTGRES_PASSWORD: ghostfrog_local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ghostfrog_web -d ghostfrog_web"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - ghostfrog_web_postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  ghostfrog_web_postgres:

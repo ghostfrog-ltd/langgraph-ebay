@@ -15,6 +15,8 @@ from pipelines.listing.market_discovery.graph import useful_near_misses
 from pipelines.listing.market_discovery.graph import MIN_CANDIDATE_COMPS
 from utils.ebay_api_accounting import (
     BUCKET_LABELS,
+    bucket_limit_overrides_from_rate_limits,
+    build_api_accounting,
     flatten_rate_limits,
     fetch_ebay_rate_limits,
 )
@@ -73,6 +75,12 @@ COMMANDS: tuple[ConsoleCommand, ...] = (
         "ebay api-health",
     ),
     ConsoleCommand(
+        "visual-condition",
+        "Run local Ollama visual checks on shortlist listing photos.",
+        "local AI + optional local DB write with --apply",
+        "ebay visual-condition --limit 5 --model qwen2.5vl:7b",
+    ),
+    ConsoleCommand(
         "backfill-plan",
         "Show which unknown rows the final-price backfill would spend calls on.",
         "read-only",
@@ -80,13 +88,19 @@ COMMANDS: tuple[ConsoleCommand, ...] = (
     ),
     ConsoleCommand(
         "backfill-dry-run",
-        "Classify a small unknown batch without writing outcomes.",
-        "spends eBay API calls",
+        "Preview the direct final-price queue without API calls.",
+        "read-only",
         "ebay backfill-dry-run --limit 250 --daily-limit 5000",
     ),
     ConsoleCommand(
+        "backfill",
+        "Recover final prices from the direct unknown queue in table order.",
+        "spends eBay API calls + writes local DB",
+        "ebay backfill --limit 10000 --daily-limit 10000",
+    ),
+    ConsoleCommand(
         "backfill-apply",
-        "Recover final prices and resolve local unknown rows.",
+        "Alias for backfill.",
         "spends eBay API calls + writes local DB",
         "ebay backfill-apply --limit 250 --daily-limit 5000",
     ),
@@ -244,9 +258,11 @@ def command_menu() -> str:
             "  ebay explain 168181595699",
             "  ebay api-health",
             "  ebay api-health --live-ebay",
+            "  ebay visual-condition --limit 5 --model qwen2.5vl:7b",
             "  ebay potentials --min-profit 35 --min-comps 15 --limit 20",
             "  ebay backfill-plan",
             "  ebay backfill-dry-run --limit 250 --daily-limit 5000",
+            "  ebay backfill --limit 10000 --daily-limit 10000",
             "  ebay backfill-apply --limit 250 --daily-limit 5000",
             "  ebay enrich-ids 147485216891 366595448811",
             "  ebay model-keys-dry-run",
@@ -334,10 +350,15 @@ def print_potentials_report(report: dict[str, object]) -> None:
     closest = report.get("closest") if isinstance(report.get("closest"), list) else []
 
     print("Live eBay potentials")
+    min_comps = thresholds.get("min_comps")
+    if min_comps is None and thresholds.get("min_comps_mode") == "category":
+        comps_gate = "category floors"
+    else:
+        comps_gate = str(int(min_comps or 0))
     print(
         "Gate: "
         f"profit >= {_money(thresholds.get('min_profit_gbp'))}, "
-        f"comps >= {int(thresholds.get('min_comps') or 0)}"
+        f"comps >= {comps_gate}"
     )
     print(
         "Checked: "
@@ -394,7 +415,7 @@ def print_potentials_report(report: dict[str, object]) -> None:
         )
 
 
-def run_potentials(*, limit: int, min_profit: float, min_comps: int, min_roi: float, as_json: bool) -> int:
+def run_potentials(*, limit: int, min_profit: float, min_comps: int | None, min_roi: float, as_json: bool) -> int:
     from pipelines.listing.market_discovery.graph import run as run_market_discovery
 
     report = run_market_discovery(
@@ -424,7 +445,14 @@ def build_stats() -> dict[str, Any]:
 
     from pipelines.listing.operator_metrics import build_operator_metrics
 
-    metrics = build_operator_metrics()
+    metrics = build_operator_metrics(
+        include_backfill_plan=False,
+        query_timeout_ms=int(os.getenv("GF_STATS_QUERY_TIMEOUT_MS", "120000")),
+        secondary_query_timeout_ms=int(os.getenv("GF_STATS_SECONDARY_QUERY_TIMEOUT_MS", "3000")),
+        exact_listing_summary_timeout_ms=int(os.getenv("GF_STATS_HEADLINE_TIMEOUT_MS", "120000")),
+        approximate_listing_counts_on_timeout=False,
+        use_estimated_listing_counts=False,
+    )
     counts = metrics.get("listing_counts") or {}
     comps = metrics.get("comps") or {}
     coverage = metrics.get("live_comp_coverage") or {}
@@ -434,38 +462,71 @@ def build_stats() -> dict[str, Any]:
     api_budget = backfill.get("api_budget") if isinstance(backfill, dict) else {}
     api_budget = api_budget if isinstance(api_budget, dict) else {}
     api_accounting = metrics.get("api_accounting") if isinstance(metrics.get("api_accounting"), dict) else {}
+    api_today = metrics.get("api_today") if isinstance(metrics.get("api_today"), list) else []
+    metric_errors = metrics.get("metric_errors") if isinstance(metrics.get("metric_errors"), dict) else {}
 
     total = _metric_int(counts, "total")
     missing_keys = _metric_int(counts, "missing_model_key")
-    live_total = _metric_int(coverage, "live_total")
+    confirmed_final_prices = _metric_int(counts, "final_prices")
+    live_total = _metric_int(coverage, "live_total") if isinstance(coverage, dict) and "live_total" in coverage else _metric_int(counts, "live")
     live_unknown_keys = _metric_int(coverage, "live_unknown_model_key")
+    unknown_queue = _metric_int(
+        counts,
+        "direct_backfill_due"
+        if counts.get("direct_backfill_due") is not None
+        else "unknown_backfill_due"
+        if counts.get("unknown_backfill_due") is not None
+        else "unknown_unfinalized",
+    )
+    trading_checks_today = sum(
+        _metric_int(row, "call_count")
+        for row in api_today
+        if isinstance(row, dict) and str(row.get("service")) == "ebay_ended_v1"
+    )
+    backfill_checked_today = _metric_int(backfill_activity, "checked_today")
+    if not backfill_checked_today and "backfill_activity" in metric_errors:
+        backfill_checked_today = trading_checks_today
+    backfill_daily_limit = _metric_int(api_budget, "max_backfill_per_day")
+    backfill_daily_remaining = max(backfill_daily_limit - backfill_checked_today, 0)
+    trading_spare = _metric_int(api_budget, "theoretical_spare")
+    backfill_left_today = min(unknown_queue, backfill_daily_remaining, trading_spare)
 
     return {
         "total_listings": total,
         "known_model_keys": max(total - missing_keys, 0),
         "unknown_model_keys": missing_keys,
-        "confirmed_final_prices": _metric_int(counts, "final_prices"),
+        "confirmed_final_prices": confirmed_final_prices,
+        "listings_without_final_price": max(total - confirmed_final_prices, 0),
         "final_prices_with_known_model_key": _metric_int(counts, "final_prices_with_known_model_key"),
         "comp_buckets": _metric_int(comps, "comp_keys"),
         "comp_samples": _metric_int(comps, "comp_samples"),
         "comp_buckets_3plus": _metric_int(comps, "comp_keys_3plus"),
         "live_listings": live_total,
         "unknown_listings": _metric_int(counts, "unknown"),
-        "unknown_queue": _metric_int(
-            counts,
-            "unknown_backfill_due" if counts.get("unknown_backfill_due") is not None else "unknown_unfinalized",
-        ),
+        "unknown_queue": unknown_queue,
         "live_with_known_key": max(live_total - live_unknown_keys, 0),
         "live_with_same_grade_comps": _metric_int(coverage, "live_with_comps"),
         "live_with_3plus_same_grade_comps": _metric_int(coverage, "live_with_3plus_comps"),
         "today_calls": _metric_int(metrics, "api_total"),
         "api_accounting": api_accounting,
         "planned_normal_calls": _metric_int(api_budget, "planned_normal_calls"),
-        "spare_calls": _metric_int(api_budget, "theoretical_spare"),
-        "backfill_checked_today": _metric_int(backfill_activity, "checked_today"),
+        "spare_calls": trading_spare,
+        "backfill_daily_limit": backfill_daily_limit,
+        "backfill_daily_remaining": backfill_daily_remaining,
+        "backfill_left_today": backfill_left_today,
+        "backfill_checked_today": backfill_checked_today,
         "backfill_sold_today": _metric_int(backfill_activity, "sold_today"),
         "current_roi_rows": _metric_int(roi, "live_roi_gt_15"),
         "current_roi_rows_above_100": _metric_int(roi, "live_roi_gt_100"),
+        "data_estimated": bool(counts.get("_estimated")),
+        "summary_exact": bool(counts.get("_summary_exact")) or not bool(counts.get("_estimated")),
+        "coverage_skipped": bool(coverage.get("_skipped")),
+        "roi_skipped": bool(roi.get("_skipped")),
+        "comps_unavailable": "comps" in metric_errors,
+        "coverage_unavailable": "live_comp_coverage" in metric_errors,
+        "roi_unavailable": "high_risk_roi" in metric_errors,
+        "backfill_activity_unavailable": "backfill_activity" in metric_errors,
+        "metric_warnings": metric_errors,
     }
 
 
@@ -490,6 +551,11 @@ def _print_rule(title: str) -> None:
 def _print_stat(label: str, value: object, note: str = "") -> None:
     suffix = f"  {note}" if note else ""
     print(f"  {label.ljust(30)} {_fmt(value).rjust(10)}{suffix}")
+
+
+def _print_text_stat(label: str, value: str, note: str = "") -> None:
+    suffix = f"  {note}" if note else ""
+    print(f"  {label.ljust(30)} {value.rjust(10)}{suffix}")
 
 
 def _bucket_line(info: dict[str, Any]) -> str:
@@ -531,20 +597,56 @@ def _print_card_grid(cards: list[tuple[str, str, str]]) -> None:
         print("")
 
 
-def print_stats(stats: dict[str, int]) -> None:
+def print_stats(stats: dict[str, Any]) -> None:
     """Print the compact data-health block the operator asked for."""
+
+    total_listings = int(stats.get("total_listings") or 0)
+    confirmed_final_prices = int(stats.get("confirmed_final_prices") or 0)
+    missing_final_price = stats.get("listings_without_final_price")
+    if missing_final_price is None:
+        missing_final_price = max(total_listings - confirmed_final_prices, 0)
+    missing_final_price = int(missing_final_price or 0)
+    remaining_backfill = int(stats.get("unknown_queue") or 0)
 
     print("GhostFrog eBay stats")
     print("Mission: buy cheap from eBay to resell on eBay for profit.")
+    headline_exact = bool(stats.get("summary_exact"))
+    if stats.get("data_estimated") and not headline_exact:
+        print("Exact headline counts unavailable: PostgreSQL count timed out.")
+        print("Planner estimates below are not comparable with prior exact totals:")
+        print(f"  Estimated listings: {_fmt(total_listings)}")
+        print(f"  Estimated closed with price: {_fmt(confirmed_final_prices)}")
+        print(f"  Estimated backfill-eligible: {_fmt(remaining_backfill)}")
+    else:
+        print(f"Total listings: {_fmt(total_listings)}")
+        print(f"Total listings closed with price: {_fmt(confirmed_final_prices)}")
+        print(f"Backfill-eligible rows: {_fmt(remaining_backfill)}")
+        print(f"Rows without final price: {_fmt(missing_final_price)}")
+        if stats.get("data_estimated"):
+            print("Note: headline counts are exact; quick stats estimates some detail and skips deep coverage scans.")
     print("")
+    coverage_skipped = bool(stats.get("coverage_skipped"))
+    roi_skipped = bool(stats.get("roi_skipped"))
+    comps_unavailable = bool(stats.get("comps_unavailable"))
+    coverage_unavailable = bool(stats.get("coverage_unavailable"))
+    roi_unavailable = bool(stats.get("roi_unavailable"))
+    backfill_activity_unavailable = bool(stats.get("backfill_activity_unavailable"))
     _print_card_grid(
         [
             ("Live listings", _fmt(stats["live_listings"]), f"{_fmt(stats['total_listings'])} total tracked"),
-            ("Confirmed comps", _fmt(stats["comp_buckets"]), f"{_fmt(stats['comp_samples'])} final-price samples"),
+            (
+                "Confirmed comps",
+                "unavailable" if comps_unavailable else _fmt(stats["comp_buckets"]),
+                "locked/timed out" if comps_unavailable else f"{_fmt(stats['comp_samples'])} final-price samples",
+            ),
             (
                 "Live comp coverage",
-                f"{_coverage_pct(stats):.0f}%",
-                f"{_fmt(stats['live_with_3plus_same_grade_comps'])} of {_fmt(stats['live_listings'])} have 3+ comps",
+                "unavailable" if coverage_unavailable else "skipped" if coverage_skipped else f"{_coverage_pct(stats):.0f}%",
+                "locked/timed out"
+                if coverage_unavailable
+                else "deep scan skipped in quick mode"
+                if coverage_skipped
+                else f"{_fmt(stats['live_with_3plus_same_grade_comps'])} of {_fmt(stats['live_listings'])} have 3+ comps",
             ),
             (
                 "API today",
@@ -557,19 +659,28 @@ def print_stats(stats: dict[str, int]) -> None:
                 "confirmed sold evidence rows",
             ),
             (
-                "Unknown queue",
+                "Backfill queue",
                 _fmt(stats["unknown_queue"]),
-                "past-end rows for Trading",
+                "eligible rows for Trading",
             ),
             (
                 "Backfill today",
                 _fmt(stats["backfill_checked_today"]),
-                f"{_fmt(stats['backfill_sold_today'])} sold confirmed",
+                "sold count unavailable" if backfill_activity_unavailable else f"{_fmt(stats['backfill_sold_today'])} sold confirmed",
+            ),
+            (
+                "Backfill left today",
+                _fmt(stats["backfill_left_today"]),
+                f"{_fmt(stats['unknown_queue'])} queued | {_fmt(stats['spare_calls'])} spare",
             ),
             (
                 "Current ROI rows",
-                _fmt(stats["current_roi_rows"]),
-                f"{_fmt(stats['current_roi_rows_above_100'])} above 100% ROI",
+                "unavailable" if roi_unavailable else "skipped" if roi_skipped else _fmt(stats["current_roi_rows"]),
+                "locked/timed out"
+                if roi_unavailable
+                else "deep scan skipped in quick mode"
+                if roi_skipped
+                else f"{_fmt(stats['current_roi_rows_above_100'])} above 100% ROI",
             ),
         ]
     )
@@ -581,15 +692,43 @@ def print_stats(stats: dict[str, int]) -> None:
     _print_stat("Final prices with known key", stats["final_prices_with_known_model_key"])
 
     _print_rule("Comps And Live Coverage")
-    _print_stat("Comp buckets", stats["comp_buckets"])
-    _print_stat("Comp buckets with 3+ sold", stats["comp_buckets_3plus"])
+    if comps_unavailable:
+        _print_text_stat("Comp buckets", "unavailable", "locked/timed out")
+        _print_text_stat("Comp buckets with 3+ sold", "unavailable", "locked/timed out")
+    else:
+        _print_stat("Comp buckets", stats["comp_buckets"])
+        _print_stat("Comp buckets with 3+ sold", stats["comp_buckets_3plus"])
     _print_stat("Live listings", stats["live_listings"])
     _print_stat("Unknown listings", stats["unknown_listings"])
-    _print_stat("Live with known key", stats["live_with_known_key"])
-    _print_stat("Live with same-grade comps", stats["live_with_same_grade_comps"])
-    _print_stat("Live with 3+ same-grade comps", stats["live_with_3plus_same_grade_comps"])
+    if coverage_unavailable:
+        _print_text_stat("Live with known key", "unavailable", "locked/timed out")
+    else:
+        _print_stat("Live with known key", stats["live_with_known_key"])
+    if coverage_unavailable:
+        _print_text_stat("Live with same-grade comps", "unavailable", "locked/timed out")
+        _print_text_stat("Live with 3+ same-grade comps", "unavailable", "locked/timed out")
+    elif coverage_skipped:
+        _print_text_stat("Live with same-grade comps", "skipped", "quick stats")
+        _print_text_stat("Live with 3+ same-grade comps", "skipped", "quick stats")
+    else:
+        _print_stat("Live with same-grade comps", stats["live_with_same_grade_comps"])
+        _print_stat("Live with 3+ same-grade comps", stats["live_with_3plus_same_grade_comps"])
 
     _print_api_accounting(stats.get("api_accounting"))
+
+    _print_rule("Backfill Budget")
+    _print_stat("Backfill-eligible queue", stats["unknown_queue"], "rows needing Trading resolution")
+    _print_stat("Checked today", stats["backfill_checked_today"])
+    _print_stat("Daily backfill limit", stats["backfill_daily_limit"])
+    _print_stat("Daily backfill remaining", stats["backfill_daily_remaining"])
+    _print_stat("Trading spare calls", stats["spare_calls"], "after reserve/planned usage")
+    _print_stat("Can backfill today", stats["backfill_left_today"], "capped by queue, daily limit, Trading spare")
+
+    warnings = stats.get("metric_warnings")
+    if isinstance(warnings, dict) and warnings:
+        _print_rule("Stats Warnings")
+        for name, message in warnings.items():
+            print(f"  {str(name).ljust(30)} {message}")
 
 
 def _print_api_accounting(api_accounting: object) -> None:
@@ -613,7 +752,18 @@ def _print_api_accounting(api_accounting: object) -> None:
 
 
 def run_stats(*, as_json: bool = False) -> int:
-    stats = build_stats()
+    try:
+        stats = build_stats()
+    except Exception as exc:
+        message = str(exc).splitlines()[0]
+        if as_json:
+            print(json.dumps({"error": "exact_stats_unavailable", "detail": message}, indent=2))
+        else:
+            print("GhostFrog eBay stats")
+            print("Mission: buy cheap from eBay to resell on eBay for profit.")
+            print(f"Exact stats unavailable: {message}")
+            print("No estimated counts printed.")
+        return 2
     if as_json:
         print(json.dumps(stats, indent=2, default=str))
     else:
@@ -652,6 +802,17 @@ def run_api_health(*, live_ebay: bool = False, as_json: bool = False) -> int:
 
     metrics = build_operator_metrics()
     api_accounting = metrics.get("api_accounting") or {}
+    if live_ebay:
+        live_overrides = bucket_limit_overrides_from_rate_limits(live_rows)
+        local_usage = {
+            str(row.get("service")): int(row.get("call_count") or 0)
+            for row in metrics.get("api_today") or []
+            if isinstance(row, dict)
+        }
+        api_accounting = build_api_accounting(
+            local_usage,
+            bucket_limit_overrides=live_overrides,
+        )
     payload: dict[str, Any] = {
         "local": api_accounting,
         "api_today": metrics.get("api_today") or [],
@@ -765,14 +926,14 @@ def build_parser() -> argparse.ArgumentParser:
     for name, default_profit in (("serious", 50.0), ("punt", 25.0)):
         p = sub.add_parser(name, help=f"Show GBP {default_profit:.0f}+ live potentials.")
         p.add_argument("--limit", type=_positive_int, default=20)
-        p.add_argument("--min-comps", type=_positive_int, default=MIN_CANDIDATE_COMPS)
+        p.add_argument("--min-comps", type=_positive_int, default=None)
         p.add_argument("--json", action="store_true", help="Print raw JSON instead of the operator list.")
         p.set_defaults(default_profit=default_profit)
 
     p = sub.add_parser("potentials", help="Show live potentials with custom thresholds.")
     p.add_argument("--limit", type=_positive_int, default=20)
     p.add_argument("--min-profit", type=_non_negative_float, default=50.0)
-    p.add_argument("--min-comps", type=_positive_int, default=MIN_CANDIDATE_COMPS)
+    p.add_argument("--min-comps", type=_positive_int, default=None)
     p.add_argument("--min-roi", type=_non_negative_float, default=0.0)
     p.add_argument("--json", action="store_true", help="Print raw JSON instead of the operator list.")
 
@@ -792,12 +953,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Also fetch eBay's Developer Analytics rate-limit view. Spends one Analytics API call.",
     )
 
+    p = sub.add_parser("visual-condition", help="Run local Ollama visual condition checks.")
+    p.add_argument("--model", default="qwen2.5vl:7b")
+    p.add_argument("--limit", type=_positive_int, default=5)
+    p.add_argument("--source", default="ebay-apple")
+    p.add_argument("--product", default="iphone")
+    p.add_argument("--min-profit", type=_non_negative_float, default=25.0)
+    p.add_argument("--min-comps", type=_positive_int, default=None)
+    p.add_argument("--include-checked", action="store_true")
+    p.add_argument("--all-live", action="store_true", help="Grade live image-backed rows even before comps/profit evidence exists.")
+    p.add_argument("--max-images", type=_positive_int, default=6)
+    p.add_argument("--apply", action="store_true", help="Persist visual checks to local PostgreSQL.")
+    p.add_argument("--image", action="append", default=[], help="Local image path for model smoke tests.")
+    p.add_argument("--title", default="Apple iPhone listing")
+
     p = sub.add_parser("backfill-plan", help="Show targeted final-price backfill plan.")
     p.add_argument("--candidate-detail-limit", type=_positive_int, default=10)
     p.add_argument("--max-backfill-per-day", type=_positive_int, default=1000)
     p.add_argument("--include-vehicle-sources", action="store_true")
 
-    for name, apply in (("backfill-dry-run", False), ("backfill-apply", True)):
+    for name, apply in (("backfill-dry-run", False), ("backfill", True), ("backfill-apply", True)):
         p = sub.add_parser(name, help="Run a bounded final-price backfill batch.")
         p.add_argument("--limit", type=_positive_int, default=DEFAULT_BACKFILL_BATCH_SIZE)
         p.add_argument(
@@ -808,7 +983,16 @@ def build_parser() -> argparse.ArgumentParser:
             default=1000,
             help="Maximum eBay ended-item checks this command may spend today.",
         )
-        p.add_argument("--include-vehicle-sources", action="store_true")
+        p.add_argument(
+            "--include-vehicle-sources",
+            action="store_true",
+            help="Compatibility option; the direct backfill queue already includes all sources.",
+        )
+        p.add_argument(
+            "--verbose-outcomes",
+            action="store_true",
+            help="Print every candidate/outcome in final JSON instead of a compact sample.",
+        )
         p.set_defaults(apply=apply)
 
     sub.add_parser("comps", help="Rebuild confirmed sold comps.")
@@ -918,6 +1102,36 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "api-health":
         return run_api_health(live_ebay=bool(args.live_ebay), as_json=bool(args.json))
 
+    if args.command == "visual-condition":
+        cmd = [
+            "pipelines.listing.visual_condition",
+            "--model",
+            args.model,
+            "--limit",
+            str(args.limit),
+            "--source",
+            args.source,
+            "--product",
+            args.product,
+            "--min-profit",
+            str(args.min_profit),
+            "--max-images",
+            str(args.max_images),
+            "--title",
+            args.title,
+        ]
+        if args.min_comps is not None:
+            cmd.extend(["--min-comps", str(args.min_comps)])
+        if args.include_checked:
+            cmd.append("--include-checked")
+        if args.all_live:
+            cmd.append("--all-live")
+        if args.apply:
+            cmd.append("--apply")
+        for image in args.image:
+            cmd.extend(["--image", image])
+        return _python_module(*cmd)
+
     if args.command == "backfill-plan":
         cmd = [
             "pipelines.listing.point_zero",
@@ -930,7 +1144,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             cmd.append("--include-vehicle-sources")
         return _python_module(*cmd)
 
-    if args.command in {"backfill-dry-run", "backfill-apply"}:
+    if args.command in {"backfill-dry-run", "backfill", "backfill-apply"}:
         cmd = [
             "pipelines.listing.point_zero.backfill_apply",
             "--limit",
@@ -940,6 +1154,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         ]
         if args.include_vehicle_sources:
             cmd.append("--include-vehicle-sources")
+        if args.verbose_outcomes:
+            cmd.append("--verbose-outcomes")
         if args.apply:
             cmd.append("--apply")
         return _python_module(*cmd)

@@ -5,11 +5,32 @@ import re
 from typing import Mapping, Any, Optional
 from typing import Dict, Set
 
+CONDITION_GRADE_RANK: dict[str, int] = {"A": 0, "B": 1, "C": 2, "D": 3}
+
 
 def _as_text(val: Any) -> str:
     if val is None:
         return ""
     return str(val).strip().lower()
+
+
+def effective_condition_grade(text_grade: Any, visual_grade: Any = None, text_scan_grade: Any = None) -> str:
+    """
+    Return the single grade used for comps.
+
+    Model checks can only downgrade the coded text-derived grade. Unknown model
+    output is treated as no downgrade until we have enough evidence.
+    """
+    text = str(text_grade or "B").strip().upper()
+    if text not in CONDITION_GRADE_RANK:
+        text = "B"
+
+    effective = text
+    for candidate in (text_scan_grade, visual_grade):
+        grade = str(candidate or "").strip().upper()
+        if grade in CONDITION_GRADE_RANK and CONDITION_GRADE_RANK[grade] > CONDITION_GRADE_RANK[effective]:
+            effective = grade
+    return effective
 
 
 def _listing_blob(title: str, attrs: Optional[Mapping[str, Any]] = None, model_key: Optional[str] = None) -> str:
@@ -417,6 +438,8 @@ LEGO_PART_TERMS = (
     "joblot bricks",
     "instruction book only",
     "instructions only",
+    "instructions and stickers only",
+    "stickers only",
     "box only",
     "custom",
     "compatible with lego",
@@ -425,6 +448,26 @@ LEGO_PART_TERMS = (
     "non lego",
     "not lego",
 )
+
+LEGO_WHOLE_SET_TERMS = (
+    "complete set",
+    "complete lego set",
+    "full set",
+    "sealed set",
+    "new sealed",
+    "new and sealed",
+    "brand new sealed",
+)
+
+LEGO_SUB_BUILD_TERMS = (
+    "castle byers",
+)
+
+
+def _looks_like_lego_sub_build(title_text: str) -> bool:
+    if not any(term in title_text for term in LEGO_SUB_BUILD_TERMS):
+        return False
+    return not any(term in title_text for term in LEGO_WHOLE_SET_TERMS)
 
 DEVICE_ACCESSORY_TERMS = (
     "screen protector",
@@ -875,6 +918,8 @@ def looks_like_partial_or_accessory_listing(
 
     is_lego = "lego" in source_text or "lego" in blob
     if is_lego and any(term in blob for term in LEGO_PART_TERMS):
+        return True
+    if is_lego and _looks_like_lego_sub_build(_as_text(title)):
         return True
 
     is_console = any(

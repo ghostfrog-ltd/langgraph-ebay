@@ -37,6 +37,7 @@ from utils.usage_tracker import increment_api_usage
 logger = get_logger(__name__)
 
 TERMINAL_STATUSES = {"ended", "sold", "complete", "completed"}
+PAPER_TRADING_ENABLED = os.getenv("GF_PAPER_TRADING_ENABLED", "0") == "1"
 DEFAULT_SNAPSHOT_LIMIT = int(os.getenv("GF_PAPER_TRADE_LIMIT", "25"))
 DEFAULT_OUTCOME_RESOLVE_LIMIT = int(os.getenv("GF_PAPER_OUTCOME_RESOLVE_LIMIT", "5"))
 OUTCOME_RESOLVE_GRACE_MINUTES = int(os.getenv("GF_PAPER_OUTCOME_GRACE_MINUTES", "60"))
@@ -1035,6 +1036,17 @@ def resolve_overdue_outcomes(*, limit: int = DEFAULT_OUTCOME_RESOLVE_LIMIT) -> d
     spends calls only on predictions whose end time has passed, then feeds the
     local result back into the existing observation and lesson pipeline.
     """
+    if not PAPER_TRADING_ENABLED:
+        return {
+            "status": "disabled",
+            "reason": "paper_trading_disabled",
+            "candidate_count": 0,
+            "checked": 0,
+            "closed": 0,
+            "counts": {},
+            "outcomes": [],
+        }
+
     candidates = _load_overdue_outcome_candidates(limit)
     resolutions: list[PaperOutcomeResolution] = []
 
@@ -1208,6 +1220,25 @@ def run(
     resolve_limit: int = DEFAULT_OUTCOME_RESOLVE_LIMIT,
 ) -> dict[str, Any]:
     """Run one deterministic paper-trading pipeline pass."""
+    if not PAPER_TRADING_ENABLED:
+        return {
+            "status": "disabled",
+            "reason": "paper_trading_disabled",
+            "snapshots": 0,
+            "observation_counts": {},
+            "outcome_resolution": {
+                "status": "disabled",
+                "reason": "paper_trading_disabled",
+                "candidate_count": 0,
+                "checked": 0,
+                "closed": 0,
+                "counts": {},
+                "outcomes": [],
+            },
+            "snapshot_preview": [],
+            "lesson_report": {"count": 0, "lessons": []},
+        }
+
     snapshots = collect_current_snapshots(limit) if snapshot else []
     inserted_or_updated = persist_snapshots(snapshots) if snapshot else 0
     observation_counts = update_observations()

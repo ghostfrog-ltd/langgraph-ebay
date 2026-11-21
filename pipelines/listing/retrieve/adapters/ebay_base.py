@@ -89,6 +89,43 @@ def _add_browse_attr(
         attrs[label] = value
 
 
+def _image_url_from_value(value: Any) -> str | None:
+    if isinstance(value, str):
+        url = value.strip()
+    elif isinstance(value, dict):
+        url = str(value.get("imageUrl") or value.get("url") or "").strip()
+    else:
+        url = ""
+
+    if not url:
+        return None
+    if not url.lower().startswith(("http://", "https://")):
+        return None
+    return url
+
+
+def _browse_image_urls(raw: dict[str, Any]) -> list[str]:
+    urls: list[str] = []
+    seen: set[str] = set()
+
+    def add(value: Any) -> None:
+        url = _image_url_from_value(value)
+        if url and url not in seen:
+            seen.add(url)
+            urls.append(url)
+
+    for key in ("image", "thumbnailImage"):
+        add(raw.get(key))
+
+    for key in ("additionalImages", "thumbnailImages"):
+        values = raw.get(key)
+        if isinstance(values, list):
+            for value in values:
+                add(value)
+
+    return urls
+
+
 def _browse_description_attrs(raw: dict[str, Any]) -> dict[str, Any]:
     """
     Extract useful low-cost evidence from Browse search/getItem responses.
@@ -173,6 +210,11 @@ def _browse_description_attrs(raw: dict[str, Any]) -> dict[str, Any]:
                 continue
             _add_browse_attr(attrs, f"Browse aspect {name}", aspect.get("value"), max_chars=1000)
 
+    image_urls = _browse_image_urls(raw)
+    if image_urls:
+        attrs["Browse imageUrls"] = image_urls[:12]
+        attrs["Browse imageUrl"] = image_urls[0]
+
     return attrs
 
 
@@ -191,6 +233,10 @@ def _sale_type_from_buying_options(
     if has_bin:
         return "bin"
     return str(fallback or "")
+
+
+def _search_sort_for_sale_type(sale_type: str | None) -> str:
+    return "newlyListed" if sale_type == "bin" else "endingSoon"
 
 
 def is_configurable_item(raw: dict[str, Any]) -> bool:
@@ -307,7 +353,7 @@ class EbayAdapterBase:
     CATEGORY_IDS: List[int] = []
     SELLER_USERNAME: Optional[str] = None
     FETCH_MODE: str = "category"
-    SALE_TYPE: str | List[str] = "bin"
+    SALE_TYPE: str | List[str] = ["bin", "auction"]
     SEARCH_QUERY: Optional[str] = None
     SEARCH_QUERIES: List[str] = []
     SEARCH_QUERIES_BY_CATEGORY: Dict[int | None, List[str]] = {}
@@ -517,7 +563,7 @@ class EbayAdapterBase:
             qs = [
                 f"q={quote_plus(query or DEFAULT_Q)}",
                 f"limit={limit}",
-                "sort=endingSoon",
+                f"sort={_search_sort_for_sale_type(sale_type)}",
             ]
             if category_id:
                 qs.append(f"category_ids={category_id}")
@@ -613,7 +659,7 @@ class EbayAdapterBase:
                     f"filter={filter_param}",
                     f"limit={limit}",
                     f"offset={offset}",
-                    "sort=endingSoon",
+                    f"sort={_search_sort_for_sale_type(sale_type)}",
                 ]
                 url = f"{base}/buy/browse/v1/item_summary/search?" + "&".join(qs)
 

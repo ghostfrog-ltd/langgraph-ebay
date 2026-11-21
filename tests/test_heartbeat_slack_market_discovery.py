@@ -3,7 +3,11 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-from pipelines.listing.main import _build_heartbeat_slack_message, _heartbeat_scheduler_status
+from pipelines.listing.main import (
+    _build_heartbeat_slack_message,
+    _heartbeat_scheduler_status,
+    _slack_rows_from_report,
+)
 
 
 class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
@@ -37,7 +41,7 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
                         "max_safe_buy": 190.0,
                         "expected_profit": 70.0,
                         "sold_median": 250.0,
-                        "comp_samples": 15,
+                        "comp_samples": 100,
                         "condition_grade": "B",
                     }
                 ],
@@ -51,7 +55,7 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
                         "max_safe_buy": 170.0,
                         "expected_profit": 45.0,
                         "sold_median": 230.0,
-                        "comp_samples": 15,
+                        "comp_samples": 100,
                     }
                 ],
             },
@@ -66,7 +70,7 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
                         "max_safe_buy": 120.0,
                         "expected_profit": 30.0,
                         "sold_median": 165.0,
-                        "comp_samples": 15,
+                        "comp_samples": 100,
                     }
                 ],
                 "closest": [],
@@ -115,6 +119,44 @@ class HeartbeatSlackMarketDiscoveryTests(unittest.TestCase):
         self.assertNotIn("BID", rendered)
         self.assertNotIn("ACTIONABLE", rendered)
         self.assertNotIn("Paper", rendered)
+
+    def test_slack_rows_enforce_buy_signal_comp_floor(self):
+        rows, used_ids = _slack_rows_from_report(
+            {
+                "potentials": [
+                    {
+                        "source": "ebay-graphics-cards",
+                        "external_id": "v1|low|0",
+                        "title": "Thin GPU row",
+                        "url": "https://example.test/gpu",
+                        "current_price": 100.0,
+                        "max_safe_buy": 150.0,
+                        "expected_profit": 50.0,
+                        "sold_median": 200.0,
+                        "comp_samples": 5,
+                        "effective_min_comps": 5,
+                    },
+                    {
+                        "source": "ebay-apple",
+                        "external_id": "v1|ok|0",
+                        "title": "Enough comp row",
+                        "url": "https://example.test/apple",
+                        "current_price": 100.0,
+                        "max_safe_buy": 150.0,
+                        "expected_profit": 50.0,
+                        "sold_median": 200.0,
+                        "comp_samples": 100,
+                        "effective_min_comps": 10,
+                    },
+                ]
+            },
+            limit=0,
+        )
+
+        rendered = "\n".join(rows)
+        self.assertNotIn("Thin GPU row", rendered)
+        self.assertIn("Enough comp row", rendered)
+        self.assertEqual(used_ids, {"v1|ok|0"})
 
     def test_scheduler_status_is_in_hourly_slack_message(self):
         metrics = self._base_metrics()

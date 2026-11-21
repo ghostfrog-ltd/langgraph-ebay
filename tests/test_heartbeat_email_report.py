@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from pipelines.listing.main import (
     _build_heartbeat_email_html,
@@ -7,6 +8,8 @@ from pipelines.listing.main import (
     _email_link,
     _next_action_for_email,
     _potential_rows_for_email,
+    hourly_status_email,
+    send_heartbeat_email_now,
 )
 
 
@@ -54,7 +57,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
             [("ebay-apple", "v1|1|0"), ("ebay-consoles", "v1|2|0")],
         )
 
-    def test_candidate_price_refresh_shortlist_zero_limit_means_all(self):
+    def test_candidate_price_refresh_shortlist_zero_limit_disables_refresh(self):
         report = {
             "thresholds": {"min_profit_gbp": 25},
             "potentials": [
@@ -79,7 +82,30 @@ class HeartbeatEmailReportTests(unittest.TestCase):
 
         rows = _candidate_rows_for_refresh(report, limit=0)
 
-        self.assertEqual(len(rows), 3)
+        self.assertEqual(rows, [])
+
+    def test_heartbeat_email_disabled_skips_metrics_and_send(self):
+        with patch("pipelines.listing.main.HEARTBEAT_EMAIL_ENABLED", False):
+            with patch("pipelines.listing.main._metrics_for_heartbeat") as metrics:
+                with patch("pipelines.listing.main.send_email") as send:
+                    result = send_heartbeat_email_now()
+
+        self.assertEqual(result, {"status": "skipped", "reason": "disabled"})
+        metrics.assert_not_called()
+        send.assert_not_called()
+
+    def test_hourly_heartbeat_email_disabled_skips_metrics_and_send(self):
+        with patch("pipelines.listing.main.HEARTBEAT_EMAIL_ENABLED", False):
+            with patch("pipelines.listing.main._metrics_for_heartbeat") as metrics:
+                with patch("pipelines.listing.main.send_email") as send:
+                    state = hourly_status_email({})
+
+        self.assertEqual(
+            state["heartbeat_email_out"],
+            {"status": "skipped", "reason": "disabled"},
+        )
+        metrics.assert_not_called()
+        send.assert_not_called()
 
     def test_email_potential_rows_zero_limit_means_all(self):
         report = {
@@ -94,7 +120,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": index + 10,
                     "expected_profit": index + 20,
                     "sold_median": index + 30,
-                    "comp_samples": 15,
+                    "comp_samples": 100,
                     "condition_grade": "B",
                 }
                 for index in range(12)
@@ -119,7 +145,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 15,
+                    "comp_samples": 100,
                     "condition_grade": "B",
                 },
                 {
@@ -132,7 +158,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 15,
+                    "comp_samples": 100,
                     "condition_grade": "B",
                 },
                 {
@@ -145,7 +171,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 15,
+                    "comp_samples": 100,
                     "condition_grade": "B",
                 },
             ]
@@ -171,7 +197,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 15,
+                    "comp_samples": 100,
                     "condition_grade": "B",
                 },
                 {
@@ -184,7 +210,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 15,
+                    "comp_samples": 100,
                     "condition_grade": "B",
                 },
             ]
@@ -208,11 +234,11 @@ class HeartbeatEmailReportTests(unittest.TestCase):
 
         self.assertEqual(action, "Avoid")
 
-    def test_email_potential_rows_enforce_candidate_comp_floor(self):
+    def test_email_potential_rows_enforce_buy_signal_comp_floor(self):
         report = {
             "potentials": [
                 {
-                    "source": "ebay-samsung",
+                    "source": "ebay-graphics-cards",
                     "external_id": "v1|low|0",
                     "title": "Thin evidence row",
                     "url": "https://example.test/low",
@@ -220,7 +246,8 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 5,
+                    "comp_samples": 49,
+                    "effective_min_comps": 5,
                     "condition_grade": "B",
                 },
                 {
@@ -232,7 +259,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 15,
+                    "comp_samples": 50,
                     "condition_grade": "B",
                 },
             ]
@@ -244,6 +271,31 @@ class HeartbeatEmailReportTests(unittest.TestCase):
         self.assertNotIn("Thin evidence row", rendered)
         self.assertIn("Enough evidence row", rendered)
         self.assertEqual(used_ids, {"v1|ok|0"})
+
+    def test_email_potential_rows_allow_explicit_lower_analysis_floor(self):
+        report = {
+            "potentials": [
+                {
+                    "source": "ebay-graphics-cards",
+                    "external_id": "v1|low|0",
+                    "title": "Thin evidence row",
+                    "url": "https://example.test/low",
+                    "current_price": 100,
+                    "max_safe_buy": 150,
+                    "expected_profit": 50,
+                    "sold_median": 200,
+                    "comp_samples": 5,
+                    "effective_min_comps": 5,
+                    "condition_grade": "B",
+                },
+            ]
+        }
+
+        rows, used_ids = _potential_rows_for_email(report, limit=0, min_comps=5)
+
+        rendered = "\n".join(" ".join(row) for row in rows)
+        self.assertIn("Thin evidence row", rendered)
+        self.assertEqual(used_ids, {"v1|low|0"})
 
     def test_email_potential_rows_sort_by_ending_soonest(self):
         report = {
@@ -259,7 +311,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 15,
+                    "comp_samples": 100,
                     "condition_grade": "B",
                 },
                 {
@@ -273,7 +325,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                     "max_safe_buy": 150,
                     "expected_profit": 50,
                     "sold_median": 200,
-                    "comp_samples": 15,
+                    "comp_samples": 100,
                     "condition_grade": "B",
                 },
             ]
@@ -361,7 +413,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                         "max_safe_buy": 180,
                         "expected_profit": 75,
                         "sold_median": 240,
-                        "comp_samples": 18,
+                        "comp_samples": 100,
                         "condition_grade": "B",
                     }
                 ],
@@ -376,7 +428,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                         "max_safe_buy": 80.00,
                         "expected_profit": 45.00,
                         "sold_median": 167.00,
-                        "comp_samples": 18,
+                        "comp_samples": 100,
                         "condition_grade": "B",
                     },
                     {
@@ -406,7 +458,7 @@ class HeartbeatEmailReportTests(unittest.TestCase):
                         "max_safe_buy": 112,
                         "expected_profit": 32,
                         "sold_median": 145,
-                        "comp_samples": 18,
+                        "comp_samples": 100,
                         "condition_grade": "B",
                     }
                 ],
@@ -528,66 +580,45 @@ class HeartbeatEmailReportTests(unittest.TestCase):
         )
 
         self.assertIn("Pipeline is running from live PostgreSQL data", html)
-        self.assertIn("How To Read Listing Rows", html)
-        self.assertIn("Expected profit if bought at the current price", html)
-        self.assertIn("Highest safe buy price after resale costs and target profit", html)
         self.assertIn("GBP 50 Profit Candidates", html)
         self.assertIn("GBP 25 Profit Candidates", html)
-        self.assertIn("Pokemon GBP 20 Profit Candidates", html)
         self.assertIn("Review", html)
         self.assertIn("Type", html)
         self.assertIn("action=up", html)
         self.assertIn("action=down", html)
         self.assertIn("Apple MacBook Air", html)
         self.assertIn("Mafell A 12", html)
-        self.assertIn("Pokemon TCG Test Card PSA 10", html)
+        self.assertNotIn("Pokemon TCG Test Card PSA 10", html)
         self.assertNotIn("Pokemon TCG Thin Comp", html)
         self.assertIn("Auction", html)
         self.assertIn("Auction + BIN", html)
         self.assertIn("&pound;75.00", html)
         self.assertIn("&pound;32.00", html)
-        self.assertIn("&pound;22.00", html)
-        self.assertIn("GBP 50 Closest Misses", html)
-        self.assertIn("GBP 25 Closest Misses", html)
-        self.assertIn("No actionable near misses at or below max buy", html)
+        self.assertNotIn("&pound;22.00", html)
+        self.assertNotIn("How To Read Listing Rows", html)
+        self.assertNotIn("Expected profit if bought at the current price", html)
+        self.assertNotIn("Highest safe buy price after resale costs and target profit", html)
+        self.assertNotIn("Pokemon GBP 20 Profit Candidates", html)
+        self.assertNotIn("GBP 50 Closest Misses", html)
+        self.assertNotIn("GBP 25 Closest Misses", html)
+        self.assertNotIn("No actionable near misses at or below max buy", html)
         self.assertNotIn("Nintendo Switch HAC-001", html)
         self.assertNotIn("Apple iPhone 11 128GB", html)
         self.assertNotIn("&pound;45.00", html)
         self.assertNotIn("&pound;20.00", html)
         self.assertNotIn("Samsung Galaxy A12 Cracked", html)
         self.assertNotIn("&pound;-15.20", html)
-        self.assertIn("Favourites", html)
-        self.assertIn("Favourite MacBook", html)
-        self.assertIn("Model Keys By Market", html)
-        self.assertIn("usable model-key evidence only", html)
-        self.assertIn("unknown past-end backfill queue", html)
-        self.assertIn("20 usable rows", html)
-        self.assertIn("17 without final price", html)
-        self.assertIn("6 without final price", html)
-        self.assertIn("Apple", html)
-        self.assertIn("Tools", html)
-        self.assertIn("apple-macbook-air-13in-m1-8gb-256gb", html)
-        self.assertIn("apple-iphone-13-128gb", html)
-        self.assertIn("mafell-a12-drill", html)
+        self.assertNotIn("Favourites", html)
+        self.assertNotIn("Favourite MacBook", html)
+        self.assertNotIn("Model Keys By Market", html)
+        self.assertNotIn("usable model-key evidence only", html)
+        self.assertNotIn("20 usable rows", html)
+        self.assertNotIn("apple-macbook-air-13in-m1-8gb-256gb", html)
+        self.assertNotIn("apple-iphone-13-128gb", html)
+        self.assertNotIn("mafell-a12-drill", html)
         self.assertLess(
-            html.index("How To Read Listing Rows"),
             html.index("GBP 50 Profit Candidates"),
-        )
-        self.assertLess(
             html.index("GBP 25 Profit Candidates"),
-            html.index("Pokemon GBP 20 Profit Candidates"),
-        )
-        self.assertLess(
-            html.index("Pokemon GBP 20 Profit Candidates"),
-            html.index("GBP 50 Closest Misses"),
-        )
-        self.assertLess(
-            html.index("GBP 25 Closest Misses"),
-            html.index("Favourites"),
-        )
-        self.assertLess(
-            html.index("Favourites"),
-            html.index("Model Keys By Market"),
         )
         self.assertNotIn("Fresh Live Review Data", html)
         self.assertNotIn("Backfill Position", html)

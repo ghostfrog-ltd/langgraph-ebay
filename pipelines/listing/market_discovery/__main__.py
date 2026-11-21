@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from pipelines.listing.market_discovery.graph import MIN_CANDIDATE_COMPS, run
+from pipelines.listing.market_discovery.graph import run
 
 
 def main() -> None:
@@ -22,8 +22,8 @@ def main() -> None:
     parser.add_argument(
         "--min-comps",
         type=int,
-        default=MIN_CANDIDATE_COMPS,
-        help="Minimum confirmed sold comps for the model key.",
+        default=None,
+        help="Override the category-specific minimum confirmed sold comps floor.",
     )
     parser.add_argument(
         "--min-score",
@@ -38,7 +38,7 @@ def main() -> None:
         min_score=max(args.min_score, 0.0),
         min_profit=max(args.min_profit, 0.0),
         min_roi=max(args.min_roi, 0.0),
-        min_comps=max(args.min_comps, 1),
+        min_comps=max(args.min_comps, 1) if args.min_comps is not None else None,
     )
     print(json.dumps(report, indent=2, default=str))
 

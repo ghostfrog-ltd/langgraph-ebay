@@ -15,4 +15,243 @@ fi
 
 cd "$ROOT"
 export GF_LOG_DIR="${GF_LOG_DIR:-$ROOT/logs}"
+
+if [[ "${1:-}" == "web" ]]; then
+    shift
+    cd "$ROOT/web"
+    exec docker compose up -d "$@"
+fi
+
+if [[ "${1:-}" == "web-sync" ]]; then
+    shift
+    exec "$PYTHON_BIN" -m pipelines.listing.remote_sync "$@"
+fi
+
+if [[ "${1:-}" == "web-sync-all" ]]; then
+    shift
+    export GF_LOG_DIR="${GF_LOG_DIR:-$ROOT/logs}"
+    mkdir -p "$GF_LOG_DIR"
+    lock_dir="${GHOSTFROG_WEB_SYNC_LOCK_DIR:-$ROOT/logs/web-sync.lock}"
+    if ! mkdir "$lock_dir" 2>/dev/null; then
+        lock_pid_file="$lock_dir/pid"
+        lock_pid=""
+        if [[ -f "$lock_pid_file" ]]; then
+            lock_pid="$(<"$lock_pid_file")"
+        fi
+        if [[ "$lock_pid" == <-> ]] && kill -0 "$lock_pid" 2>/dev/null; then
+            echo "Web sync is already running; skipping this run."
+            exit 0
+        fi
+        echo "Removing stale web sync lock: $lock_dir" >&2
+        rm -f "$lock_pid_file" 2>/dev/null || true
+        rmdir "$lock_dir" 2>/dev/null || true
+        if ! mkdir "$lock_dir" 2>/dev/null; then
+            echo "Web sync lock is still held; skipping this run."
+            exit 0
+        fi
+    fi
+    print -r -- "$$" > "$lock_dir/pid"
+    trap 'rm -f "$lock_dir/pid" 2>/dev/null || true; rmdir "$lock_dir" 2>/dev/null || true' EXIT
+
+    args=(--send --chunk-size "${GHOSTFROG_WEB_SYNC_CHUNK_SIZE:-50}")
+    args+=("$@")
+
+    local_endpoint="${GHOSTFROG_PUSH_LOCAL_URL:-http://127.0.0.1:8080}"
+    local_secret="${GHOSTFROG_PUSH_LOCAL_SYNC_SECRET:-local-development-sync-secret-change-me}"
+    prod_endpoint="${GHOSTFROG_PUSH_PROD_URL:-https://ebay.ghostfrog.co.uk}"
+    prod_secret=""
+    prod_ssh_key="${GHOSTFROG_PROD_SSH_KEY:-$HOME/.ssh/id_ghostfrog}"
+    prod_ssh_host="${GHOSTFROG_PROD_SSH_HOST:-root@91.99.113.93}"
+    prod_app_dir="${GHOSTFROG_PROD_APP_DIR:-/opt/ghostfrog-evidence}"
+
+    if [[ -n "${GHOSTFROG_PUSH_PROD_SYNC_SECRET:-}" ]]; then
+        prod_secret="$GHOSTFROG_PUSH_PROD_SYNC_SECRET"
+    elif [[ -n "${GHOSTFROG_PROD_SYNC_SECRET:-}" ]]; then
+        prod_secret="$GHOSTFROG_PROD_SYNC_SECRET"
+    elif [[ -n "${GHOSTFROG_WEB_URL:-}" && "${GHOSTFROG_WEB_URL:-}" != "$local_endpoint" && -n "${GHOSTFROG_SYNC_SECRET:-}" ]]; then
+        prod_endpoint="$GHOSTFROG_WEB_URL"
+        prod_secret="$GHOSTFROG_SYNC_SECRET"
+    fi
+
+    if [[ -z "$prod_secret" && "${GHOSTFROG_PUSH_PROD_SECRET_FROM_SSH:-1}" != "0" && -r "$prod_ssh_key" ]]; then
+        prod_secret="$(ssh -i "$prod_ssh_key" "$prod_ssh_host" "cd '$prod_app_dir' && if [ -f .env ]; then sed -n 's/^GHOSTFROG_SYNC_SECRET=//p' .env | head -n 1; fi" 2>/dev/null || true)"
+        if [[ -z "$prod_secret" ]]; then
+            prod_secret="$(ssh -i "$prod_ssh_key" "$prod_ssh_host" "cd '$prod_app_dir' && docker compose exec -T app php -r 'echo getenv(\"GHOSTFROG_SYNC_SECRET\") ?: \"\";'" 2>/dev/null || true)"
+        fi
+        prod_secret="${prod_secret%\"}"
+        prod_secret="${prod_secret#\"}"
+        prod_secret="${prod_secret%\'}"
+        prod_secret="${prod_secret#\'}"
+    fi
+
+    echo "Pushing live web snapshot to local Laravel ($local_endpoint)..."
+    GHOSTFROG_WEB_URL="$local_endpoint" GHOSTFROG_SYNC_SECRET="$local_secret" "$PYTHON_BIN" -m pipelines.listing.remote_sync "${args[@]}"
+
+    if [[ -z "$prod_secret" ]]; then
+        echo "Local web sync completed, but prod push was skipped: set GHOSTFROG_PUSH_PROD_SYNC_SECRET or GHOSTFROG_PROD_SYNC_SECRET." >&2
+        exit 2
+    fi
+
+    echo "Pushing live web snapshot to prod Laravel ($prod_endpoint)..."
+    GHOSTFROG_WEB_URL="$prod_endpoint" GHOSTFROG_SYNC_SECRET="$prod_secret" "$PYTHON_BIN" -m pipelines.listing.remote_sync "${args[@]}"
+
+    echo "Web sync completed for local and prod."
+    exit 0
+fi
+
+if [[ "${1:-}" == "evidence-sync" ]]; then
+    shift
+    args=(--sold-evidence-only --send --chunk-size "${GHOSTFROG_SOLD_EVIDENCE_CHUNK_SIZE:-1000}")
+    args+=("$@")
+
+    local_endpoint="${GHOSTFROG_PUSH_LOCAL_URL:-http://127.0.0.1:8080}"
+    local_secret="${GHOSTFROG_PUSH_LOCAL_SYNC_SECRET:-local-development-sync-secret-change-me}"
+    prod_endpoint="${GHOSTFROG_PUSH_PROD_URL:-https://ebay.ghostfrog.co.uk}"
+    prod_secret=""
+    prod_ssh_key="${GHOSTFROG_PROD_SSH_KEY:-$HOME/.ssh/id_ghostfrog}"
+    prod_ssh_host="${GHOSTFROG_PROD_SSH_HOST:-root@91.99.113.93}"
+    prod_app_dir="${GHOSTFROG_PROD_APP_DIR:-/opt/ghostfrog-evidence}"
+
+    if [[ -n "${GHOSTFROG_PUSH_PROD_SYNC_SECRET:-}" ]]; then
+        prod_secret="$GHOSTFROG_PUSH_PROD_SYNC_SECRET"
+    elif [[ -n "${GHOSTFROG_PROD_SYNC_SECRET:-}" ]]; then
+        prod_secret="$GHOSTFROG_PROD_SYNC_SECRET"
+    elif [[ -n "${GHOSTFROG_WEB_URL:-}" && "${GHOSTFROG_WEB_URL:-}" != "$local_endpoint" && -n "${GHOSTFROG_SYNC_SECRET:-}" ]]; then
+        prod_endpoint="$GHOSTFROG_WEB_URL"
+        prod_secret="$GHOSTFROG_SYNC_SECRET"
+    fi
+
+    if [[ -z "$prod_secret" && "${GHOSTFROG_PUSH_PROD_SECRET_FROM_SSH:-1}" != "0" && -r "$prod_ssh_key" ]]; then
+        prod_secret="$(ssh -i "$prod_ssh_key" "$prod_ssh_host" "cd '$prod_app_dir' && if [ -f .env ]; then sed -n 's/^GHOSTFROG_SYNC_SECRET=//p' .env | head -n 1; fi" 2>/dev/null || true)"
+        if [[ -z "$prod_secret" ]]; then
+            prod_secret="$(ssh -i "$prod_ssh_key" "$prod_ssh_host" "cd '$prod_app_dir' && docker compose exec -T app php -r 'echo getenv(\"GHOSTFROG_SYNC_SECRET\") ?: \"\";'" 2>/dev/null || true)"
+        fi
+        prod_secret="${prod_secret%\"}"
+        prod_secret="${prod_secret#\"}"
+        prod_secret="${prod_secret%\'}"
+        prod_secret="${prod_secret#\'}"
+    fi
+
+    echo "Pushing all sold evidence to local Laravel ($local_endpoint)..."
+    GHOSTFROG_WEB_URL="$local_endpoint" GHOSTFROG_SYNC_SECRET="$local_secret" "$PYTHON_BIN" -m pipelines.listing.remote_sync "${args[@]}"
+
+    if [[ -z "$prod_secret" ]]; then
+        echo "Local evidence sync completed, but prod push was skipped: set GHOSTFROG_PUSH_PROD_SYNC_SECRET or GHOSTFROG_PROD_SYNC_SECRET." >&2
+        exit 2
+    fi
+
+    echo "Pushing all sold evidence to prod Laravel ($prod_endpoint)..."
+    GHOSTFROG_WEB_URL="$prod_endpoint" GHOSTFROG_SYNC_SECRET="$prod_secret" "$PYTHON_BIN" -m pipelines.listing.remote_sync "${args[@]}"
+
+    echo "Evidence sync completed for local and prod."
+    exit 0
+fi
+
+if [[ "${1:-}" == "3d-print-leaderboard-sync" ]]; then
+    shift
+    if [[ "${GHOSTFROG_3D_PRINT_LEADERBOARD_ENABLED:-0}" != "1" && "${GF_3D_PRINT_LEADERBOARD_ENABLED:-0}" != "1" ]]; then
+        echo "3D print seller leaderboard sync disabled; set GF_3D_PRINT_LEADERBOARD_ENABLED=1 to opt back in."
+        exit 0
+    fi
+
+    args=(--send)
+    args+=("$@")
+
+    local_endpoint="${GHOSTFROG_PUSH_LOCAL_URL:-http://127.0.0.1:8080}"
+    local_secret="${GHOSTFROG_PUSH_LOCAL_SYNC_SECRET:-local-development-sync-secret-change-me}"
+    prod_endpoint="${GHOSTFROG_PUSH_PROD_URL:-https://ebay.ghostfrog.co.uk}"
+    prod_secret=""
+    prod_ssh_key="${GHOSTFROG_PROD_SSH_KEY:-$HOME/.ssh/id_ghostfrog}"
+    prod_ssh_host="${GHOSTFROG_PROD_SSH_HOST:-root@91.99.113.93}"
+    prod_app_dir="${GHOSTFROG_PROD_APP_DIR:-/opt/ghostfrog-evidence}"
+
+    if [[ -n "${GHOSTFROG_PUSH_PROD_SYNC_SECRET:-}" ]]; then
+        prod_secret="$GHOSTFROG_PUSH_PROD_SYNC_SECRET"
+    elif [[ -n "${GHOSTFROG_PROD_SYNC_SECRET:-}" ]]; then
+        prod_secret="$GHOSTFROG_PROD_SYNC_SECRET"
+    elif [[ -n "${GHOSTFROG_WEB_URL:-}" && "${GHOSTFROG_WEB_URL:-}" != "$local_endpoint" && -n "${GHOSTFROG_SYNC_SECRET:-}" ]]; then
+        prod_endpoint="$GHOSTFROG_WEB_URL"
+        prod_secret="$GHOSTFROG_SYNC_SECRET"
+    fi
+
+    if [[ -z "$prod_secret" && "${GHOSTFROG_PUSH_PROD_SECRET_FROM_SSH:-1}" != "0" && -r "$prod_ssh_key" ]]; then
+        prod_secret="$(ssh -i "$prod_ssh_key" "$prod_ssh_host" "cd '$prod_app_dir' && if [ -f .env ]; then sed -n 's/^GHOSTFROG_SYNC_SECRET=//p' .env | head -n 1; fi" 2>/dev/null || true)"
+        if [[ -z "$prod_secret" ]]; then
+            prod_secret="$(ssh -i "$prod_ssh_key" "$prod_ssh_host" "cd '$prod_app_dir' && docker compose exec -T app php -r 'echo getenv(\"GHOSTFROG_SYNC_SECRET\") ?: \"\";'" 2>/dev/null || true)"
+        fi
+        prod_secret="${prod_secret%\"}"
+        prod_secret="${prod_secret#\"}"
+        prod_secret="${prod_secret%\'}"
+        prod_secret="${prod_secret#\'}"
+    fi
+
+    echo "Pushing 3D print seller leaderboard to local Laravel ($local_endpoint)..."
+    GHOSTFROG_WEB_URL="$local_endpoint" GHOSTFROG_SYNC_SECRET="$local_secret" "$PYTHON_BIN" -m pipelines.listing.three_d_print_leaderboard "${args[@]}"
+
+    if [[ -z "$prod_secret" ]]; then
+        echo "Local 3D print leaderboard sync completed, but prod push was skipped: set GHOSTFROG_PUSH_PROD_SYNC_SECRET or GHOSTFROG_PROD_SYNC_SECRET." >&2
+        exit 2
+    fi
+
+    echo "Pushing 3D print seller leaderboard to prod Laravel ($prod_endpoint)..."
+    GHOSTFROG_WEB_URL="$prod_endpoint" GHOSTFROG_SYNC_SECRET="$prod_secret" "$PYTHON_BIN" -m pipelines.listing.three_d_print_leaderboard "${args[@]}"
+
+    echo "3D print seller leaderboard sync completed for local and prod."
+    exit 0
+fi
+
+if [[ "${1:-}" == "push" ]]; then
+    shift
+    if [[ "$#" -lt 1 ]]; then
+        echo "Usage: ebay push <model_key> [<model_key> ...]" >&2
+        exit 2
+    fi
+    args=(--send --model-key-only)
+    for model_key in "$@"; do
+        args+=(--model-key "$model_key")
+    done
+
+    local_endpoint="${GHOSTFROG_PUSH_LOCAL_URL:-http://127.0.0.1:8080}"
+    local_secret="${GHOSTFROG_PUSH_LOCAL_SYNC_SECRET:-local-development-sync-secret-change-me}"
+    prod_endpoint="${GHOSTFROG_PUSH_PROD_URL:-https://ebay.ghostfrog.co.uk}"
+    prod_secret=""
+    prod_ssh_key="${GHOSTFROG_PROD_SSH_KEY:-$HOME/.ssh/id_ghostfrog}"
+    prod_ssh_host="${GHOSTFROG_PROD_SSH_HOST:-root@91.99.113.93}"
+    prod_app_dir="${GHOSTFROG_PROD_APP_DIR:-/opt/ghostfrog-evidence}"
+
+    if [[ -n "${GHOSTFROG_PUSH_PROD_SYNC_SECRET:-}" ]]; then
+        prod_secret="$GHOSTFROG_PUSH_PROD_SYNC_SECRET"
+    elif [[ -n "${GHOSTFROG_PROD_SYNC_SECRET:-}" ]]; then
+        prod_secret="$GHOSTFROG_PROD_SYNC_SECRET"
+    elif [[ -n "${GHOSTFROG_WEB_URL:-}" && "${GHOSTFROG_WEB_URL:-}" != "$local_endpoint" && -n "${GHOSTFROG_SYNC_SECRET:-}" ]]; then
+        prod_endpoint="$GHOSTFROG_WEB_URL"
+        prod_secret="$GHOSTFROG_SYNC_SECRET"
+    fi
+
+    if [[ -z "$prod_secret" && "${GHOSTFROG_PUSH_PROD_SECRET_FROM_SSH:-1}" != "0" && -r "$prod_ssh_key" ]]; then
+        prod_secret="$(ssh -i "$prod_ssh_key" "$prod_ssh_host" "cd '$prod_app_dir' && if [ -f .env ]; then sed -n 's/^GHOSTFROG_SYNC_SECRET=//p' .env | head -n 1; fi" 2>/dev/null || true)"
+        if [[ -z "$prod_secret" ]]; then
+            prod_secret="$(ssh -i "$prod_ssh_key" "$prod_ssh_host" "cd '$prod_app_dir' && docker compose exec -T app php -r 'echo getenv(\"GHOSTFROG_SYNC_SECRET\") ?: \"\";'" 2>/dev/null || true)"
+        fi
+        prod_secret="${prod_secret%\"}"
+        prod_secret="${prod_secret#\"}"
+        prod_secret="${prod_secret%\'}"
+        prod_secret="${prod_secret#\'}"
+    fi
+
+    echo "Pushing model-key comps to local Laravel ($local_endpoint)..."
+    GHOSTFROG_WEB_URL="$local_endpoint" GHOSTFROG_SYNC_SECRET="$local_secret" "$PYTHON_BIN" -m pipelines.listing.remote_sync "${args[@]}"
+
+    if [[ -z "$prod_secret" ]]; then
+        echo "Local push completed, but prod push was skipped: set GHOSTFROG_PUSH_PROD_SYNC_SECRET or GHOSTFROG_PROD_SYNC_SECRET." >&2
+        exit 2
+    fi
+
+    echo "Pushing model-key comps to prod Laravel ($prod_endpoint)..."
+    GHOSTFROG_WEB_URL="$prod_endpoint" GHOSTFROG_SYNC_SECRET="$prod_secret" "$PYTHON_BIN" -m pipelines.listing.remote_sync "${args[@]}"
+
+    echo "Push completed for local and prod."
+    exit 0
+fi
+
 exec "$PYTHON_BIN" -m pipelines.listing.operator_console "$@"

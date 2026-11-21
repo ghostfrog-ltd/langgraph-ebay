@@ -145,7 +145,7 @@ def _parse_slack_backfill_apply_command(cleaned: str) -> SlackOperatorCommand:
     try:
         tokens = shlex.split(cleaned)
     except ValueError as exc:
-        return SlackOperatorCommand(name="backfill-apply", error=f"cannot parse command: {exc}")
+        return SlackOperatorCommand(name="backfill", error=f"cannot parse command: {exc}")
 
     limit = DEFAULT_SLACK_BACKFILL_LIMIT
     daily_limit = DEFAULT_SLACK_BACKFILL_DAILY_LIMIT
@@ -155,10 +155,10 @@ def _parse_slack_backfill_apply_command(cleaned: str) -> SlackOperatorCommand:
         token = tokens[index]
         if token in {"--limit", "--daily-limit", "--daily-backfill-budget"}:
             if index + 1 >= len(tokens):
-                return SlackOperatorCommand(name="backfill-apply", error=f"{token} needs a number")
+                return SlackOperatorCommand(name="backfill", error=f"{token} needs a number")
             parsed = _parse_positive_int(tokens[index + 1])
             if parsed is None:
-                return SlackOperatorCommand(name="backfill-apply", error=f"{token} must be a positive number")
+                return SlackOperatorCommand(name="backfill", error=f"{token} must be a positive number")
             if token == "--limit":
                 limit = parsed
             else:
@@ -168,14 +168,14 @@ def _parse_slack_backfill_apply_command(cleaned: str) -> SlackOperatorCommand:
         if token.startswith("--limit="):
             parsed = _parse_positive_int(token.split("=", 1)[1])
             if parsed is None:
-                return SlackOperatorCommand(name="backfill-apply", error="--limit must be a positive number")
+                return SlackOperatorCommand(name="backfill", error="--limit must be a positive number")
             limit = parsed
             index += 1
             continue
         if token.startswith("--daily-limit=") or token.startswith("--daily-backfill-budget="):
             parsed = _parse_positive_int(token.split("=", 1)[1])
             if parsed is None:
-                return SlackOperatorCommand(name="backfill-apply", error="--daily-limit must be a positive number")
+                return SlackOperatorCommand(name="backfill", error="--daily-limit must be a positive number")
             daily_limit = parsed
             index += 1
             continue
@@ -183,10 +183,10 @@ def _parse_slack_backfill_apply_command(cleaned: str) -> SlackOperatorCommand:
             include_vehicle_sources = True
             index += 1
             continue
-        return SlackOperatorCommand(name="backfill-apply", error=f"unknown option: {token}")
+        return SlackOperatorCommand(name="backfill", error=f"unknown option: {token}")
 
     return SlackOperatorCommand(
-        name="backfill-apply",
+        name="backfill",
         limit=limit,
         daily_limit=daily_limit,
         include_vehicle_sources=include_vehicle_sources,
@@ -206,7 +206,7 @@ def parse_slack_operator_command(text: str) -> SlackOperatorCommand | None:
         name = "favourites" if lower == "favorites" else lower
         name = "heartbeat" if lower == "slack-heartbeat" else name
         return SlackOperatorCommand(name=name)
-    if lower == "backfill-apply" or lower.startswith("backfill-apply "):
+    if lower in {"backfill", "backfill-apply"} or lower.startswith(("backfill ", "backfill-apply ")):
         return _parse_slack_backfill_apply_command(cleaned)
     if lower == "explain":
         return SlackOperatorCommand(name="explain")
@@ -272,7 +272,7 @@ def format_slack_operator_command_menu() -> str:
         "- `ebay stats` - show compact local data health",
         "- `ebay explain 206446095377` - show the comp evidence behind one profit estimate",
         "- `ebay explain 206446095377 --all` - show every exact sold comp",
-        "- `ebay backfill-apply --limit 4000 --daily-limit 10000` - spend eBay calls and update local unknown rows",
+        "- `ebay backfill --limit 4000 --daily-limit 10000` - spend eBay calls and update local unknown rows",
         "- `ebay favourites` - show thumbed-up listings",
         "- `ebay reviews` - show recent up/down actions",
         "- `up 206446095377` - mark a listing as a local favourite",
@@ -544,7 +544,7 @@ def run_slack_operator_command(command: SlackOperatorCommand, *, channel_id: str
             channel_id=channel_id,
             text=(
                 f"Cannot run `ebay {command.name}`: {_slack_escape(command.error)}\n"
-                "Use `ebay backfill-apply --limit 4000 --daily-limit 10000`."
+                "Use `ebay backfill --limit 4000 --daily-limit 10000`."
             ),
         )
 
@@ -606,7 +606,7 @@ def run_slack_operator_command(command: SlackOperatorCommand, *, channel_id: str
             text=_format_listing_explanation_for_slack(explanation, show_all=command.show_all),
         )
 
-    if command.name == "backfill-apply":
+    if command.name in {"backfill", "backfill-apply"}:
         from pipelines.listing.point_zero.backfill_apply import (
             _release_lock,
             _try_acquire_lock,
@@ -760,9 +760,9 @@ def process_slack_review_commands_once(*, limit: int = 50, reply: bool = True) -
                         display = f"{display} {operator_command.item}"
                     if operator_command.show_all:
                         display = f"{display} --all"
-                    if operator_command.name == "backfill-apply":
+                    if operator_command.name in {"backfill", "backfill-apply"}:
                         display = (
-                            f"{display} --limit {operator_command.limit or DEFAULT_SLACK_BACKFILL_LIMIT} "
+                            f"ebay backfill --limit {operator_command.limit or DEFAULT_SLACK_BACKFILL_LIMIT} "
                             f"--daily-limit {operator_command.daily_limit or DEFAULT_SLACK_BACKFILL_DAILY_LIMIT}"
                         )
                         if operator_command.include_vehicle_sources:
@@ -772,7 +772,7 @@ def process_slack_review_commands_once(*, limit: int = 50, reply: bool = True) -
                         thread_ts=ts,
                         text=f"Running `{display}`...",
                     )
-                    if operator_command.name == "backfill-apply":
+                    if operator_command.name in {"backfill", "backfill-apply"}:
                         _save_cursor(newest_ts)
                 if run_slack_operator_command(operator_command, channel_id=channel_id):
                     replied += 1

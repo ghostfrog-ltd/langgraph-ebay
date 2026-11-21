@@ -60,6 +60,32 @@ def _has_game_attrs(attrs: Mapping[str, Any]) -> bool:
     return any(key in attrs for key in ("Game Name", "Video Game Name", "Genre", "Rating"))
 
 
+def _has_console_accessory_type_attrs(attrs: Mapping[str, Any]) -> bool:
+    accessory_type_keys = (
+        "Type",
+        "Product Type",
+        "Accessory Type",
+        "Browse aspect Type",
+        "Browse aspect Product Type",
+        "Browse aspect Accessory Type",
+    )
+    for key in accessory_type_keys:
+        value = attrs.get(key)
+        values = value if isinstance(value, (list, tuple, set)) else (value,)
+        for item in values:
+            text = _as_text(item)
+            if re.search(
+                r"\b("
+                r"travel\s+cases?|carrying\s+cases?|carry\s+cases?|"
+                r"protective\s+cases?|hard\s+cases?|memory\s+cards?|"
+                r"usb\s*-?\s*cables?|controllers?"
+                r")\b",
+                text,
+            ):
+                return True
+    return False
+
+
 def _has_console_hardware_signal(title_text: str, text: str) -> bool:
     return any(
         term in title_text
@@ -77,6 +103,7 @@ def _has_console_hardware_signal(title_text: str, text: str) -> bool:
         )
     ) or bool(
         re.search(r"\b(128|256|500|512|825)\s?gb\b|\b(1|2)\s?tb\b", title_text)
+        or re.search(r"\bnintendo\s+switch\s+(lite|oled)\b", title_text)
         or re.search(r"\b(?:with|including|incl\.?)\s+(?:a\s+)?(?:console|system)\b", text)
     )
 
@@ -84,6 +111,8 @@ def _has_console_hardware_signal(title_text: str, text: str) -> bool:
 def _looks_like_accessory_or_software_intent(title_text: str, text: str, attrs: Mapping[str, Any]) -> bool:
     attr_keys = " ".join(_as_text(key) for key in attrs.keys())
     if any(key in attr_keys for key in ("game name", "video game name", "genre", "rating")):
+        return True
+    if _has_console_accessory_type_attrs(attrs):
         return True
 
     hardware_signal = _has_console_hardware_signal(title_text, text)
@@ -215,7 +244,10 @@ def _looks_like_game_only(text: str, attrs: Mapping[str, Any]) -> bool:
             "tablet only",
             "oled model",
         )
-    ) or bool(re.search(r"\b(500|512|825)\s?gb\b|\b(1|2)\s?tb\b", text))
+    ) or bool(
+        re.search(r"\b(500|512|825)\s?gb\b|\b(1|2)\s?tb\b", text)
+        or re.search(r"\bnintendo\s+switch\s+(lite|oled)\b", text)
+    )
     platform_only = any(
         term in text
         for term in (
@@ -340,18 +372,42 @@ def _xbox_key(title_text: str, text: str, storage: str) -> str:
     return UNKNOWN_KEY
 
 
-def _switch_key(text: str) -> str:
+def _switch_2_structured_signal(attrs: Mapping[str, Any]) -> bool:
+    for key in (
+        "Model",
+        "Platform",
+        "Compatible Product",
+        "Browse aspect Model",
+        "Browse aspect Platform",
+        "Browse aspect Compatible Product",
+        "model_name",
+        "platform",
+    ):
+        value = attrs.get(key)
+        values = value if isinstance(value, (list, tuple, set)) else (value,)
+        for item in values:
+            text = _as_text(item)
+            if re.search(r"\b(?:nintendo\s+)?switch\s*2\b", text):
+                return True
+    return False
+
+
+def _has_switch_2_title_signal(title_text: str) -> bool:
+    return bool(re.search(r"\b(?:nintendo\s+)?switch\s*2\b", title_text))
+
+
+def _switch_key(attrs: Mapping[str, Any], title_text: str, text: str) -> str:
     if "switch" not in text:
         return UNKNOWN_KEY
 
-    if "switch 2" in text:
-        return "nintendo-switch-2"
     if "tablet only" in text or "console/tablet only" in text or "screen only" in text:
         return "nintendo-switch-tablet-only"
     if "oled" in text:
         return "nintendo-switch-oled"
     if "lite" in text:
         return "nintendo-switch-lite"
+    if _has_switch_2_title_signal(title_text) or _switch_2_structured_signal(attrs):
+        return "nintendo-switch-2"
     return "nintendo-switch-base"
 
 
@@ -375,4 +431,4 @@ def console_or_game_model_key(attrs: Mapping[str, Any], title: str) -> Optional[
     if key != UNKNOWN_KEY:
         return key
 
-    return _switch_key(text)
+    return _switch_key(attrs, title_text, text)

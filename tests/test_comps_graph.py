@@ -3,13 +3,26 @@ import unittest
 from collections import deque
 from unittest.mock import patch
 
-from pipelines.listing.comps.graph import APPLE_MAC_ALLOWED_CPU_PATTERN, _compute_daily_comps
+from pipelines.listing.comps.graph import (
+    APPLE_MAC_ALLOWED_CPU_PATTERN,
+    CONSOLE_COMP_ACCESSORY_ATTR_PATTERN,
+    CONSOLE_COMP_ACCESSORY_FOR_PATTERN,
+    CONSOLE_COMP_ACCESSORY_PATTERNS,
+    CONSOLE_COMP_HARDWARE_BLOB_PATTERN,
+    CONSOLE_COMP_HARDWARE_TITLE_PATTERN,
+    CONSOLE_COMP_NON_HARDWARE_PATTERNS,
+    ELECTRONICS_DAMAGE_NEGATION_PATTERN,
+    ELECTRONICS_DAMAGE_WORD_PATTERN,
+    _compute_daily_comps,
+)
 from pipelines.listing.retrieve.adapters.apple import Adapter as AppleAdapter
 from pipelines.listing.retrieve.adapters.ebay_base import (
     EbayAdapterBase,
     _browse_description_attrs,
+    _browse_image_urls,
     _browse_item_unavailable_reason,
     _sale_type_from_buying_options,
+    _search_sort_for_sale_type,
     bulk_upsert_auction_listings,
 )
 
@@ -56,6 +69,76 @@ class _FakeResponse:
 
 
 class CompsGraphTests(unittest.TestCase):
+    def _pattern_matches(self, text, patterns):
+        lowered = text.lower()
+        return any(pattern.strip("%") in lowered for pattern in patterns)
+
+    def _console_comp_blocked_by_sql_constants(self, title, attrs_text=""):
+        title_text = title.lower()
+        blob = f"{title_text} {attrs_text.lower()}".strip()
+        hardware_title_pattern = CONSOLE_COMP_HARDWARE_TITLE_PATTERN.replace("\\m", "\\b").replace("\\M", "\\b")
+        hardware_blob_pattern = CONSOLE_COMP_HARDWARE_BLOB_PATTERN.replace("\\m", "\\b").replace("\\M", "\\b")
+        accessory_attr_pattern = CONSOLE_COMP_ACCESSORY_ATTR_PATTERN.replace("\\m", "\\b").replace("\\M", "\\b")
+        accessory_for_pattern = CONSOLE_COMP_ACCESSORY_FOR_PATTERN.replace("\\m", "\\b").replace("\\M", "\\b")
+        has_hardware = bool(
+            re.search(hardware_title_pattern, title_text)
+            or re.search(hardware_blob_pattern, blob)
+        )
+        return (
+            self._pattern_matches(blob, CONSOLE_COMP_NON_HARDWARE_PATTERNS)
+            or (
+                self._pattern_matches(blob, CONSOLE_COMP_ACCESSORY_PATTERNS)
+                and not has_hardware
+            )
+            or (
+                bool(re.search(accessory_attr_pattern, attrs_text.lower()))
+                and not has_hardware
+            )
+            or (
+                bool(re.search(accessory_for_pattern, title_text))
+                and not has_hardware
+            )
+        )
+
+    def _electronics_damage_blocked_by_sql_constants(self, text):
+        lowered = text.lower()
+        damage_pattern = ELECTRONICS_DAMAGE_WORD_PATTERN.replace("\\m", "\\b").replace("\\M", "\\b")
+        negation_pattern = ELECTRONICS_DAMAGE_NEGATION_PATTERN.replace("\\m", "\\b").replace("\\M", "\\b")
+        return bool(re.search(damage_pattern, lowered)) and not bool(
+            re.search(negation_pattern, lowered)
+        )
+
+    def test_console_comp_sql_fixture_blocks_switch_accessory_rows(self):
+        blocked = [
+            ("Nintendo Switch Carry Case Messenger Bag Power A.", "Type Carry Case"),
+            ("Nintendo Switch Console Game - Turquoise", ""),
+            ("Wireless Controller for Nintendo Switch 2", "Type Controller"),
+        ]
+
+        for title, attrs in blocked:
+            with self.subTest(title=title):
+                self.assertTrue(self._console_comp_blocked_by_sql_constants(title, attrs))
+
+    def test_console_comp_sql_fixture_allows_console_with_controller(self):
+        self.assertFalse(
+            self._console_comp_blocked_by_sql_constants(
+                "Nintendo Switch 2 Console With Wireless Controller",
+                "Type Video Game Console",
+            )
+        )
+
+    def test_electronics_damage_sql_fixture_respects_negation(self):
+        self.assertTrue(
+            self._electronics_damage_blocked_by_sql_constants(
+                "Samsung Galaxy Z Fold 7 256GB Unlocked Blue damaged"
+            )
+        )
+        self.assertFalse(
+            self._electronics_damage_blocked_by_sql_constants(
+                "Samsung Galaxy S24 Excellent Condition no damage"
+            )
+        )
+
     def test_apple_mac_comps_allow_intel_core_keys(self):
         valid_keys = [
             "apple-macbook-pro-a2141-16in-core-i7-16gb-512gb",
@@ -89,6 +172,8 @@ class CompsGraphTests(unittest.TestCase):
             call for call in fake_conn.cursor_obj.calls if "INSERT INTO comps" in call[0]
         )
         sql, params = insert_call
+        self.assertIn("latest_listing_text_conditions", sql)
+        self.assertIn("tc.text_grade", sql)
         self.assertIn("raw_attrs::text", sql)
         self.assertIn("\\mlocked\\M", sql)
         patterns = params[2]
@@ -96,9 +181,76 @@ class CompsGraphTests(unittest.TestCase):
         self.assertIn("%logic board missing%", patterns)
         self.assertIn("%screen is damaged%", patterns)
         self.assertIn("%joy-con%", patterns)
+        self.assertIn("%instructions and stickers only%", patterns)
+        self.assertIn("%stickers only%", patterns)
+        self.assertIn("%%castle byers%%", sql)
+        self.assertIn("NOT LIKE ALL", sql)
+        self.assertIn("source = 'ebay-consoles'", sql)
+        self.assertIn("source IN", sql)
+        self.assertIn("!~", sql)
+        console_non_hardware_patterns = params[3]
+        console_accessory_patterns = params[4]
+        damage_pattern = params[13]
+        damage_negation_pattern = params[14]
+        lego_whole_set_patterns = params[15]
+        self.assertIn("%console game%", console_non_hardware_patterns)
+        self.assertIn("%case game holder%", console_non_hardware_patterns)
+        self.assertIn("%carry case%", console_accessory_patterns)
+        self.assertIn("%controller for%", console_accessory_patterns)
+        self.assertIn("damaged", damage_pattern)
+        self.assertIn("no|not|without|free from", damage_negation_pattern)
+        self.assertIn("%complete set%", lego_whole_set_patterns)
 
-    def test_apple_collection_defaults_to_auction_feed(self):
-        self.assertEqual(AppleAdapter.SALE_TYPE, ["auction"])
+    def test_comps_compute_upserts_current_snapshot(self):
+        fake_conn = _FakeConnection()
+
+        with patch("pipelines.listing.comps.graph.connection", fake_conn):
+            _compute_daily_comps(days=365)
+
+        sql, _params = next(
+            call for call in fake_conn.cursor_obj.calls if "INSERT INTO comps" in call[0]
+        )
+        self.assertIn("ON CONFLICT (model_key, condition_grade) DO UPDATE", sql)
+        self.assertIn("median_final_price = EXCLUDED.median_final_price", sql)
+        self.assertIn("mean_final_price = EXCLUDED.mean_final_price", sql)
+        self.assertIn("samples = EXCLUDED.samples", sql)
+        self.assertIn("computed_at = EXCLUDED.computed_at", sql)
+
+    def test_console_comp_sql_blocks_accessories_without_global_controller_ban(self):
+        fake_conn = _FakeConnection()
+
+        with patch("pipelines.listing.comps.graph.connection", fake_conn):
+            _compute_daily_comps(days=365)
+
+        sql, params = next(
+            call for call in fake_conn.cursor_obj.calls if "INSERT INTO comps" in call[0]
+        )
+        console_accessory_patterns = params[4]
+
+        self.assertIn("%controller for%", console_accessory_patterns)
+        self.assertIn("CONSOLE", sql.upper())
+        self.assertIn("NOT (", sql)
+        self.assertNotIn("%with controller%", console_accessory_patterns)
+
+    def test_electronics_damage_sql_has_negation_guard(self):
+        fake_conn = _FakeConnection()
+
+        with patch("pipelines.listing.comps.graph.connection", fake_conn):
+            _compute_daily_comps(days=365)
+
+        sql, params = next(
+            call for call in fake_conn.cursor_obj.calls if "INSERT INTO comps" in call[0]
+        )
+        damage_pattern = params[13]
+        damage_negation_pattern = params[14]
+
+        self.assertIn("damaged", damage_pattern)
+        self.assertIn("damage", damage_pattern)
+        self.assertIn("no|not|without|free from", damage_negation_pattern)
+        self.assertIn("!~", sql)
+
+    def test_apple_collection_defaults_to_bin_and_auction_feeds(self):
+        self.assertEqual(AppleAdapter.SALE_TYPE, ["bin", "auction"])
 
     def test_base_adapter_uses_source_specific_model_keys(self):
         adapter = object.__new__(EbayAdapterBase)
@@ -136,6 +288,11 @@ class CompsGraphTests(unittest.TestCase):
         self.assertEqual(_sale_type_from_buying_options(["AUCTION"]), "auction")
         self.assertEqual(_sale_type_from_buying_options(["FIXED_PRICE"]), "bin")
 
+    def test_search_sort_matches_sale_type(self):
+        self.assertEqual(_search_sort_for_sale_type("bin"), "newlyListed")
+        self.assertEqual(_search_sort_for_sale_type("auction"), "endingSoon")
+        self.assertEqual(_search_sort_for_sale_type("both"), "endingSoon")
+
     def test_normalize_item_preserves_auction_plus_buy_now_type(self):
         adapter = object.__new__(EbayAdapterBase)
         adapter.DOMAIN = "ebay-test"
@@ -151,7 +308,7 @@ class CompsGraphTests(unittest.TestCase):
                 "buyingOptions": ["AUCTION", "FIXED_PRICE"],
                 "currentBidPrice": {"value": "101.00"},
                 "price": {"value": "299.00"},
-                "itemEndDate": "2026-08-30T12:00:00Z",
+                "itemEndDate": "2026-12-30T12:00:00Z",
             },
             "auction",
         )
@@ -181,6 +338,29 @@ class CompsGraphTests(unittest.TestCase):
 
         self.assertEqual(len(seen_urls), 1)
         self.assertIn("filter=buyingOptions:{AUCTION}", seen_urls[0])
+        self.assertIn("sort=endingSoon", seen_urls[0])
+        self.assertNotIn("listingType", seen_urls[0])
+
+    def test_category_fetch_uses_newly_listed_sort_for_bin(self):
+        adapter = object.__new__(EbayAdapterBase)
+        adapter.DOMAIN = "ebay-test"
+        adapter.SEARCH_QUERY = "test"
+        adapter._hist_api = deque(maxlen=10)
+        seen_urls = []
+
+        def fake_get(url, **kwargs):
+            seen_urls.append(url)
+            return _FakeResponse()
+
+        with patch.dict("os.environ", {"EBAY_API_BASE": "https://api.example.test"}), patch(
+            "pipelines.listing.retrieve.adapters.ebay_base.requests.get",
+            side_effect=fake_get,
+        ), patch("pipelines.listing.retrieve.adapters.ebay_base.increment_api_usage"):
+            adapter._fetch_category_items("token", 123, "bin")
+
+        self.assertEqual(len(seen_urls), 1)
+        self.assertIn("filter=buyingOptions:{FIXED_PRICE}", seen_urls[0])
+        self.assertIn("sort=newlyListed", seen_urls[0])
         self.assertNotIn("listingType", seen_urls[0])
 
     def test_unseen_live_cleanup_marks_not_seen_rows_unknown(self):
@@ -328,6 +508,43 @@ class CompsGraphTests(unittest.TestCase):
         self.assertEqual(attrs["Browse seller feedbackScore"], 35)
         self.assertNotIn("Browse seller feedbackPercentage", attrs)
 
+    def test_browse_image_urls_collect_primary_and_additional_urls(self):
+        urls = _browse_image_urls(
+            {
+                "image": {"imageUrl": "https://i.ebayimg.test/primary.jpg"},
+                "thumbnailImages": [{"imageUrl": "https://i.ebayimg.test/thumb.jpg"}],
+                "additionalImages": [
+                    {"imageUrl": "https://i.ebayimg.test/side.jpg"},
+                    {"imageUrl": "https://i.ebayimg.test/primary.jpg"},
+                    {"imageUrl": "not-a-url"},
+                ],
+            }
+        )
+
+        self.assertEqual(
+            urls,
+            [
+                "https://i.ebayimg.test/primary.jpg",
+                "https://i.ebayimg.test/side.jpg",
+                "https://i.ebayimg.test/thumb.jpg",
+            ],
+        )
+
+    def test_browse_description_attrs_keep_image_urls(self):
+        attrs = _browse_description_attrs(
+            {
+                "condition": "Used",
+                "image": {"imageUrl": "https://i.ebayimg.test/primary.jpg"},
+                "additionalImages": [{"imageUrl": "https://i.ebayimg.test/back.jpg"}],
+            }
+        )
+
+        self.assertEqual(attrs["Browse imageUrl"], "https://i.ebayimg.test/primary.jpg")
+        self.assertEqual(
+            attrs["Browse imageUrls"],
+            ["https://i.ebayimg.test/primary.jpg", "https://i.ebayimg.test/back.jpg"],
+        )
+
     def test_browse_unavailable_detects_past_end_time(self):
         reason = _browse_item_unavailable_reason(
             {
@@ -396,7 +613,7 @@ class CompsGraphTests(unittest.TestCase):
                 "itemWebUrl": "https://example.test/damaged",
                 "buyingOptions": ["AUCTION"],
                 "currentBidPrice": {"value": "157.00"},
-                "itemEndDate": "2026-08-28T22:16:00Z",
+                "itemEndDate": "2026-12-30T22:16:00Z",
                 "condition": "Used",
                 "conditionDescription": (
                     "Working 2020 M1 Macbook Air, left side of the screen is damaged "

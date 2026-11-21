@@ -1,22 +1,22 @@
 """
-Apply targeted unknown-listing finalization using spare eBay Trading API calls.
+Apply historic-listing finalization using eBay Trading API calls.
 
 This module is intentionally narrower than the normal ended-listing pipeline:
-it only considers candidates selected by the read-only Point Zero planner, and
-it only mutates rows that are still `status = 'unknown'` and not finalized. Dry
-run is the default so operators can review candidate quality before spending
-API calls or changing PostgreSQL state.
+it checks past-end rows that lack both a confirmed final price and a conclusive
+Trading audit, regardless of their legacy local status. The apply path drains
+that queue in `auction_listings.id` order so catch-up work is predictable.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import time
 from dataclasses import asdict, dataclass
 from typing import Any, Optional
 
 import requests
-from psycopg2.extras import execute_batch
+from psycopg2.extras import RealDictCursor, execute_batch
 
 from pipelines.listing.ended.graph import (
     TRADING_USAGE_LIMIT_ERROR_CODES,
@@ -24,8 +24,9 @@ from pipelines.listing.ended.graph import (
     _extract_numeric_item_id,
     _parse_trading_get_item,
 )
-from pipelines.listing.point_zero.backfill_plan import build_plan, ensure_backfill_tracking_columns
+from pipelines.listing.point_zero.backfill_plan import ensure_backfill_tracking_columns
 from utils.db_schema import get_fresh_connection
+from utils.ebay_api_accounting import get_bucket_limit
 from utils.logger import get_logger
 from utils.usage_tracker import increment_api_usage
 
@@ -34,6 +35,7 @@ logger = get_logger(__name__)
 BACKFILL_LOCK_KEY = 260531001
 DEFAULT_DAILY_BACKFILL_BUDGET = 1000
 DEFAULT_BACKFILL_BATCH_SIZE = 100
+BACKFILL_COMMIT_CHUNK_SIZE = 50
 TRADING_DELETE_CODES = {"17", "1505", "21920397"}
 
 
@@ -79,26 +81,16 @@ def is_backfill_running() -> bool:
 
 
 def backfill_checks_today() -> int:
-    """Count local unknown-listing final-price checks already attempted today."""
+    """Count Trading final-price calls already spent today."""
     conn = get_fresh_connection()
     try:
         with conn.cursor() as cur:
-            ensure_backfill_tracking_columns(cur)
             cur.execute(
                 """
-                SELECT GREATEST(
-                    (
-                        SELECT COUNT(*)::int
-                        FROM auction_listings
-                        WHERE backfill_checked_at::date = CURRENT_DATE
-                    ),
-                    (
-                        SELECT COALESCE(SUM(call_count), 0)::int
-                        FROM api_usage
-                        WHERE date = CURRENT_DATE
-                          AND service = 'ebay_ended_v1'
-                    )
-                ) AS checked_today
+                SELECT COALESCE(SUM(call_count), 0)::int AS checked_today
+                FROM api_usage
+                WHERE date = CURRENT_DATE
+                  AND service = 'ebay_ended_v1'
                 """
             )
             row = cur.fetchone()
@@ -111,7 +103,7 @@ def backfill_checks_today() -> int:
 @dataclass
 class BackfillOutcome:
     """
-    Result for one targeted unknown-listing finalization candidate.
+    Result for one historic-listing finalization candidate.
 
     `new_status` is intentionally narrow:
     - `sold` means Trading returned an ended listing with one or more bids and a final price.
@@ -275,31 +267,98 @@ def _temporary_trading_failure_outcome(
     )
 
 
-def _load_candidates_from_plan(
-    *,
-    limit: int,
-    daily_cap: int,
-    safety_reserve: int,
-    include_vehicle_sources: bool,
-    recommended_backfill_override: int | None = None,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _fetch_table_order_backfill_candidates(cur, *, limit: int) -> list[dict[str, Any]]:
     """
-    Ask the read-only Point Zero planner for the exact unknown rows to process.
+    Fetch old listings that have never had a conclusive final-price check.
 
-    The planner already applies the API budget, excludes broad/unsafe model
-    keys, and filters obvious parts/accessories. This runner does not select
-    its own arbitrary unknown rows.
+    This is deliberately plain: no source priority, no comp-demand priority, no
+    planner exclusions, and no reliance on the local status label. A historic
+    `ended` or `live` label is not proof that Trading checked the outcome. Rows
+    with a conclusive recorded check are excluded so genuine no-sales are not
+    queried forever. Retryable API failures become eligible again after a day.
     """
-    plan = build_plan(
-        daily_cap=daily_cap,
-        safety_reserve=safety_reserve,
-        max_backfill_per_day=limit,
-        candidate_detail_limit=limit,
-        include_vehicle_sources=include_vehicle_sources,
-        recommended_backfill_override=recommended_backfill_override,
+    if limit <= 0:
+        return []
+    select_columns = """
+        SELECT
+            id,
+            external_id,
+            source,
+            status AS prior_status,
+            finalized AS prior_finalized,
+            COALESCE(NULLIF(model_key, ''), 'unknown') AS model_key,
+            title,
+            price_current,
+            bids_count,
+            price_bid_current,
+            sale_type,
+            end_time,
+            last_seen_at,
+            backfill_checked_at,
+            backfill_check_count,
+            backfill_last_reason
+        FROM auction_listings
+    """
+    common_where = """
+        WHERE (final_price IS NULL OR final_price <= 0)
+          AND end_time IS NOT NULL
+          AND end_time <= (now() AT TIME ZONE 'utc') - interval '1 day'
+          AND external_id ~ '[0-9]'
+    """
+
+    rows: list[dict[str, Any]] = []
+    cur.execute(
+        f"""
+        {select_columns}
+        {common_where}
+          AND backfill_checked_at IS NULL
+        ORDER BY id ASC
+        LIMIT %s
+        """,
+        (limit,),
     )
-    candidates = list(plan.get("recommended_unknown_candidate_preview") or [])
-    return candidates[:limit], plan
+    rows.extend(dict(row) for row in (cur.fetchall() or []))
+
+    remaining = limit - len(rows)
+    if remaining <= 0:
+        return rows
+
+    cur.execute(
+        f"""
+        {select_columns}
+        {common_where}
+          AND backfill_checked_at IS NOT NULL
+          AND backfill_checked_at <= CURRENT_TIMESTAMP - interval '1 day'
+          AND NOT (status = 'ended' AND COALESCE(finalized, FALSE) = TRUE)
+          AND COALESCE(backfill_last_reason, '') <> 'invalid_external_id'
+        ORDER BY id ASC
+        LIMIT %s
+        """,
+        (remaining,),
+    )
+    rows.extend(dict(row) for row in (cur.fetchall() or []))
+    return rows
+
+
+def _load_candidates_in_table_order(*, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Load backfill candidates directly from PostgreSQL in `auction_listings.id` order."""
+    conn = get_fresh_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            ensure_backfill_tracking_columns(cur)
+            candidates = _fetch_table_order_backfill_candidates(cur, limit=limit)
+        conn.commit()
+    finally:
+        conn.close()
+
+    shortfall = max(limit - len(candidates), 0)
+    return candidates, {
+        "candidate_limit_source": "operator_limit",
+        "candidate_shortfall_reason": "direct_backfill_selector_returned_fewer_rows_than_requested"
+        if shortfall > 0
+        else None,
+        "selection": "table_order_unchecked_past_end_missing_final_price",
+    }
 
 
 def _apply_outcomes(outcomes: list[BackfillOutcome]) -> int:
@@ -310,8 +369,7 @@ def _apply_outcomes(outcomes: list[BackfillOutcome]) -> int:
     remove local junk rows that eBay confirms are inaccessible/deleted and have
     no final price. `restore` outcomes move rows back to live when Trading says
     they are not ended. Skipped/error outcomes leave commercial state untouched.
-    All checked rows receive local backfill audit fields so the planner does
-    not spend repeated API calls on the same uncertain listing every run.
+    All checked rows receive local backfill audit fields for operator visibility.
     """
     checked_rows = [
         (outcome.reason, outcome.listing_id)
@@ -356,7 +414,7 @@ def _apply_outcomes(outcomes: list[BackfillOutcome]) -> int:
                         backfill_check_count = COALESCE(backfill_check_count, 0) + 1,
                         backfill_last_reason = %s
                     WHERE id = %s
-                      AND status = 'unknown'
+                      AND (final_price IS NULL OR final_price <= 0)
                     """,
                     checked_rows,
                     page_size=100,
@@ -371,8 +429,7 @@ def _apply_outcomes(outcomes: list[BackfillOutcome]) -> int:
                         final_price = %s,
                         bids_count = %s
                     WHERE id = %s
-                      AND status = 'unknown'
-                      AND COALESCE(finalized, FALSE) = FALSE
+                      AND (final_price IS NULL OR final_price <= 0)
                     """,
                     sold_rows,
                     page_size=100,
@@ -386,8 +443,7 @@ def _apply_outcomes(outcomes: list[BackfillOutcome]) -> int:
                         status = 'ended',
                         bids_count = %s
                     WHERE id = %s
-                      AND status = 'unknown'
-                      AND COALESCE(finalized, FALSE) = FALSE
+                      AND (final_price IS NULL OR final_price <= 0)
                     """,
                     ended_rows,
                     page_size=100,
@@ -408,8 +464,7 @@ def _apply_outcomes(outcomes: list[BackfillOutcome]) -> int:
                     DELETE FROM auction_listings
                     WHERE id = %s
                       AND external_id = %s
-                      AND COALESCE(finalized, FALSE) = FALSE
-                      AND final_price IS NULL
+                      AND (final_price IS NULL OR final_price <= 0)
                     """,
                     [(listing_id, external_id) for external_id, listing_id in delete_rows],
                     page_size=100,
@@ -424,8 +479,7 @@ def _apply_outcomes(outcomes: list[BackfillOutcome]) -> int:
                         bids_count = %s,
                         end_time = COALESCE(%s, end_time)
                     WHERE id = %s
-                      AND status = 'unknown'
-                      AND COALESCE(finalized, FALSE) = FALSE
+                      AND (final_price IS NULL OR final_price <= 0)
                     """,
                     restore_rows,
                     page_size=100,
@@ -441,18 +495,19 @@ def run_backfill(
     *,
     limit: int,
     apply: bool,
-    daily_cap: int = 5000,
+    daily_cap: int | None = None,
     safety_reserve: int = 500,
     daily_backfill_budget: int = DEFAULT_DAILY_BACKFILL_BUDGET,
     include_vehicle_sources: bool = False,
 ) -> dict[str, Any]:
     """
-    Run a targeted unknown-listing final-price batch.
+    Run a historic-listing final-price batch.
 
-    Dry-run mode returns planner candidates without spending API calls. Apply
-    mode performs read-only Trading API calls and then updates only selected
-    unknown PostgreSQL rows to `live`, `sold`, `ended`, or local deletion.
+    Dry-run mode returns the direct table-order candidates without spending API
+    calls. Apply mode performs read-only Trading API calls and then updates only
+    selected PostgreSQL rows to `live`, `sold`, `ended`, or local deletion.
     """
+    daily_cap = get_bucket_limit("trading") if daily_cap is None else int(daily_cap)
     logger.info(
         "[point_zero.backfill_apply] start mode=%s limit=%d daily_backfill_budget=%d daily_cap=%d safety_reserve=%d",
         "apply" if apply else "dry_run",
@@ -472,16 +527,10 @@ def run_backfill(
         effective_limit,
     )
 
-    logger.info("[point_zero.backfill_apply] planning candidates limit=%d", effective_limit)
-    candidates, plan = _load_candidates_from_plan(
-        limit=effective_limit,
-        daily_cap=planner_daily_cap,
-        safety_reserve=safety_reserve,
-        include_vehicle_sources=include_vehicle_sources,
-        recommended_backfill_override=effective_limit,
-    )
+    logger.info("[point_zero.backfill_apply] loading table-order candidates limit=%d", effective_limit)
+    candidates, plan = _load_candidates_in_table_order(limit=effective_limit)
     logger.info(
-        "[point_zero.backfill_apply] planned candidates=%d shortfall=%d reason=%s",
+        "[point_zero.backfill_apply] loaded candidates=%d shortfall=%d reason=%s",
         len(candidates),
         max(effective_limit - len(candidates), 0),
         plan.get("candidate_shortfall_reason"),
@@ -495,6 +544,7 @@ def run_backfill(
             "budget_shortfall": max(limit - effective_limit, 0),
             "candidate_count": len(candidates),
             "candidate_limit_source": plan.get("candidate_limit_source"),
+            "selection": plan.get("selection"),
             "candidate_shortfall": max(effective_limit - len(candidates), 0),
             "candidate_shortfall_reason": plan.get("candidate_shortfall_reason"),
             "daily_backfill_budget": daily_backfill_budget,
@@ -506,9 +556,53 @@ def run_backfill(
         }
 
     outcomes: list[BackfillOutcome] = []
+    pending_outcomes: list[BackfillOutcome] = []
+    applied = 0
     remaining_trading_calls = remaining_backfill_budget
-    stop_reason: str | None = None
     total_candidates = len(candidates)
+    progress_started_at = time.monotonic()
+    progress_counts = {
+        "sold": 0,
+        "ended": 0,
+        "deleted": 0,
+        "restored": 0,
+        "errors": 0,
+    }
+
+    def record_outcome(outcome: BackfillOutcome) -> None:
+        nonlocal applied
+        outcomes.append(outcome)
+        pending_outcomes.append(outcome)
+        if outcome.action == "finalize" and outcome.new_status == "sold":
+            progress_counts["sold"] += 1
+        elif outcome.action == "finalize" and outcome.new_status == "ended":
+            progress_counts["ended"] += 1
+        elif outcome.action == "delete":
+            progress_counts["deleted"] += 1
+        elif outcome.action == "restore":
+            progress_counts["restored"] += 1
+        else:
+            progress_counts["errors"] += 1
+
+        processed = len(outcomes)
+        if processed <= 5 or processed % 25 == 0 or processed == total_candidates:
+            logger.info(
+                "[point_zero.backfill_apply] resolved=%d/%d sold=%d ended=%d deleted=%d restored=%d errors=%d remaining_calls=%d elapsed=%.0fs",
+                processed,
+                total_candidates,
+                progress_counts["sold"],
+                progress_counts["ended"],
+                progress_counts["deleted"],
+                progress_counts["restored"],
+                progress_counts["errors"],
+                remaining_trading_calls,
+                time.monotonic() - progress_started_at,
+            )
+        if len(pending_outcomes) >= BACKFILL_COMMIT_CHUNK_SIZE:
+            applied += _apply_outcomes(pending_outcomes)
+            pending_outcomes.clear()
+
+    stop_reason: str | None = None
     for index, row in enumerate(candidates, start=1):
         if index == 1 or index % 50 == 0 or index == total_candidates:
             logger.info(
@@ -525,7 +619,7 @@ def run_backfill(
 
         item_id = _extract_numeric_item_id(external_id)
         if not item_id:
-            outcomes.append(
+            record_outcome(
                 BackfillOutcome(
                     listing_id=listing_id,
                     external_id=external_id,
@@ -542,7 +636,7 @@ def run_backfill(
             continue
 
         if remaining_trading_calls <= 0:
-            outcomes.append(
+            record_outcome(
                 BackfillOutcome(
                     listing_id=listing_id,
                     external_id=external_id,
@@ -569,7 +663,7 @@ def run_backfill(
                 external_id,
                 exc,
             )
-            outcomes.append(
+            record_outcome(
                 _temporary_trading_failure_outcome(
                     listing_id=listing_id,
                     external_id=external_id,
@@ -587,7 +681,7 @@ def run_backfill(
                 external_id,
                 exc,
             )
-            outcomes.append(
+            record_outcome(
                 _temporary_trading_failure_outcome(
                     listing_id=listing_id,
                     external_id=external_id,
@@ -605,7 +699,7 @@ def run_backfill(
                 external_id,
                 exc,
             )
-            outcomes.append(
+            record_outcome(
                 _temporary_trading_failure_outcome(
                     listing_id=listing_id,
                     external_id=external_id,
@@ -625,7 +719,7 @@ def run_backfill(
                 external_id,
                 usage_limit_reason,
             )
-            outcomes.append(
+            record_outcome(
                 _temporary_trading_failure_outcome(
                     listing_id=listing_id,
                     external_id=external_id,
@@ -637,7 +731,7 @@ def run_backfill(
             )
             stop_reason = usage_limit_reason
             break
-        outcomes.append(
+        record_outcome(
             _classify_trading_snapshot(
                 listing_id=listing_id,
                 external_id=external_id,
@@ -648,7 +742,8 @@ def run_backfill(
             )
         )
 
-    applied = _apply_outcomes(outcomes)
+    if pending_outcomes:
+        applied += _apply_outcomes(pending_outcomes)
     counts: dict[str, int] = {}
     for outcome in outcomes:
         key = f"{outcome.action}:{outcome.new_status}:{outcome.reason}"
@@ -672,6 +767,7 @@ def run_backfill(
         "remaining_backfill_budget": remaining_backfill_budget,
         "candidate_count": len(candidates),
         "candidate_limit_source": plan.get("candidate_limit_source"),
+        "selection": plan.get("selection"),
         "candidate_shortfall": max(effective_limit - len(candidates), 0),
         "candidate_shortfall_reason": plan.get("candidate_shortfall_reason"),
         "outcome_count": len(outcomes),
@@ -683,10 +779,24 @@ def run_backfill(
     }
 
 
+def _summary_for_cli(summary: dict[str, Any], *, include_outcomes: bool = False) -> dict[str, Any]:
+    """Keep terminal output readable for large backfill batches."""
+    if include_outcomes:
+        return summary
+    compact = dict(summary)
+    candidates = list(compact.pop("candidates", []) or [])
+    compact["sample_candidates"] = candidates[:20]
+    compact["sample_candidate_count"] = min(len(candidates), 20)
+    outcomes = list(compact.pop("outcomes", []) or [])
+    compact["sample_outcomes"] = outcomes[:20]
+    compact["sample_outcome_count"] = min(len(outcomes), 20)
+    return compact
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Apply a targeted unknown-listing final-price batch.")
+    parser = argparse.ArgumentParser(description="Apply a historic-listing final-price batch in table order.")
     parser.add_argument("--limit", type=int, default=DEFAULT_BACKFILL_BATCH_SIZE)
-    parser.add_argument("--daily-cap", type=int, default=5000)
+    parser.add_argument("--daily-cap", type=int, default=get_bucket_limit("trading"))
     parser.add_argument("--safety-reserve", type=int, default=500)
     parser.add_argument(
         "--daily-limit",
@@ -694,17 +804,22 @@ def main() -> None:
         dest="daily_limit",
         type=int,
         default=DEFAULT_DAILY_BACKFILL_BUDGET,
-        help="Maximum local unknown-listing final-price checks this worker may spend per day.",
+        help="Maximum local final-price checks this worker may spend per day.",
     )
     parser.add_argument(
         "--include-vehicle-sources",
         action="store_true",
-        help="Include vehicle/parts-heavy sources that the planner excludes by default.",
+        help="Compatibility option; the direct table-order queue already includes all sources.",
     )
     parser.add_argument(
         "--apply",
         action="store_true",
-        help="Spend Trading API calls and update unknown rows. Omit for dry-run.",
+        help="Spend Trading API calls and update eligible past-end rows. Omit for dry-run.",
+    )
+    parser.add_argument(
+        "--verbose-outcomes",
+        action="store_true",
+        help="Print every per-listing outcome in the final JSON. Default prints a compact summary.",
     )
     args = parser.parse_args()
 
@@ -737,7 +852,7 @@ def main() -> None:
     finally:
         _release_lock(lock_conn)
         lock_conn.close()
-    print(json.dumps(summary, indent=2, default=str))
+    print(json.dumps(_summary_for_cli(summary, include_outcomes=args.verbose_outcomes), indent=2, default=str))
 
 
 if __name__ == "__main__":

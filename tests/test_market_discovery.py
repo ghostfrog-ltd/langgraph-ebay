@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from pipelines.listing.market_discovery.graph import (
     _fetch_live_listing_comp_rows,
     build_potentials,
+    effective_min_comps_for_source,
     potential_from_row,
     useful_near_misses,
 )
@@ -51,6 +52,56 @@ class ListingPotentialTests(unittest.TestCase):
         self.assertEqual(potential.price_gap_to_max_buy, 77.8)
         self.assertIn("current £120.0 vs max buy £197.8", potential.signal)
 
+    def test_potential_from_row_uses_effective_visual_downgrade(self):
+        potential = potential_from_row(
+            {
+                "source": "ebay-apple",
+                "external_id": "v1|iphone|0",
+                "title": "Apple iPhone 12 64GB",
+                "url": "https://example.test/iphone",
+                "model_key": "apple-iphone-12-64gb",
+                "condition_grade": "B",
+                "text_condition_grade": "B",
+                "visual_condition_grade": "C",
+                "visual_condition_checked": True,
+                "visual_review_required": True,
+                "visual_damage_flags": ["chipped_corner"],
+                "visual_model_name": "minicpm-v:8b",
+                "visual_checked_at": "2026-08-26T20:00:00+00:00",
+                "price_current": 24.0,
+                "median_final_price": 89.0,
+                "samples": 20,
+            }
+        )
+
+        self.assertEqual(potential.condition_grade, "C")
+        self.assertEqual(potential.text_condition_grade, "B")
+        self.assertEqual(potential.visual_condition_grade, "C")
+        self.assertTrue(potential.visual_condition_checked)
+        self.assertEqual(potential.visual_damage_flags, ["chipped_corner"])
+
+    def test_potential_from_row_uses_effective_llm_text_downgrade(self):
+        potential = potential_from_row(
+            {
+                "source": "ebay-apple",
+                "external_id": "v1|iphone|1",
+                "title": "Apple iPhone 12 64GB fully working",
+                "url": "https://example.test/iphone-2",
+                "model_key": "apple-iphone-12-64gb",
+                "condition_grade": "B",
+                "text_condition_grade": "B",
+                "text_scan_grade": "D",
+                "visual_condition_grade": "B",
+                "price_current": 24.0,
+                "median_final_price": 89.0,
+                "samples": 20,
+            }
+        )
+
+        self.assertEqual(potential.condition_grade, "D")
+        self.assertEqual(potential.text_condition_grade, "B")
+        self.assertEqual(potential.text_scan_grade, "D")
+
     def test_default_candidate_query_only_uses_live_rows(self):
         cur = _QueryCursor()
 
@@ -58,8 +109,13 @@ class ListingPotentialTests(unittest.TestCase):
 
         self.assertIn("a.status = 'live'", cur.sql)
         self.assertNotIn("a.status = 'unknown'", cur.sql)
+        self.assertIn("COALESCE(a.last_seen_at, a.first_seen)", cur.sql)
+        self.assertEqual(cur.params, ["24"])
         self.assertIn("listing_review_actions", cur.sql)
         self.assertIn("review.action = 'down'", cur.sql)
+        self.assertIn("latest_listing_visual_conditions", cur.sql)
+        self.assertIn("latest_listing_text_conditions", cur.sql)
+        self.assertIn("grade.effective_condition_grade", cur.sql)
 
     def test_email_prefetch_can_include_future_unknown_rows_for_refresh(self):
         cur = _QueryCursor()
@@ -76,7 +132,7 @@ class ListingPotentialTests(unittest.TestCase):
         _fetch_live_listing_comp_rows(cur, source="ebay-pokemon")
 
         self.assertIn("AND a.source = %s", cur.sql)
-        self.assertEqual(cur.params, ["ebay-pokemon"])
+        self.assertEqual(cur.params, ["24", "ebay-pokemon"])
 
     def test_build_potentials_returns_rows_that_clear_thresholds(self):
         rows = [
@@ -349,6 +405,76 @@ class ListingPotentialTests(unittest.TestCase):
         self.assertEqual(potentials, [])
         self.assertEqual(closest, [])
         self.assertEqual(stats["below_min_comps"], 1)
+
+    def test_category_specific_comp_floor_allows_samsung_at_five(self):
+        potentials, _closest, stats = build_potentials(
+            [
+                {
+                    "source": "ebay-samsung",
+                    "external_id": "v1|fold|0",
+                    "title": "Samsung Galaxy Z Fold 7 512GB",
+                    "url": "https://example.test/fold",
+                    "model_key": "samsung-galaxy-z-fold7-512gb",
+                    "condition_grade": "B",
+                    "price_current": 100.0,
+                    "median_final_price": 800.0,
+                    "samples": 5,
+                }
+            ]
+        )
+
+        self.assertEqual(len(potentials), 1)
+        self.assertEqual(potentials[0].effective_min_comps, 5)
+        self.assertEqual(stats["below_min_comps"], 0)
+
+    def test_category_specific_comp_floor_keeps_lego_at_fifteen(self):
+        potentials, _closest, stats = build_potentials(
+            [
+                {
+                    "source": "ebay-lego",
+                    "external_id": "v1|lego|0",
+                    "title": "LEGO Set 75810 Complete",
+                    "url": "https://example.test/lego",
+                    "model_key": "lego-set-75810",
+                    "condition_grade": "B",
+                    "price_current": 100.0,
+                    "median_final_price": 800.0,
+                    "samples": 14,
+                }
+            ]
+        )
+
+        self.assertEqual(potentials, [])
+        self.assertEqual(stats["below_min_comps"], 1)
+
+    def test_explicit_min_comps_override_applies_globally(self):
+        potentials, _closest, _stats = build_potentials(
+            [
+                {
+                    "source": "ebay-lego",
+                    "external_id": "v1|lego|0",
+                    "title": "LEGO Set 75810 Complete",
+                    "url": "https://example.test/lego",
+                    "model_key": "lego-set-75810",
+                    "condition_grade": "B",
+                    "price_current": 100.0,
+                    "median_final_price": 800.0,
+                    "samples": 3,
+                }
+            ],
+            min_comps=3,
+        )
+
+        self.assertEqual(len(potentials), 1)
+        self.assertEqual(potentials[0].effective_min_comps, 3)
+
+    def test_effective_min_comps_for_source_uses_fallback_and_override(self):
+        self.assertEqual(effective_min_comps_for_source("ebay-apple"), 10)
+        self.assertEqual(effective_min_comps_for_source("ebay-samsung"), 5)
+        self.assertEqual(effective_min_comps_for_source("ebay-graphics-cards"), 5)
+        self.assertEqual(effective_min_comps_for_source("ebay-consoles"), 15)
+        self.assertEqual(effective_min_comps_for_source("unknown-source"), 15)
+        self.assertEqual(effective_min_comps_for_source("ebay-apple", override=3), 3)
 
     def test_useful_near_misses_zero_limit_means_all(self):
         rows = [

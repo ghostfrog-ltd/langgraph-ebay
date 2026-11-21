@@ -17,7 +17,7 @@ from typing import Any
 from psycopg2.extras import RealDictCursor
 
 from utils.db_schema import get_fresh_connection
-from utils.ebay_api_accounting import build_api_accounting
+from utils.ebay_api_accounting import build_api_accounting, get_bucket_limit
 
 DEFAULT_EXCLUDED_BACKFILL_SOURCES = (
     "ebay-honda-msx125",
@@ -199,18 +199,30 @@ def unknown_backfill_source_summary(cur) -> list[dict[str, Any]]:
         """
         WITH live_keys AS (
             SELECT
-                source,
-                model_key,
-                COALESCE(condition_grade, 'B') AS condition_grade,
+                a.source,
+                a.model_key,
+                grade.effective_condition_grade AS condition_grade,
                 COUNT(*)::int AS live_count
-            FROM auction_listings
-            WHERE status = 'live'
-              AND model_key IS NOT NULL
-              AND model_key <> ''
-              AND LOWER(model_key) <> 'unknown'
-              AND LOWER(model_key) NOT LIKE 'unknown%%'
-              AND LOWER(model_key) NOT LIKE '%%generic%%'
-            GROUP BY source, model_key, COALESCE(condition_grade, 'B')
+            FROM auction_listings AS a
+            LEFT JOIN latest_listing_visual_conditions AS vc
+              ON vc.listing_id = a.id
+            LEFT JOIN latest_listing_text_conditions AS tc
+              ON tc.listing_id = a.id
+            CROSS JOIN LATERAL (
+                SELECT CASE
+                    WHEN 'D' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'D'
+                    WHEN 'C' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'C'
+                    WHEN 'B' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'B'
+                    ELSE 'A'
+                END AS effective_condition_grade
+            ) AS grade
+            WHERE a.status = 'live'
+              AND a.model_key IS NOT NULL
+              AND a.model_key <> ''
+              AND LOWER(a.model_key) <> 'unknown'
+              AND LOWER(a.model_key) NOT LIKE 'unknown%%'
+              AND LOWER(a.model_key) NOT LIKE '%%generic%%'
+            GROUP BY a.source, a.model_key, grade.effective_condition_grade
         ),
         needed_keys AS (
             SELECT
@@ -229,18 +241,30 @@ def unknown_backfill_source_summary(cur) -> list[dict[str, Any]]:
             SELECT
                 l.source,
                 l.model_key,
-                COALESCE(l.condition_grade, 'B') AS condition_grade,
+                grade.effective_condition_grade AS condition_grade,
                 COUNT(*)::int AS unknown_count,
                 MAX(l.last_seen_at) AS newest_unknown
             FROM auction_listings l
+            LEFT JOIN latest_listing_visual_conditions AS vc
+              ON vc.listing_id = l.id
+            LEFT JOIN latest_listing_text_conditions AS tc
+              ON tc.listing_id = l.id
+            CROSS JOIN LATERAL (
+                SELECT CASE
+                    WHEN 'D' IN (UPPER(COALESCE(l.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'D'
+                    WHEN 'C' IN (UPPER(COALESCE(l.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'C'
+                    WHEN 'B' IN (UPPER(COALESCE(l.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'B'
+                    ELSE 'A'
+                END AS effective_condition_grade
+            ) AS grade
             JOIN needed_keys nk
               ON nk.source = l.source
              AND nk.model_key = l.model_key
-             AND nk.condition_grade = COALESCE(l.condition_grade, 'B')
+             AND nk.condition_grade = grade.effective_condition_grade
             WHERE l.status = 'unknown'
               AND COALESCE(l.finalized, FALSE) = FALSE
               AND l.end_time <= (now() AT TIME ZONE 'utc') - interval '1 day'
-            GROUP BY l.source, l.model_key, COALESCE(l.condition_grade, 'B')
+            GROUP BY l.source, l.model_key, grade.effective_condition_grade
         )
         SELECT
             nk.source,
@@ -287,9 +311,9 @@ def unknown_backfill_candidates(
     if limit <= 0:
         return []
 
-    # Final-price recovery is intentionally broader than the live buy list.
-    # Live candidates must pass strict investible-product guardrails; backfill
-    # should spend calls on known model-key rows so comps can become complete.
+    # Final-price recovery is broader than the live buy list. Rows that improve
+    # active comp coverage are ranked first, but spare API budget should still
+    # drain the general unknown backlog instead of returning an empty plan.
     return _fetch_unknown_backfill_candidate_page(
         cur,
         limit=limit,
@@ -310,18 +334,30 @@ def _fetch_unknown_backfill_candidate_page(
         """
         WITH live_keys AS (
             SELECT
-                source,
-                model_key,
-                COALESCE(condition_grade, 'B') AS condition_grade,
+                a.source,
+                a.model_key,
+                grade.effective_condition_grade AS condition_grade,
                 COUNT(*)::int AS live_count
-            FROM auction_listings
-            WHERE status = 'live'
-              AND model_key IS NOT NULL
-              AND model_key <> ''
-              AND LOWER(model_key) <> 'unknown'
-              AND LOWER(model_key) NOT LIKE 'unknown%%'
-              AND LOWER(model_key) NOT LIKE '%%generic%%'
-            GROUP BY source, model_key, COALESCE(condition_grade, 'B')
+            FROM auction_listings AS a
+            LEFT JOIN latest_listing_visual_conditions AS vc
+              ON vc.listing_id = a.id
+            LEFT JOIN latest_listing_text_conditions AS tc
+              ON tc.listing_id = a.id
+            CROSS JOIN LATERAL (
+                SELECT CASE
+                    WHEN 'D' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'D'
+                    WHEN 'C' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'C'
+                    WHEN 'B' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'B'
+                    ELSE 'A'
+                END AS effective_condition_grade
+            ) AS grade
+            WHERE a.status = 'live'
+              AND a.model_key IS NOT NULL
+              AND a.model_key <> ''
+              AND LOWER(a.model_key) <> 'unknown'
+              AND LOWER(a.model_key) NOT LIKE 'unknown%%'
+              AND LOWER(a.model_key) NOT LIKE '%%generic%%'
+            GROUP BY a.source, a.model_key, grade.effective_condition_grade
         ),
         needed_keys AS (
             SELECT
@@ -342,7 +378,7 @@ def _fetch_unknown_backfill_candidate_page(
                 l.external_id,
                 l.source,
                 l.model_key,
-                COALESCE(l.condition_grade, 'B') AS condition_grade,
+                grade.effective_condition_grade AS condition_grade,
                 COALESCE(nk.live_count, 0)::int AS live_count,
                 COALESCE(nk.comp_samples, c.samples, 0)::int AS comp_samples,
                 l.title,
@@ -356,45 +392,106 @@ def _fetch_unknown_backfill_candidate_page(
                 l.backfill_check_count,
                 l.backfill_last_reason,
                 CASE
-                    WHEN nk.model_key IS NOT NULL THEN 'known_key_live_demand_under_3_comps'
-                    WHEN l.source = ANY(%s) THEN 'known_key_high_value_source'
-                    WHEN l.end_time >= (now() AT TIME ZONE 'utc') - (%s)::interval THEN 'known_key_recent_ended'
-                    ELSE 'known_key_backlog'
+                    WHEN l.last_seen_at IS NOT NULL
+                     AND l.last_seen_at > l.end_time
+                        THEN 1
+                    ELSE 0
+                END AS stale_end_rank,
+                CASE
+                    WHEN COALESCE(l.bids_count, 0) > 0 THEN 0
+                    WHEN l.sale_type IN ('bin', 'both') THEN 1
+                    ELSE 2
+                END AS sale_likelihood_rank,
+                CASE
+                    WHEN nk.model_key IS NOT NULL
+                     AND NOT (l.source = ANY(%s))
+                        THEN 'known_key_live_demand_under_3_comps'
+                    WHEN l.source = ANY(%s)
+                     AND l.model_key IS NOT NULL
+                     AND l.model_key <> ''
+                     AND LOWER(l.model_key) <> 'unknown'
+                     AND LOWER(l.model_key) NOT LIKE 'unknown%%'
+                     AND LOWER(l.model_key) NOT LIKE '%%generic%%'
+                        THEN 'known_key_high_value_source'
+                    WHEN l.end_time >= (now() AT TIME ZONE 'utc') - (%s)::interval
+                     AND l.model_key IS NOT NULL
+                     AND l.model_key <> ''
+                     AND LOWER(l.model_key) <> 'unknown'
+                     AND LOWER(l.model_key) NOT LIKE 'unknown%%'
+                     AND LOWER(l.model_key) NOT LIKE '%%generic%%'
+                     AND NOT (l.source = ANY(%s))
+                        THEN 'known_key_recent_ended'
+                    WHEN l.model_key IS NOT NULL
+                     AND l.model_key <> ''
+                     AND LOWER(l.model_key) <> 'unknown'
+                     AND LOWER(l.model_key) NOT LIKE 'unknown%%'
+                     AND LOWER(l.model_key) NOT LIKE '%%generic%%'
+                     AND NOT (l.source = ANY(%s))
+                        THEN 'known_key_backlog'
+                    ELSE 'general_unknown_backlog'
                 END AS backfill_priority,
                 CASE
-                    WHEN nk.model_key IS NOT NULL THEN 1
-                    WHEN l.source = ANY(%s) THEN 2
-                    WHEN l.end_time >= (now() AT TIME ZONE 'utc') - (%s)::interval THEN 3
-                    ELSE 4
+                    WHEN nk.model_key IS NOT NULL
+                     AND NOT (l.source = ANY(%s))
+                        THEN 1
+                    WHEN l.source = ANY(%s)
+                     AND l.model_key IS NOT NULL
+                     AND l.model_key <> ''
+                     AND LOWER(l.model_key) <> 'unknown'
+                     AND LOWER(l.model_key) NOT LIKE 'unknown%%'
+                     AND LOWER(l.model_key) NOT LIKE '%%generic%%'
+                        THEN 2
+                    WHEN l.end_time >= (now() AT TIME ZONE 'utc') - (%s)::interval
+                     AND l.model_key IS NOT NULL
+                     AND l.model_key <> ''
+                     AND LOWER(l.model_key) <> 'unknown'
+                     AND LOWER(l.model_key) NOT LIKE 'unknown%%'
+                     AND LOWER(l.model_key) NOT LIKE '%%generic%%'
+                     AND NOT (l.source = ANY(%s))
+                        THEN 3
+                    WHEN l.model_key IS NOT NULL
+                     AND l.model_key <> ''
+                     AND LOWER(l.model_key) <> 'unknown'
+                     AND LOWER(l.model_key) NOT LIKE 'unknown%%'
+                     AND LOWER(l.model_key) NOT LIKE '%%generic%%'
+                     AND NOT (l.source = ANY(%s))
+                        THEN 4
+                    ELSE 5
                 END AS tier_rank
             FROM auction_listings l
+            LEFT JOIN latest_listing_visual_conditions AS vc
+              ON vc.listing_id = l.id
+            LEFT JOIN latest_listing_text_conditions AS tc
+              ON tc.listing_id = l.id
+            CROSS JOIN LATERAL (
+                SELECT CASE
+                    WHEN 'D' IN (UPPER(COALESCE(l.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'D'
+                    WHEN 'C' IN (UPPER(COALESCE(l.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'C'
+                    WHEN 'B' IN (UPPER(COALESCE(l.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'B'
+                    ELSE 'A'
+                END AS effective_condition_grade
+            ) AS grade
             LEFT JOIN needed_keys nk
               ON nk.source = l.source
              AND nk.model_key = l.model_key
-             AND nk.condition_grade = COALESCE(l.condition_grade, 'B')
+             AND nk.condition_grade = grade.effective_condition_grade
             LEFT JOIN latest_comps c
               ON c.model_key = l.model_key
-             AND c.condition_grade = COALESCE(l.condition_grade, 'B')
+             AND c.condition_grade = grade.effective_condition_grade
             WHERE l.status = 'unknown'
               AND COALESCE(l.finalized, FALSE) = FALSE
               AND l.end_time <= (now() AT TIME ZONE 'utc') - interval '1 day'
               AND l.external_id LIKE 'v1|%%|%%'
-              AND l.model_key IS NOT NULL
-              AND l.model_key <> ''
-              AND LOWER(l.model_key) <> 'unknown'
-              AND LOWER(l.model_key) NOT LIKE 'unknown%%'
-              AND LOWER(l.model_key) NOT LIKE '%%generic%%'
               AND (
                   l.backfill_checked_at IS NULL
                   OR l.backfill_checked_at <= now() - (%s)::interval
               )
-              AND NOT (l.source = ANY(%s))
         )
         SELECT
             id,
             external_id,
             source,
-            model_key,
+            COALESCE(NULLIF(model_key, ''), 'unknown') AS model_key,
             condition_grade,
             live_count,
             comp_samples,
@@ -410,9 +507,14 @@ def _fetch_unknown_backfill_candidate_page(
             last_seen_at,
             backfill_checked_at,
             backfill_check_count,
-            backfill_last_reason
+            backfill_last_reason,
+            stale_end_rank,
+            sale_likelihood_rank
         FROM eligible
         ORDER BY
+            stale_end_rank,
+            sale_likelihood_rank,
+            CASE WHEN backfill_checked_at IS NULL THEN 0 ELSE 1 END,
             tier_rank,
             CASE source
                 WHEN 'ebay-apple' THEN 0
@@ -434,7 +536,6 @@ def _fetch_unknown_backfill_candidate_page(
             CASE WHEN tier_rank = 1 THEN comp_samples ELSE NULL END ASC NULLS LAST,
             CASE WHEN tier_rank = 1 THEN live_count ELSE NULL END DESC NULLS LAST,
             CASE WHEN tier_rank = 2 THEN COALESCE(price_current, price_bid_current, 0) ELSE NULL END DESC NULLS LAST,
-            CASE WHEN COALESCE(bids_count, 0) > 0 THEN 0 ELSE 1 END,
             last_seen_at DESC NULLS LAST,
             end_time DESC NULLS LAST,
             backfill_checked_at ASC NULLS FIRST
@@ -442,12 +543,17 @@ def _fetch_unknown_backfill_candidate_page(
         OFFSET %s
         """,
         (
-            list(DEFAULT_BACKFILL_SOURCE_PRIORITY),
-            BACKFILL_RECENT_ENDED_WINDOW,
-            list(DEFAULT_BACKFILL_SOURCE_PRIORITY),
-            BACKFILL_RECENT_ENDED_WINDOW,
-            BACKFILL_RECHECK_COOLDOWN,
             list(excluded_sources),
+            list(DEFAULT_BACKFILL_SOURCE_PRIORITY),
+            BACKFILL_RECENT_ENDED_WINDOW,
+            list(excluded_sources),
+            list(excluded_sources),
+            list(excluded_sources),
+            list(DEFAULT_BACKFILL_SOURCE_PRIORITY),
+            BACKFILL_RECENT_ENDED_WINDOW,
+            list(excluded_sources),
+            list(excluded_sources),
+            BACKFILL_RECHECK_COOLDOWN,
             limit,
             offset,
         ),
@@ -508,13 +614,13 @@ def build_plan(
                 else None,
                 "recommended_unknown_candidate_preview": candidates,
                 "strategy": [
-                    "Do not backfill unknown model_key rows with API calls until model-key extraction is fixed.",
-                    "Priority 1: known model_key rows with live demand and fewer than 3 same-grade comps.",
-                    "Priority 2: known model_key rows from high-value sources we are likely to trade.",
-                    "Priority 3: known model_key rows that ended recently.",
-                    "Priority 4: unknown model_key rows only after model-key repair gives them a usable key.",
-                    "Priority 5: inaccessible/deleted Trading rows are deleted locally by apply; do not recheck them forever.",
-                    "Exclude vehicle/parts-heavy sources by default until model keys separate complete vehicles from parts.",
+                    "First: defer rows seen after their stored end time because their end date is probably stale.",
+                    "Second: check rows with bids, then fixed-price-capable rows, before no-bid auctions.",
+                    "Third: check never-tried rows before cooldown-eligible retries.",
+                    "Then: prioritize known model keys that improve live comp coverage and high-value sources.",
+                    "If API budget remains, drain the general unknown backlog.",
+                    "Priority 6: inaccessible/deleted Trading rows are deleted locally by apply; do not recheck them forever.",
+                    "Vehicle/parts-heavy sources are demoted by default until model keys separate complete vehicles from parts.",
                     "Do not wait for the full historical unknown backlog; backfill is an incremental enrichment loop for active opportunity decisions.",
                     "Start below the theoretical spare budget, then increase only after API usage and outcome quality are reviewed.",
                     "After each backfill batch, recompute comps and ROI before judging Buy Desk readiness.",
@@ -526,7 +632,7 @@ def build_plan(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Plan API-budgeted unknown listing final-price checks.")
-    parser.add_argument("--daily-cap", type=int, default=5000)
+    parser.add_argument("--daily-cap", type=int, default=get_bucket_limit("trading"))
     parser.add_argument("--safety-reserve", type=int, default=500)
     parser.add_argument("--max-backfill-per-day", type=int, default=1000)
     parser.add_argument("--candidate-detail-limit", type=int, default=50)

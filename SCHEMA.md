@@ -10,6 +10,9 @@ PostgreSQL is the live source of truth.
 - `sources`: configured collection sources.
 - `comps`: confirmed-final-price comp summaries by `model_key` and
   `condition_grade`.
+- `listing_text_conditions`: local LLM text-condition evidence for captured
+  listing text.
+- `listing_text_condition_queue`: local work queue for text-condition checks.
 - `listing_assessments`: optional structured assessment history.
 - `paper_trade_predictions`: candidate-validation snapshots and outcomes.
 - `alert_state`: email/Slack throttle state.
@@ -23,6 +26,7 @@ Useful read views include:
 - `listing_attribute_v`
 - `listing_score_v`
 - `listing_backfill_audit_v`
+- `latest_listing_text_conditions`
 
 ## Important Fields
 

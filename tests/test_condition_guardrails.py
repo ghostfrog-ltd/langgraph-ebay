@@ -2,12 +2,38 @@ import unittest
 
 from utils.condition import (
     _derive_condition_grade,
+    effective_condition_grade,
     has_investible_product_identity,
     looks_like_partial_or_accessory_listing,
 )
 
 
 class ConditionGuardrailTests(unittest.TestCase):
+    def test_effective_condition_grade_uses_worst_known_grade(self):
+        cases = [
+            ("B", "B", None, "B"),
+            ("B", "C", None, "C"),
+            ("A", "C", None, "C"),
+            ("C", "B", None, "C"),
+            ("B", "unknown", None, "B"),
+            ("B", None, None, "B"),
+            ("A", "D", None, "D"),
+            ("B", "B", "C", "C"),
+            ("C", "B", "B", "C"),
+            ("B", None, "D", "D"),
+        ]
+
+        for text_grade, visual_grade, text_scan_grade, expected in cases:
+            with self.subTest(
+                text_grade=text_grade,
+                visual_grade=visual_grade,
+                text_scan_grade=text_scan_grade,
+            ):
+                self.assertEqual(
+                    effective_condition_grade(text_grade, visual_grade, text_scan_grade),
+                    expected,
+                )
+
     def test_mini_number_plate_holder_is_vehicle_accessory(self):
         self.assertTrue(
             looks_like_partial_or_accessory_listing(
@@ -1024,6 +1050,33 @@ class ConditionGuardrailTests(unittest.TestCase):
         self.assertFalse(
             has_investible_product_identity(
                 "LEGO Castle Byers Exclusive Promo Set 75810",
+                source="ebay-lego",
+                model_key="lego-set-75810",
+            )
+        )
+
+    def test_lego_castle_byers_sub_build_is_not_investible_as_full_set(self):
+        self.assertFalse(
+            has_investible_product_identity(
+                "Lego Stranger Things - Upside Down Castle Byers Set 75810",
+                source="ebay-lego",
+                model_key="lego-set-75810",
+            )
+        )
+
+    def test_complete_lego_75810_set_is_still_investible(self):
+        self.assertTrue(
+            has_investible_product_identity(
+                "LEGO Stranger Things The Upside Down 75810 Complete Set",
+                source="ebay-lego",
+                model_key="lego-set-75810",
+            )
+        )
+
+    def test_lego_instructions_and_stickers_only_is_not_full_set(self):
+        self.assertFalse(
+            has_investible_product_identity(
+                "Lego Upside Down Instructions and Stickers ONLY Mint Condition",
                 source="ebay-lego",
                 model_key="lego-set-75810",
             )

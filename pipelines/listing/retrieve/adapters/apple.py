@@ -16,7 +16,7 @@ class Adapter(EbayAdapterBase):
         15032,   # iPods & MP3 players / some Apple audio
     ]
 
-    SALE_TYPE = ["auction"]
+    SALE_TYPE = ["bin", "auction"]
     SEARCH_QUERY = "apple"
     SEARCH_QUERIES = [
         "apple",

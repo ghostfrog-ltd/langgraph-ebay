@@ -56,7 +56,7 @@ class SlackReviewCommandTests(unittest.TestCase):
         self.assertIn("`ebay heartbeat`", menu)
         self.assertIn("`ebay serious`", menu)
         self.assertIn("`ebay explain 206446095377`", menu)
-        self.assertIn("`ebay backfill-apply --limit 4000 --daily-limit 10000`", menu)
+        self.assertIn("`ebay backfill --limit 4000 --daily-limit 10000`", menu)
         self.assertIn("`ebay favourites`", menu)
         self.assertIn("`up 206446095377`", menu)
         self.assertIn("Local console commands are intentionally omitted", menu)
@@ -108,35 +108,45 @@ class SlackReviewCommandTests(unittest.TestCase):
             ),
         )
 
-    def test_parse_operator_accepts_backfill_apply_limits(self):
+    def test_parse_operator_accepts_backfill_limits(self):
+        command = parse_slack_operator_command(
+            "ebay backfill --limit 4000 --daily-limit 10000"
+        )
+
+        self.assertEqual(
+            command,
+            SlackOperatorCommand(name="backfill", limit=4000, daily_limit=10000),
+        )
+
+    def test_parse_operator_accepts_backfill_apply_alias(self):
         command = parse_slack_operator_command(
             "ebay backfill-apply --limit 4000 --daily-limit 10000"
         )
 
         self.assertEqual(
             command,
-            SlackOperatorCommand(name="backfill-apply", limit=4000, daily_limit=10000),
+            SlackOperatorCommand(name="backfill", limit=4000, daily_limit=10000),
         )
 
-    def test_parse_operator_accepts_backfill_apply_equals_options(self):
+    def test_parse_operator_accepts_backfill_equals_options(self):
         command = parse_slack_operator_command(
-            "ebay backfill-apply --limit=4000 --daily-backfill-budget=10000 --include-vehicle-sources"
+            "ebay backfill --limit=4000 --daily-backfill-budget=10000 --include-vehicle-sources"
         )
 
         self.assertEqual(
             command,
             SlackOperatorCommand(
-                name="backfill-apply",
+                name="backfill",
                 limit=4000,
                 daily_limit=10000,
                 include_vehicle_sources=True,
             ),
         )
 
-    def test_parse_operator_reports_backfill_apply_option_errors(self):
-        command = parse_slack_operator_command("ebay backfill-apply --limit nope")
+    def test_parse_operator_reports_backfill_option_errors(self):
+        command = parse_slack_operator_command("ebay backfill --limit nope")
 
-        self.assertEqual(command.name, "backfill-apply")
+        self.assertEqual(command.name, "backfill")
         self.assertIn("--limit", command.error)
 
     def test_disabled_sync_does_not_call_slack(self):
@@ -387,12 +397,12 @@ class SlackReviewCommandTests(unittest.TestCase):
             post.call_args_list[0].kwargs["json"]["text"],
         )
 
-    def test_sync_dispatches_backfill_apply_and_saves_cursor_before_run(self):
+    def test_sync_dispatches_backfill_and_saves_cursor_before_run(self):
         history = Mock()
         history.json.return_value = {
             "ok": True,
             "messages": [
-                {"ts": "206.1", "text": "ebay backfill-apply --limit 4000 --daily-limit 10000"},
+                {"ts": "206.1", "text": "ebay backfill --limit 4000 --daily-limit 10000"},
             ],
         }
         reply = Mock()
@@ -427,7 +437,7 @@ class SlackReviewCommandTests(unittest.TestCase):
         self.assertEqual(result.processed, 1)
         self.assertEqual(result.replied, 1)
         run.assert_called_once_with(
-            SlackOperatorCommand(name="backfill-apply", limit=4000, daily_limit=10000),
+            SlackOperatorCommand(name="backfill", limit=4000, daily_limit=10000),
             channel_id="C123",
         )
         self.assertGreaterEqual(set_flag.call_count, 2)
@@ -437,11 +447,11 @@ class SlackReviewCommandTests(unittest.TestCase):
             {"last_ts": "206.1"},
         )
         self.assertIn(
-            "Running `ebay backfill-apply --limit 4000 --daily-limit 10000`",
+            "Running `ebay backfill --limit 4000 --daily-limit 10000`",
             post.call_args_list[0].kwargs["json"]["text"],
         )
 
-    def test_run_backfill_apply_posts_summary(self):
+    def test_run_backfill_posts_summary(self):
         conn = Mock()
         summary = {
             "status": "completed",
@@ -479,7 +489,7 @@ class SlackReviewCommandTests(unittest.TestCase):
                         ) as run:
                             ok = run_slack_operator_command(
                                 SlackOperatorCommand(
-                                    name="backfill-apply",
+                                    name="backfill",
                                     limit=4000,
                                     daily_limit=10000,
                                 ),

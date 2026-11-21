@@ -58,6 +58,8 @@ COMPS_BLOCKED_TEXT_PATTERNS: tuple[str, ...] = (
     "%box & inserts%",
     "%box and inserts%",
     "%manual only%",
+    "%instructions and stickers only%",
+    "%stickers only%",
     "%charger only%",
     "%battery only%",
     "%case only%",
@@ -93,6 +95,98 @@ COMPS_BLOCKED_TEXT_PATTERNS: tuple[str, ...] = (
     "%unit only%",
     "%no accessories%",
     "%macbook neo%",
+)
+
+CONSOLE_COMP_NON_HARDWARE_PATTERNS: tuple[str, ...] = (
+    "%code in a box%",
+    "%code-in-a-box%",
+    "%download code%",
+    "%digital code%",
+    "%game code%",
+    "%software only%",
+    "%console game%",
+    "%game only%",
+    "%game cartridge%",
+    "%game card%",
+    "%case game holder%",
+)
+
+CONSOLE_COMP_ACCESSORY_PATTERNS: tuple[str, ...] = (
+    "%wall charger%",
+    "%usb-c charger%",
+    "%usb c charger%",
+    "%charger cable%",
+    "%charging cable%",
+    "%charging lead%",
+    "%charging dock%",
+    "%usb-c cable%",
+    "%usb c cable%",
+    "%cable for%",
+    "%wireless controller%",
+    "%pro controller%",
+    "%controller for%",
+    "%gamepad for%",
+    "%carry case%",
+    "%carrying case%",
+    "%protective case%",
+    "%messenger bag%",
+    "%travel bag%",
+    "%hard case%",
+    "%case for%",
+    "%bag for%",
+    "%dock only%",
+    "%dock for%",
+    "%screen protector%",
+    "%sd card%",
+    "%memory card%",
+    "%stand for%",
+    "%grip for%",
+    "%replacement part%",
+    "%replacement shell%",
+    "%replacement case%",
+)
+
+CONSOLE_COMP_HARDWARE_TITLE_PATTERN = (
+    r"\m(console|system|handheld)\M|"
+    r"\m(disc|disk|digital|blu[- ]?ray)\s+edition\M|"
+    r"\mwith\s+controller\M|"
+    r"\mconsole\s+only\M|"
+    r"\moled\s+model\M|"
+    r"\m(128|256|500|512|825)\s?gb\M|"
+    r"\m(1|2)\s?tb\M"
+)
+
+CONSOLE_COMP_HARDWARE_BLOB_PATTERN = r"\m(with|including|incl\.?)\s+(a\s+)?(console|system)\M"
+
+CONSOLE_COMP_ACCESSORY_ATTR_PATTERN = (
+    r"\m(usb\s*-?\s*cable|cable|charger|charging\s+dock|controller|gamepad|case|bag|"
+    r"dock|screen\s+protector|sd\s+card|memory\s+card|stand|grip|replacement\s+part|"
+    r"game|software)\M"
+)
+
+CONSOLE_COMP_ACCESSORY_FOR_PATTERN = (
+    r"\m(charger|cable|controller|gamepad|case|bag|dock|stand|grip|game|software)\M"
+    r".{0,40}\m(for|compatible with)\M"
+)
+
+ELECTRONICS_DAMAGE_WORD_PATTERN = (
+    r"\m(damaged|damage|broken|cracked|crack|smashed|scratch|scratched|scrathed|"
+    r"scratches|dent|dented|chip|chipped)\M"
+)
+
+ELECTRONICS_DAMAGE_NEGATION_PATTERN = (
+    r"\m(no|not|without|free from)\s+(visible\s+|significant\s+|major\s+)?"
+    r"(damage|damaged|crack|cracked|scratch|scratched|scratches|broken|breaks)\M"
+)
+
+LEGO_WHOLE_SET_TEXT_PATTERNS: tuple[str, ...] = (
+    "%complete set%",
+    "%complete lego set%",
+    "%full set%",
+    "%sealed set%",
+    "%new sealed%",
+    "%new and sealed%",
+    "%brand new sealed%",
 )
 
 APPLE_MAC_ALLOWED_CPU_PATTERN = r"-(m[1-9](pro|max|ultra)?|intel|core-i[3579]|core-m[357])(-|_)"
@@ -194,49 +288,129 @@ def _compute_daily_comps(days: Optional[int] = None) -> None:
     sql = """
         INSERT INTO comps (model_key, condition_grade, median_final_price, mean_final_price, samples, computed_at)
         SELECT
-            model_key,
-            COALESCE(condition_grade, 'B') AS condition_grade,
-            PERCENTILE_CONT(0.5) WITHIN GROUP (
-                ORDER BY final_price
-            )::numeric AS median_final_price,
-            AVG(final_price)::numeric AS mean_final_price,
+            graded.model_key,
+            graded.effective_condition_grade AS condition_grade,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY graded.final_price)::numeric AS median_final_price,
+            AVG(graded.final_price)::numeric AS mean_final_price,
             COUNT(*)::int AS samples,
             (now() AT TIME ZONE 'utc') AS computed_at
-        FROM auction_listings
-        WHERE final_price IS NOT NULL
-          AND end_time >= (now() AT TIME ZONE 'utc' - (%s || ' days')::interval)
-          AND model_key IS NOT NULL
-          AND LOWER(model_key) <> 'unknown'
-          AND LOWER(model_key) NOT LIKE 'unknown%%'
-          AND LOWER(model_key) NOT LIKE '%%generic%%'
-          AND LOWER(model_key) NOT LIKE '%%gen-unk%%'
-          AND LOWER(model_key) !~ '_[a-d](-[a-d])?$'
+        FROM (
+            SELECT
+                a.*,
+                CASE
+                    WHEN 'D' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'D'
+                    WHEN 'C' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'C'
+                    WHEN 'B' IN (UPPER(COALESCE(a.condition_grade, 'B')), UPPER(COALESCE(tc.text_grade, '')), UPPER(COALESCE(vc.visual_grade, ''))) THEN 'B'
+                    ELSE 'A'
+                END AS effective_condition_grade
+            FROM auction_listings AS a
+            LEFT JOIN latest_listing_visual_conditions AS vc
+              ON vc.listing_id = a.id
+            LEFT JOIN latest_listing_text_conditions AS tc
+              ON tc.listing_id = a.id
+        ) AS graded
+        WHERE graded.final_price IS NOT NULL
+          AND graded.end_time >= (now() AT TIME ZONE 'utc' - (%s || ' days')::interval)
+          AND graded.model_key IS NOT NULL
+          AND LOWER(graded.model_key) <> 'unknown'
+          AND LOWER(graded.model_key) NOT LIKE 'unknown%%'
+          AND LOWER(graded.model_key) NOT LIKE '%%generic%%'
+          AND LOWER(graded.model_key) NOT LIKE '%%gen-unk%%'
+          AND LOWER(graded.model_key) !~ '_[a-d](-[a-d])?$'
           AND NOT (
-              LOWER(model_key) LIKE 'apple-iphone-%%'
-              AND LOWER(model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+)(-|_)'
+              LOWER(graded.model_key) LIKE 'apple-iphone-%%'
+              AND LOWER(graded.model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+)(-|_)'
           )
           AND NOT (
-              LOWER(model_key) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'
-              AND LOWER(model_key) !~ %s
+              LOWER(graded.model_key) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'
+              AND LOWER(graded.model_key) !~ %s
           )
           AND NOT (
-              LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) LIKE ANY(%s)
+              LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) LIKE ANY(%s)
               OR (
-                  source = 'ebay-apple'
-                  AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) LIKE '%%macbook%%'
-                  AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) ~ '\\ma[0-9]{1,2}\\s*(pro|max|ultra)?\\M'
+                  graded.source = 'ebay-apple'
+                  AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) LIKE '%%macbook%%'
+                  AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ '\\ma[0-9]{1,2}\\s*(pro|max|ultra)?\\M'
               )
               OR (
-                  source = 'ebay-apple'
-                  AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) ~ '\\mlocked\\M'
+                  graded.source = 'ebay-apple'
+                  AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ '\\mlocked\\M'
+              )
+              OR (
+                  graded.source = 'ebay-consoles'
+                  AND (
+                      LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) LIKE ANY(%s)
+                      OR (
+                          LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) LIKE ANY(%s)
+                          AND NOT (
+                              LOWER(COALESCE(graded.title, '')) ~ %s
+                              OR LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ %s
+                          )
+                      )
+                      OR (
+                          LOWER(COALESCE(graded.raw_attrs::text, '')) ~ %s
+                          AND NOT (
+                              LOWER(COALESCE(graded.title, '')) ~ %s
+                              OR LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ %s
+                          )
+                      )
+                      OR (
+                          LOWER(COALESCE(graded.title, '')) ~ %s
+                          AND NOT (
+                              LOWER(COALESCE(graded.title, '')) ~ %s
+                              OR LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ %s
+                          )
+                      )
+                  )
+              )
+              OR (
+                  graded.source IN (
+                      'ebay-apple',
+                      'ebay-samsung',
+                      'ebay-consoles',
+                      'ebay-actioncams',
+                      'ebay-graphics-cards'
+                  )
+                  AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ %s
+                  AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) !~ %s
+              )
+              OR (
+                  graded.source = 'ebay-lego'
+                  AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) LIKE '%%castle byers%%'
+                  AND LOWER(COALESCE(graded.title, '')) NOT LIKE ALL(%s)
               )
           )
-        GROUP BY model_key, COALESCE(condition_grade, 'B')
+        GROUP BY graded.model_key, graded.effective_condition_grade
+        ON CONFLICT (model_key, condition_grade) DO UPDATE SET
+            median_final_price = EXCLUDED.median_final_price,
+            mean_final_price = EXCLUDED.mean_final_price,
+            samples = EXCLUDED.samples,
+            computed_at = EXCLUDED.computed_at
     """
 
     with connection, connection.cursor() as cur:
         _ensure_utc_session(cur)
-        cur.execute(sql, (str(days), APPLE_MAC_ALLOWED_CPU_PATTERN, list(COMPS_BLOCKED_TEXT_PATTERNS)))
+        cur.execute(
+            sql,
+            (
+                str(days),
+                APPLE_MAC_ALLOWED_CPU_PATTERN,
+                list(COMPS_BLOCKED_TEXT_PATTERNS),
+                list(CONSOLE_COMP_NON_HARDWARE_PATTERNS),
+                list(CONSOLE_COMP_ACCESSORY_PATTERNS),
+                CONSOLE_COMP_HARDWARE_TITLE_PATTERN,
+                CONSOLE_COMP_HARDWARE_BLOB_PATTERN,
+                CONSOLE_COMP_ACCESSORY_ATTR_PATTERN,
+                CONSOLE_COMP_HARDWARE_TITLE_PATTERN,
+                CONSOLE_COMP_HARDWARE_BLOB_PATTERN,
+                CONSOLE_COMP_ACCESSORY_FOR_PATTERN,
+                CONSOLE_COMP_HARDWARE_TITLE_PATTERN,
+                CONSOLE_COMP_HARDWARE_BLOB_PATTERN,
+                ELECTRONICS_DAMAGE_WORD_PATTERN,
+                ELECTRONICS_DAMAGE_NEGATION_PATTERN,
+                list(LEGO_WHOLE_SET_TEXT_PATTERNS),
+            ),
+        )
 
     # Debug: how many comps did we just insert?
     with connection.cursor() as cur:

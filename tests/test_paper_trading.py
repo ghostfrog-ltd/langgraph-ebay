@@ -1,10 +1,13 @@
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from pipelines.listing.paper_trading.graph import (
     classify_paper_trade_lesson,
     classify_observed_outcome,
     classify_trading_resolution,
+    resolve_overdue_outcomes,
+    run,
     snapshot_from_opportunity,
 )
 from pipelines.listing.roi.graph import Opportunity
@@ -12,6 +15,33 @@ from pipelines.listing.roi.graph import Opportunity
 
 class PaperTradingTests(unittest.TestCase):
     """Pure logic tests for review-only paper-trading predictions."""
+
+    def test_disabled_run_does_not_snapshot_update_or_resolve(self):
+        with patch("pipelines.listing.paper_trading.graph.PAPER_TRADING_ENABLED", False):
+            with patch("pipelines.listing.paper_trading.graph.collect_current_snapshots") as collect:
+                with patch("pipelines.listing.paper_trading.graph.persist_snapshots") as persist:
+                    with patch("pipelines.listing.paper_trading.graph.update_observations") as update:
+                        with patch("pipelines.listing.paper_trading.graph.resolve_overdue_outcomes") as resolve:
+                            result = run()
+
+        self.assertEqual(result["status"], "disabled")
+        self.assertEqual(result["reason"], "paper_trading_disabled")
+        self.assertEqual(result["snapshots"], 0)
+        self.assertEqual(result["outcome_resolution"]["status"], "disabled")
+        collect.assert_not_called()
+        persist.assert_not_called()
+        update.assert_not_called()
+        resolve.assert_not_called()
+
+    def test_disabled_outcome_resolver_does_not_load_candidates(self):
+        with patch("pipelines.listing.paper_trading.graph.PAPER_TRADING_ENABLED", False):
+            with patch("pipelines.listing.paper_trading.graph._load_overdue_outcome_candidates") as load:
+                result = resolve_overdue_outcomes(limit=5)
+
+        self.assertEqual(result["status"], "disabled")
+        self.assertEqual(result["reason"], "paper_trading_disabled")
+        self.assertEqual(result["checked"], 0)
+        load.assert_not_called()
 
     def test_snapshot_records_review_only_prediction_fields(self):
         opportunity = Opportunity(

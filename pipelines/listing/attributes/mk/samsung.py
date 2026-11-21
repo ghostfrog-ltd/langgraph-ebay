@@ -87,23 +87,35 @@ def _capacity_token(amount: str, unit: str) -> str:
     return f"{number}gb"
 
 
-def _storage(attrs: Mapping[str, Any], title: str) -> str:
-    storage_text = " ".join(
-        _text(attrs.get(key))
-        for key in ("Storage Capacity", "Size", "Memory Card Type", "Capacity", "Model")
-        if attrs.get(key)
-    )
-    blob = f"{title.lower()} {storage_text}"
+def _storage_candidates(text: str) -> list[str]:
     candidates: list[str] = []
-    for match in re.finditer(r"\b(32|64|128|256|512|1000|1024|1)\s*(gb|tb)\b", blob):
-        before = blob[max(0, match.start() - 18) : match.start()]
-        after = blob[match.end() : match.end() + 18]
+    for match in re.finditer(r"\b(32|64|128|256|512|1000|1024|1)\s*(gb|tb)\b", text):
+        before = text[max(0, match.start() - 18) : match.start()]
+        after = text[match.end() : match.end() + 18]
         if re.search(r"(ram|memory)\s*$", before) or re.search(r"^\s*(ram|memory)", after):
             continue
         token = _capacity_token(match.group(1), match.group(2))
         if token not in candidates:
             candidates.append(token)
-    return candidates[-1] if candidates else ""
+    return candidates
+
+
+def _single_storage(candidates: list[str]) -> str:
+    return candidates[0] if len(candidates) == 1 else ""
+
+
+def _storage(attrs: Mapping[str, Any], title: str) -> str:
+    title_storage = _single_storage(_storage_candidates(title.lower()))
+    storage_text = " ".join(
+        _text(attrs.get(key))
+        for key in ("Storage Capacity", "Size", "Memory Card Type", "Capacity", "Model")
+        if attrs.get(key)
+    )
+    attr_storage = _single_storage(_storage_candidates(storage_text))
+
+    if title_storage and attr_storage and title_storage != attr_storage:
+        return ""
+    return title_storage or attr_storage
 
 
 def _has_5g(attrs: Mapping[str, Any], title: str) -> bool:

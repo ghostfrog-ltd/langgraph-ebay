@@ -9,7 +9,7 @@ class Adapter(EbayAdapterBase):
     DOMAIN = "motomine"
     FETCH_MODE = "seller"
     SELLER_USERNAME = "motomine"
-    SALE_TYPE = "auction"
+    SALE_TYPE = ["bin", "auction"]
     SEARCH_QUERY = "spares repair"
     MAX_PAGES = 4
     MAX_LISTINGS = 250

@@ -106,8 +106,10 @@ def _is_partial_or_accessory(text: str) -> bool:
             "build only",
             "builds only",
             "instructions only",
+            "instructions and stickers only",
             "instruction book only",
             "manual only",
+            "stickers only",
             "box only",
             "empty box",
             "custom",
@@ -118,6 +120,24 @@ def _is_partial_or_accessory(text: str) -> bool:
             "minifigure only",
             "minifig only",
         )
+    )
+
+
+def _is_sub_build_without_whole_set_signal(text: str) -> bool:
+    sub_build_terms = (
+        "castle byers",
+    )
+    whole_set_terms = (
+        "complete set",
+        "complete lego set",
+        "full set",
+        "sealed set",
+        "new sealed",
+        "new and sealed",
+        "brand new sealed",
+    )
+    return any(term in text for term in sub_build_terms) and not any(
+        term in text for term in whole_set_terms
     )
 
 
@@ -214,7 +234,12 @@ def lego_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
     safe_attrs = attrs or {}
     text = _blob(safe_attrs, title)
 
-    if _is_not_real_lego(text) or _is_bulk_or_joblot(text) or _is_partial_or_accessory(text):
+    if (
+        _is_not_real_lego(text)
+        or _is_bulk_or_joblot(text)
+        or _is_partial_or_accessory(text)
+        or _is_sub_build_without_whole_set_signal(_clean(title))
+    ):
         return UNKNOWN_KEY
 
     if _is_minifigure_listing(safe_attrs, title):
