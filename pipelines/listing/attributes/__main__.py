@@ -50,6 +50,15 @@ def _parse_ids_flag(name: str = "--ids") -> list[str]:
 
 
 def main() -> None:
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("Usage: python -m pipelines.listing.attributes [--apple] [--limit N] [--no-api]\n"
+              "  --apple, -apple  Enrich unkeyed Apple listings without an enrichment status, live first\n"
+              "  --limit N        Maximum listings in a batch (default 20)\n"
+              "  --ids ID[,ID]    Enrich specific eBay items; use --force to recheck them\n"
+              "  --no-api         Disable eBay requests\n"
+              "  --diagram        Save a diagram of the enrichment graph")
+        return
+
     _load_env()
 
     started = datetime.now(timezone.utc).isoformat()
@@ -71,12 +80,15 @@ def main() -> None:
     enable_api = "--no-api" not in sys.argv
     force = "--force" in sys.argv
     item_ids = _parse_ids_flag()
+    apple_only = "--apple" in sys.argv or "-apple" in sys.argv
+    if apple_only and ("--ids" in sys.argv or force or limit < 1):
+        raise SystemExit("--apple requires a positive --limit and selects its own item IDs.")
 
     if item_ids:
         result = run_for_ids(item_ids, enable_api=enable_api, force=force)
         print(json.dumps(result, indent=2, default=str))
     else:
-        run(limit=limit, enable_api=enable_api)
+        run(limit=limit, enable_api=enable_api, apple_only=apple_only)
 
     finished = datetime.now(timezone.utc).isoformat()
     logger.info(f"[listing.attributes] CLI end {finished}")

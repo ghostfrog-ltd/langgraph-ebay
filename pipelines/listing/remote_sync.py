@@ -24,7 +24,7 @@ from pipelines.listing.comps.graph import (
 from pipelines.listing.explain import ListingExplanation, build_listing_explanation
 from pipelines.listing.market_discovery.graph import run as run_potentials
 from pipelines.listing.market_discovery.graph import potential_from_row
-from utils.condition import has_investible_product_identity
+from utils.condition import APPLE_IPHONE_KEY_PATTERN, APPLE_MACBOOK_NEO_KEY_PATTERN, has_investible_product_identity
 from utils.db_schema import ensure_utc_session, get_fresh_connection
 
 
@@ -598,6 +598,7 @@ def fetch_comp_evidence(
                   AND LOWER(COALESCE(a.title, '') || ' ' || COALESCE(a.raw_attrs::text, '')) NOT LIKE ALL(%s)
                   AND NOT (
                       a.source = 'ebay-apple'
+                      AND LOWER(a.model_key) !~ %s
                       AND LOWER(COALESCE(a.title, '') || ' ' || COALESCE(a.raw_attrs::text, '')) LIKE '%%macbook%%'
                       AND LOWER(COALESCE(a.title, '') || ' ' || COALESCE(a.raw_attrs::text, '')) ~ '\\ma[0-9]{{1,2}}\\s*(pro|max|ultra)?\\M'
                   )
@@ -607,7 +608,7 @@ def fetch_comp_evidence(
                   )
                   AND NOT (
                       LOWER(a.model_key) LIKE 'apple-iphone-%%'
-                      AND LOWER(a.model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+)(-|_)'
+                      AND LOWER(a.model_key) !~ %s
                   )
                   AND NOT (
                       LOWER(a.model_key) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'
@@ -618,6 +619,8 @@ def fetch_comp_evidence(
                 (
                     str(_get_window_days()),
                     list(COMPS_BLOCKED_TEXT_PATTERNS),
+                    APPLE_MACBOOK_NEO_KEY_PATTERN,
+                    APPLE_IPHONE_KEY_PATTERN,
                     APPLE_MAC_ALLOWED_CPU_PATTERN,
                 ),
             )

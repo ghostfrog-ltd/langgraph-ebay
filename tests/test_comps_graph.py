@@ -25,6 +25,7 @@ from pipelines.listing.retrieve.adapters.ebay_base import (
     _search_sort_for_sale_type,
     bulk_upsert_auction_listings,
 )
+from utils.condition import APPLE_IPHONE_KEY_PATTERN, APPLE_MACBOOK_NEO_KEY_PATTERN
 
 
 class _FakeCursor:
@@ -145,6 +146,7 @@ class CompsGraphTests(unittest.TestCase):
             "apple-macbook-air-a2179-133in-core-i5-16gb-1tb",
             "apple-macbook-a1534-12in-core-m3-8gb-256gb",
             "apple-macbook-pro-a2442-14in-m1pro-16gb-1tb",
+            "apple-macbook-neo-a3404-13in-a18pro-8gb-512gb",
         ]
 
         for key in valid_keys:
@@ -155,6 +157,7 @@ class CompsGraphTests(unittest.TestCase):
         invalid_keys = [
             "apple-macbook-pro-16gb-512gb",
             "apple-macbook-air-13in-8gb-256gb",
+            "apple-macbook-neo-a3404-13in-a18pro-16gb-512gb",
         ]
 
         pattern = re.compile(APPLE_MAC_ALLOWED_CPU_PATTERN)
@@ -176,7 +179,11 @@ class CompsGraphTests(unittest.TestCase):
         self.assertIn("tc.text_grade", sql)
         self.assertIn("raw_attrs::text", sql)
         self.assertIn("\\mlocked\\M", sql)
-        patterns = params[2]
+        self.assertEqual(params[1], APPLE_IPHONE_KEY_PATTERN)
+        self.assertRegex('apple-iphone-duo-256gb', params[1])
+        self.assertEqual(params[4], APPLE_MACBOOK_NEO_KEY_PATTERN)
+        patterns = params[3]
+        self.assertNotIn('%macbook neo%', patterns)
         self.assertIn("%selling for scraps%", patterns)
         self.assertIn("%logic board missing%", patterns)
         self.assertIn("%screen is damaged%", patterns)
@@ -188,11 +195,11 @@ class CompsGraphTests(unittest.TestCase):
         self.assertIn("source = 'ebay-consoles'", sql)
         self.assertIn("source IN", sql)
         self.assertIn("!~", sql)
-        console_non_hardware_patterns = params[3]
-        console_accessory_patterns = params[4]
-        damage_pattern = params[13]
-        damage_negation_pattern = params[14]
-        lego_whole_set_patterns = params[15]
+        console_non_hardware_patterns = params[5]
+        console_accessory_patterns = params[6]
+        damage_pattern = params[15]
+        damage_negation_pattern = params[16]
+        lego_whole_set_patterns = params[17]
         self.assertIn("%console game%", console_non_hardware_patterns)
         self.assertIn("%case game holder%", console_non_hardware_patterns)
         self.assertIn("%carry case%", console_accessory_patterns)
@@ -225,7 +232,7 @@ class CompsGraphTests(unittest.TestCase):
         sql, params = next(
             call for call in fake_conn.cursor_obj.calls if "INSERT INTO comps" in call[0]
         )
-        console_accessory_patterns = params[4]
+        console_accessory_patterns = params[6]
 
         self.assertIn("%controller for%", console_accessory_patterns)
         self.assertIn("CONSOLE", sql.upper())
@@ -241,8 +248,8 @@ class CompsGraphTests(unittest.TestCase):
         sql, params = next(
             call for call in fake_conn.cursor_obj.calls if "INSERT INTO comps" in call[0]
         )
-        damage_pattern = params[13]
-        damage_negation_pattern = params[14]
+        damage_pattern = params[15]
+        damage_negation_pattern = params[16]
 
         self.assertIn("damaged", damage_pattern)
         self.assertIn("damage", damage_pattern)

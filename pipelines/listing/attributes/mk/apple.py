@@ -2,7 +2,9 @@ from __future__ import annotations
 from typing import Mapping, Any, Optional
 import re
 
-from .apple_catalog import MACBOOK_AIRS, MACBOOK_PROS, MACBOOK_PRO_GPU_CORES
+from .apple_catalog import (
+    MACBOOK_AIRS, MACBOOK_M5_PRO_CONFIGS, MACBOOK_M5_PRO_PARTS, MACBOOK_PROS, MACBOOK_PRO_GPU_CORES,
+)
 from .apple_devices import (
     airpods_key, airtag_key, desktop_key, evidence, gpu_cores, ipad_key, iphone_key, matches,
     model_numbers, screen_sizes, watch_key,
@@ -280,38 +282,105 @@ def _contains_junk_apple_listing(blob: str) -> bool:
 
 
 def _mac_line(text: str) -> str:
-    match = re.search(r'\b(macbook(?:[ -]+(?:air|pro))?|imac(?:[ -]+pro)?|mac[ -]*(?:mini|studio|pro))\b', text)
+    match = re.search(r'\b(macbook(?:[ -]+(?:air|pro|neo))?|imac(?:[ -]+pro)?|mac[ -]*(?:mini|studio|pro))\b', text)
     if not match:
         return ''
     return re.sub(r'^mac(?=mini|studio|pro)', 'mac-', match[1].replace(' ', '-'))
 
 
+def _macbook_neo_key(attrs, title, chip, ram, storage, chassis_ids, sizes, gpu):
+    parts = r'\b(?:replacement (?:keyboard|battery)|(?:screen|keyboard|battery) for)\b'
+    if any(re.search(parts, value) for value in evidence(attrs, title, 'Type', 'Model')):
+        return 'unknown'
+    processor = evidence(attrs, title, 'Processor', 'CPU', 'Processor Model', 'Chipset Model')
+    cores = matches(r'\b(\d{1,2})[ -]*c(?:ores?)?[ -]*cpu\b', processor)
+    a_series = {re.sub(r'[ -]', '', value) for value in matches(r'\b(a\d{2}(?:[ -]*pro)?)\b', processor)}
+    if (chip or a_series - {'a18pro'} or cores - {'6'} or chassis_ids - {'a3404'}
+            or sizes - {'13in'} or gpu - {5} or ram != '8gb' or storage not in {'256gb', '512gb'}):
+        return 'unknown'
+
+    touch_id = r'\btouch[ -]*id\b'
+    without_touch_id = r'\b(?:no|without|non)[ -]+touch[ -]*id\b'
+    texts = evidence(attrs, title, 'Model', 'Features')
+    if storage == '512gb' and any(re.search(without_touch_id, text) for text in texts):
+        return 'unknown'
+    if storage == '256gb' and any(re.search(touch_id, re.sub(without_touch_id, '', text)) for text in texts):
+        return 'unknown'
+    return f'apple-macbook-neo-a3404-13in-a18pro-8gb-{storage}'
+
+
+def _macbook_m5_pro_key(attrs, title, chip, ram, storage, chassis_ids, sizes, gpu, parts):
+    display = evidence(attrs, title, 'Display', 'Display Type', 'Screen Size', 'Model')
+    panels = set()
+    if any(re.search(r'\b(?:proled|oled)\b', value) for value in display):
+        panels.add('proled')
+    if any(re.search(r'\b(?:liquid retina xdr|mini[ -]?led)\b', value) for value in display):
+        panels.add('liquid')
+    cores = matches(r'\b(\d{1,2})[ -]*c(?:ores?)?[ -]*cpu\b', evidence(attrs, title, 'Processor', 'CPU'))
+    candidates = []
+    for chassis, size, cpu, panel, gpu_count, memory, capacities in MACBOOK_M5_PRO_CONFIGS:
+        rounded = f'{size[:2]}in'
+        cpu_count = '10' if cpu == 'm5' else '15' if gpu_count == 16 else '18'
+        if ((chip and chip != cpu) or chassis_ids - {chassis} or any(chassis not in ids for ids in parts)
+                or sizes - {size, rounded} or panels - {panel} or gpu - {gpu_count} or cores - {cpu_count}
+                or ram not in memory.split() or storage not in capacities.split()):
+            continue
+        variant = '' if cpu == 'm5' else f'-{gpu_count}gpu'
+        candidates.append(f'apple-macbook-pro-{chassis}-{size}-{cpu}{variant}-{ram}-{storage}')
+    return candidates[0] if len(candidates) == 1 else 'unknown'
+
+
 def _macbook_key(attrs, title, line, chip, ram, storage):
-    model_text = evidence(attrs, title, 'MPN', 'Model', 'Processor Model')
+    model_text = evidence(attrs, title, 'MPN', 'Model', 'Processor Model', 'Model Number', 'Type')
     chassis_ids = model_numbers(model_text)
     gpu = gpu_cores(attrs, title)
     if len(gpu) > 1:
         return 'unknown'
     screens = evidence(attrs, title, 'Screen Size', 'Display')
     screens.extend(f'{value}in' for value in evidence(attrs, '', 'Screen Size') if re.fullmatch(r'\d{2}(\.\d)?', value))
+    shorthand = matches(r'\bmacbook(?:[ -]+(?:air|pro|neo))?[ -]+(1[3-6](?:\.[236])?)\b(?![.\d]|\s*(?:gb|tb)\b)',
+                        evidence({}, title))
+    screens.extend(f'{value}in' for value in shorthand)
     sizes = screen_sizes(screens)
     if len(chassis_ids) > 1 or not (ram and storage) or storage in {'1gb', ram}:
         return 'unknown'
 
+    if line == 'macbook-neo' or 'a3404' in chassis_ids:
+        if line not in {'macbook', 'macbook-neo'}:
+            return 'unknown'
+        return _macbook_neo_key(attrs, title, chip, ram, storage, chassis_ids, sizes, gpu)
+
     air_ids = {row[0] for row in MACBOOK_AIRS}
-    if chassis_ids & air_ids or (line == 'macbook-air' and chip in {'m1', 'm2', 'm3', 'm4'}):
+    air_chips = {row[1] for row in MACBOOK_AIRS}
+    if chassis_ids & air_ids or (line == 'macbook-air' and chip in air_chips):
         if line not in {'macbook-air', 'macbook'}:
             return 'unknown'
         candidates = []
         for chassis, cpu, size, aliases, memory in MACBOOK_AIRS:
+            capacities = {'256gb', '512gb', '1tb', '2tb'} if cpu != 'm5' else {'512gb', '1tb', '2tb', '4tb'}
             if (chassis_ids <= {chassis} and (chip == cpu or (not chip and chassis_ids == {chassis}))
                     and sizes <= set(aliases.split()) and ram in memory.split()
-                    and storage in {'256gb', '512gb', '1tb', '2tb'}):
-                valid_gpu = {'m1': {7, 8}, 'm4': {8, 10}}.get(cpu, {8, 10})
+                    and storage in capacities):
+                valid_gpu = {7, 8} if cpu == 'm1' else {8, 10}
+                if cpu == 'm5' and size == '153in':
+                    valid_gpu = {10}
                 if gpu <= valid_gpu:
+                    if cpu == 'm5' and len(valid_gpu) > 1 and not gpu:
+                        continue
                     variant = f'-{next(iter(gpu))}gpu' if gpu else ''
+                    if cpu == 'm5' and len(valid_gpu) == 1:
+                        variant = ''
                     candidates.append(f'apple-macbook-air-{chassis}-{size}-{cpu}{variant}-{ram}-{storage}')
         return candidates[0] if len(candidates) == 1 else 'unknown'
+
+    m5_ids = {row[0] for row in MACBOOK_M5_PRO_CONFIGS}
+    parts = [chassis for stems, chassis in MACBOOK_M5_PRO_PARTS.items()
+             if matches(rf'\b({"|".join(stems.split())})(?:[a-z]{{1,3}}(?:/a)?)?\b', model_text)]
+    if chassis_ids & m5_ids or parts or chip in {'m5', 'm5pro', 'm5max'}:
+        models = {_mac_line(text) for text in evidence(attrs, '', 'Product Line', 'Series', 'Model', 'Type')}
+        if line not in {'macbook-pro', 'macbook'} or models - {'', 'macbook-pro', 'macbook'}:
+            return 'unknown'
+        return _macbook_m5_pro_key(attrs, title, chip, ram, storage, chassis_ids, sizes, gpu, parts)
 
     pro_ids = {chassis for codes, *_ in MACBOOK_PROS for chassis in codes.split()}
     pro_chips = {cpu for _, cpu, *_ in MACBOOK_PROS}
@@ -346,15 +415,19 @@ def _macbook_key(attrs, title, line, chip, ram, storage):
     ) if part)
 
 
-def _mac_memory(attrs, title):
-    explicit = matches(r'\b(\d{1,3})\s*gb\s*(?:ram(?=\b|\d)|unified\s+memory\b)', evidence({}, title))
-    explicit |= matches(r'\b(\d{1,3})\s*gb\b', evidence(attrs, '', 'RAM Size', 'Memory', 'RAM'))
-    # Some eBay listings copy the SSD capacity into the RAM item specific.
+def _mac_memory(attrs, title, *, is_macbook):
+    structured = matches(r'\b(\d{1,4})\s*gb\b', evidence(attrs, '', 'RAM Size', 'Memory', 'RAM'))
+    # A disk-sized value in a laptop RAM item specific is contradictory evidence.
+    if is_macbook and any(int(amount) > 128 for amount in structured):
+        return ''
+    explicit = structured | matches(
+        r'\b(\d{1,3})\s*gb\s*(?:ram(?=\b|\d)|unified\s+memory\b)', evidence({}, title)
+    )
     # Desktop configurations may legitimately have 256 GB and more.
     plausible = {f'{amount}gb' for amount in explicit if int(amount) in {
         4, 6, 8, 12, 16, 18, 24, 32, 36, 48, 64, 96, 128, 192, 256, 512, 768,
     }}
-    if _mac_line(title.lower()).startswith('macbook'):
+    if is_macbook:
         plausible = {value for value in plausible if int(value[:-2]) <= 128}
     if plausible:
         return next(iter(plausible)) if len(plausible) == 1 else ''
@@ -424,7 +497,7 @@ def apple_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
     def family(text):
         match = re.search(
             r'\b(airpods?|iphone|ipad|(?:apple\s+)?watch|air[ -]?tags?|apple[ -]+tv|homepod|ipod|'
-            r'macbook(?:[ -]+(?:air|pro))?|imac(?:[ -]+pro)?|mac[ -]*(?:mini|studio|pro))\b',
+            r'macbook(?:[ -]+(?:air|pro|neo))?|imac(?:[ -]+pro)?|mac[ -]*(?:mini|studio|pro))\b',
             text,
         )
         if match:
@@ -463,12 +536,14 @@ def apple_model_key(attrs: Mapping[str, Any], title: str = "") -> Optional[str]:
             return 'unknown'
         chips = {
             chip for value in evidence(attrs, title_text, 'Chipset Model', 'Processor', 'CPU', 'Processor Model')
-            if (chip := _chip_from_text(value)) and chip != 'intel'
+            if (chip := _chip_from_text(value))
         }
+        if chips & {'core-i3', 'core-i5', 'core-i7', 'core-i9', 'core-m3'}:
+            chips.discard('intel')
         if len(chips) > 1:
             return 'unknown'
         chip = next(iter(chips), '') or _extract_chip(attrs, title_text)
-        ram = _mac_memory(attrs, title_text)
+        ram = _mac_memory(attrs, title_text, is_macbook=line.startswith('macbook'))
         storage = _mac_storage(attrs, title_text)
         if line.startswith('macbook'):
             return _macbook_key(attrs, title, line, chip, ram, storage)

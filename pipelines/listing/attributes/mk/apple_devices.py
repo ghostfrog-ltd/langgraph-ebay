@@ -73,7 +73,7 @@ def iphone_key(attrs, title):
     variants = set()
     for text in texts:
         for match in re.finditer(
-            r'\biphone[ -]*(\d{1,2}[es]?|xs(?:[ -]+max)?|xr|x|se)\b'
+            r'\biphone[ -]*(\d{1,2}[es]?|xs(?:[ -]+max)?|xr|x|se|duo)\b'
             r'(?:[ -]+(pro[ -]*max|pro|max|plus|mini|air)\b)?', text
         ):
             base, tier = match.groups()
@@ -103,6 +103,13 @@ def iphone_key(attrs, title):
     model_numbers_for_variant = IPHONE_MODEL_NUMBERS.get(model)
     if model_numbers_for_variant and not ids <= set(model_numbers_for_variant.split()):
         return 'unknown'
+    if model == 'duo':
+        chips = matches(r'\b(a\d{2}(?:[ -]*pro)?)\b', evidence(attrs, title, 'Chipset Model', 'Processor'))
+        sizes = screen_sizes(evidence(attrs, title, 'Screen Size', 'Display'))
+        if {chip.replace(' ', '').replace('-', '') for chip in chips} - {'a20pro'} or sizes - {
+            '54in', '536in', '76in', '758in',
+        }:
+            return 'unknown'
     return f'apple-iphone-{model}-{storage}' if storage in IPHONE_STORAGE.get(model, '').split() else 'unknown'
 
 
@@ -236,6 +243,7 @@ def watch_key(attrs, title):
 
 _AUDIO_COMPONENT = re.compile(
     r'\b(?:replica|clone|counterfeit|fake|single (?:earbud|bud|airpod)|'
+    r'(?:left|right)(?:[ -]+(?:side|ear|earbud|bud|airpod))?\s*(?:and|&|\+|/)\s*(?:the\s+)?(?:charging\s+)?case|'
     r'(?:left|right)(?:[ -]+(?:side|ear|earbud|bud|airpod))?\b(?!\s*(?:and|&|\+|/))'
     r'|(?:no|without|missing)\s+(?:charging\s+case|case|buds?|earbuds?)|'
     r'(?:charging\s+case|earbuds?|buds?)\s+only|replacement\s+(?:charging\s+case|earbuds?|case)|'
@@ -333,9 +341,11 @@ def airtag_key(attrs, title):
 
 
 def gpu_cores(attrs, title):
-    texts = evidence(attrs, title, 'GPU', 'Graphics Processing Type')
+    explicit = matches(r'\b(\d{1,2})[ -]*(?:c(?:ores?)?[ -]*)?gpu\b',
+                       evidence(attrs, title, 'GPU', 'Graphics Processing Type'))
+    structured = matches(r'^(?:apple\s+)?(\d{1,2})[ -]*cores?$', evidence(attrs, '', 'GPU'))
     return {
-        int(value) for value in matches(r'\b(\d{1,2})[ -]*(?:cores?[ -]*)?gpu\b', texts)
+        int(value) for value in explicit | structured
     }
 
 

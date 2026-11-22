@@ -2,6 +2,7 @@ import json
 import unittest
 from unittest.mock import patch
 
+from pipelines.listing.attributes.__main__ import main
 from pipelines.listing.attributes.graph import (
     TRADING_ENRICHMENT_STATUS_KEY,
     _apply_attributes,
@@ -9,6 +10,7 @@ from pipelines.listing.attributes.graph import (
     _load_candidates,
     _load_candidates_for_ids,
     _merge_raw_attrs,
+    _node_apply,
     _node_mark_false,
     _with_trading_marker,
 )
@@ -78,6 +80,31 @@ class AttributesEnrichmentTests(unittest.TestCase):
         self.assertIn("brand IS NULL", sql)
         self.assertIn("NOT (raw_attrs ? %s)", sql)
         self.assertEqual(params, (TRADING_ENRICHMENT_STATUS_KEY, 25))
+
+    def test_apple_mode_schedules_missing_keys_across_the_archive(self):
+        cursor = _FakeCursor()
+        with patch("pipelines.listing.attributes.graph.get_connection", return_value=_FakeConnection(cursor)):
+            _load_candidates(20, apple_only=True)
+
+        sql, params = cursor.calls[0]
+        where, order = sql.split("ORDER BY")
+        self.assertIn("source = 'ebay-apple'", where)
+        self.assertIn("model_key IS NULL OR LOWER(BTRIM(model_key)) IN ('', 'unknown')", where)
+        self.assertIn("NULLIF(BTRIM(raw_attrs->>'_trading_enrichment_status'), '') IS NULL", where)
+        self.assertNotIn("status = 'live'", where)
+        self.assertNotIn("end_time", where)
+        self.assertNotIn("jsonb_object_keys", where)
+        self.assertIn("WHEN status = 'live'", order)
+        self.assertIn("WHEN status = 'sold' AND final_price > 0", order)
+        self.assertEqual(params, (20,))
+
+    def test_apple_cli_selects_its_own_ids(self):
+        for flag in ("--apple", "-apple"):
+            with self.subTest(flag=flag), patch("sys.argv", ["attributes", flag, "--limit", "40"]), patch(
+                "pipelines.listing.attributes.__main__.run"
+            ) as run:
+                main()
+                run.assert_called_once_with(limit=40, enable_api=True, apple_only=True)
 
     def test_load_candidates_for_ids_only_schedules_requested_items(self):
         cursor = _FakeCursor(fetchall_rows=[])
@@ -202,6 +229,68 @@ class AttributesEnrichmentTests(unittest.TestCase):
         self.assertEqual(update_params[-2], "C")
         self.assertEqual(update_params[-1], 10)
 
+    def test_apple_write_skips_listing_that_changed_after_selection(self):
+        cursor = _FakeCursor()
+        with patch("pipelines.listing.attributes.graph.get_connection", return_value=_FakeConnection(cursor)):
+            updated, key = _apply_attributes(
+                auction_id=10,
+                raw_attrs={"Storage Capacity": "128 GB"},
+                brand="Apple",
+                model_name="iPhone 14",
+                storage_gb=128,
+                colour=None,
+                epid=None,
+                model_key="apple-iphone-14-128gb",
+                expected_apple_title="Apple iPhone 14",
+            )
+
+        self.assertFalse(updated)
+        self.assertIsNone(key)
+        self.assertEqual(len(cursor.calls), 1)
+        sql, params = cursor.calls[0]
+        self.assertIn("FOR UPDATE", sql)
+        self.assertIn("model_key IS NULL OR LOWER(BTRIM(model_key)) IN ('', 'unknown')", sql)
+        self.assertIn("NULLIF(BTRIM(raw_attrs->>'_trading_enrichment_status'), '') IS NULL", sql)
+        self.assertEqual(params, (10, "Apple iPhone 14"))
+
+    def test_apple_enrichment_uses_existing_specifics_in_the_saved_key(self):
+        cursor = _FakeCursor(fetchone_rows=[({"Model Number": "A2221"}, "B")])
+        cursor.rowcount = 1
+        with patch("pipelines.listing.attributes.graph.get_connection", return_value=_FakeConnection(cursor)):
+            updated, key = _apply_attributes(
+                auction_id=10,
+                raw_attrs={"Storage Capacity": "128 GB"},
+                brand="Apple",
+                model_name="iPhone 13",
+                storage_gb=128,
+                colour=None,
+                epid=None,
+                model_key="apple-iphone-13-128gb",
+                expected_apple_title="Apple iPhone 13",
+            )
+
+        self.assertTrue(updated)
+        self.assertEqual(key, "unknown")
+        _, params = cursor.calls[-1]
+        self.assertEqual(json.loads(params[0])["Model Number"], "A2221")
+        self.assertIn("unknown", params)
+
+    def test_apple_counts_only_named_keys_that_were_written(self):
+        for storage, updated, expected in (("128 GB", True, 1), ("128 GB", False, 0), ("256 MB", True, 0)):
+            state = {
+                "apple_only": True,
+                "source": "ebay-apple",
+                "title": "Apple iPhone 14",
+                "raw_map": {"Storage Capacity": storage},
+            }
+            saved_key = "apple-iphone-14-128gb" if expected else "unknown" if updated else None
+            with self.subTest(storage=storage, updated=updated), patch(
+                "pipelines.listing.attributes.graph._apply_attributes", return_value=(updated, saved_key)
+            ) as apply_attrs:
+                result = _node_apply(state)
+                self.assertEqual(result.get("keys_assigned", 0), expected)
+                self.assertEqual(apply_attrs.call_args.kwargs["expected_apple_title"], "Apple iPhone 14")
+
     def test_no_response_is_retryable_and_does_not_mark_row_complete(self):
         state = {
             "auction_id": 10,
@@ -214,7 +303,7 @@ class AttributesEnrichmentTests(unittest.TestCase):
             "outcomes": [],
         }
 
-        with patch("pipelines.listing.attributes.graph._apply_attributes") as apply_attrs:
+        with patch("pipelines.listing.attributes.graph._apply_attributes", return_value=(True, None)) as apply_attrs:
             updated = _node_mark_false(state)
 
         apply_attrs.assert_not_called()
@@ -235,7 +324,7 @@ class AttributesEnrichmentTests(unittest.TestCase):
             "outcomes": [],
         }
 
-        with patch("pipelines.listing.attributes.graph._apply_attributes") as apply_attrs:
+        with patch("pipelines.listing.attributes.graph._apply_attributes", return_value=(True, None)) as apply_attrs:
             updated = _node_mark_false(state)
 
         apply_attrs.assert_called_once()

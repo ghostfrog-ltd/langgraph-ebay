@@ -22,9 +22,11 @@ IPHONE_STORAGE = {
     '17-pro-max': _PHONE_256 + ' 2tb',
     '18-pro': _PHONE_256 + ' 2tb',
     '18-pro-max': _PHONE_256 + ' 2tb',
+    'duo': _PHONE_256 + ' 2tb',
 }
 
 IPHONE_MODEL_NUMBERS = {
+    'duo': 'a3447 a3719 a3720 a3721',
     '18-pro-max': 'a3473 a3716 a3717 a3718',
     '18-pro': 'a3472 a3713 a3714 a3715',
     '17e': 'a3575 a3634 a3635',
@@ -168,6 +170,8 @@ MACBOOK_AIRS = (
     ('a3114', 'm3', '153in', '15in 153in', '8gb 16gb 24gb'),
     ('a3240', 'm4', '136in', '13in 136in', '16gb 24gb 32gb'),
     ('a3241', 'm4', '153in', '15in 153in', '16gb 24gb 32gb'),
+    ('a3449', 'm5', '136in', '13in 136in', '16gb 24gb 32gb'),
+    ('a3448', 'm5', '153in', '15in 153in', '16gb 24gb 32gb'),
 )
 
 # https://support.apple.com/en-ie/102852, /108054, /102231 and their linked specs.
@@ -239,4 +243,43 @@ MACBOOK_PRO_GPU_CORES = {
     'm2': {10}, 'm2pro': {16, 19}, 'm2max': {30, 38},
     'm3': {10}, 'm3pro': {14, 18}, 'm3max': {30, 40},
     'm4': {10}, 'm4pro': {16, 20}, 'm4max': {32, 40},
+}
+
+# Apple Support 125405, 126318, 126319, 148301 and 148302; chassis from
+# Apple's regulatory catalogue. The Liquid Retina XDR and PROLED XDR
+# machines share chips and diagonals, but have different chassis.
+# Chassis, screen, chip, panel, GPU cores, memory, SSD capacities.
+_M5_PRO_SSD = '1tb 2tb 4tb'
+_M5_MAX_SSD = '2tb 4tb 8tb'
+MACBOOK_M5_PRO_CONFIGS = (
+    ('a3434', '142in', 'm5', 'liquid', 10, '16gb 24gb 32gb', '512gb ' + _M5_PRO_SSD),
+    ('a3426', '142in', 'm5pro', 'liquid', 16, '24gb 48gb', _M5_PRO_SSD),
+    ('a3426', '142in', 'm5pro', 'liquid', 20, '24gb 48gb 64gb', _M5_PRO_SSD),
+    ('a3428', '162in', 'm5pro', 'liquid', 20, '24gb 48gb 64gb', _M5_PRO_SSD),
+    ('a3427', '142in', 'm5max', 'liquid', 32, '36gb', _M5_MAX_SSD),
+    ('a3427', '142in', 'm5max', 'liquid', 40, '48gb 64gb 128gb', _M5_MAX_SSD),
+    ('a3429', '162in', 'm5max', 'liquid', 32, '36gb', _M5_MAX_SSD),
+    ('a3429', '162in', 'm5max', 'liquid', 40, '48gb 64gb 128gb', _M5_MAX_SSD),
+    ('a3468', '142in', 'm5pro', 'proled', 16, '24gb 48gb', _M5_PRO_SSD),
+    ('a3468', '142in', 'm5pro', 'proled', 20, '24gb 48gb 64gb', _M5_PRO_SSD),
+    ('a3469', '163in', 'm5pro', 'proled', 20, '24gb 48gb 64gb', _M5_PRO_SSD),
+    ('a3375', '142in', 'm5max', 'proled', 32, '36gb', _M5_MAX_SSD + ' 16tb'),
+    ('a3375', '142in', 'm5max', 'proled', 40, '48gb 64gb 128gb', _M5_MAX_SSD + ' 16tb'),
+    ('a3376', '163in', 'm5max', 'proled', 32, '36gb', _M5_MAX_SSD + ' 16tb'),
+    ('a3376', '163in', 'm5max', 'proled', 40, '48gb 64gb 128gb', _M5_MAX_SSD + ' 16tb'),
+)
+
+# Retail part-number stems from Apple Support 108052 and Apple certification.
+# The stem identifies the eligible chassis across regional suffixes.
+MACBOOK_M5_PRO_PARTS = {
+    'mde04 mde14 mde34 mde44 mde54 mde64': {'a3434'},
+    'mgdm4 mgdn4 mgdp4 mgdt4': {'a3426'},
+    'mgdq4 mgdu4': {'a3427'},
+    'mgdr4': {'a3426', 'a3427'},
+    'mge44 mge64 mgea4 mgec4': {'a3428'},
+    'mge74 mge94 mged4 mgee4': {'a3429'},
+    'mj2g4 mj2k4': {'a3468'},
+    'mj2j4 mj2m4': {'a3375'},
+    'mj2w4 mj304': {'a3469'},
+    'mj2x4 mj2y4': {'a3376'},
 }

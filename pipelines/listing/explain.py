@@ -12,6 +12,7 @@ from pipelines.listing.comps.graph import (
 )
 from pipelines.listing.market_discovery.graph import potential_from_row
 from pipelines.listing.review_actions import normalise_external_id
+from utils.condition import APPLE_IPHONE_KEY_PATTERN, APPLE_MACBOOK_NEO_KEY_PATTERN
 from utils.db_schema import ensure_utc_session, get_fresh_connection
 
 
@@ -124,6 +125,7 @@ def _fetch_comp_rows(
           AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) NOT LIKE ALL(%s)
           AND NOT (
               source = 'ebay-apple'
+              AND LOWER(model_key) !~ %s
               AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) LIKE '%%macbook%%'
               AND LOWER(COALESCE(title, '') || ' ' || COALESCE(raw_attrs::text, '')) ~ '\\ma[0-9]{1,2}\\s*(pro|max|ultra)?\\M'
           )
@@ -133,7 +135,7 @@ def _fetch_comp_rows(
           )
           AND NOT (
               LOWER(model_key) LIKE 'apple-iphone-%%'
-              AND LOWER(model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+)(-|_)'
+              AND LOWER(model_key) !~ %s
           )
           AND NOT (
               LOWER(model_key) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'
@@ -146,6 +148,8 @@ def _fetch_comp_rows(
             model_key,
             condition_grade,
             list(COMPS_BLOCKED_TEXT_PATTERNS),
+            APPLE_MACBOOK_NEO_KEY_PATTERN,
+            APPLE_IPHONE_KEY_PATTERN,
             APPLE_MAC_ALLOWED_CPU_PATTERN,
         ),
     )

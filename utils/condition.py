@@ -6,6 +6,8 @@ from typing import Mapping, Any, Optional
 from typing import Dict, Set
 
 CONDITION_GRADE_RANK: dict[str, int] = {"A": 0, "B": 1, "C": 2, "D": 3}
+APPLE_MACBOOK_NEO_KEY_PATTERN = r"^apple-macbook-neo-a3404-13in-a18pro-8gb-(256|512)gb$"
+APPLE_IPHONE_KEY_PATTERN = r"^apple-iphone-(duo|se|x|xr|xs|[0-9]+[es]?)(-|_)"
 
 
 def _as_text(val: Any) -> str:
@@ -390,10 +392,6 @@ GENERIC_PART_ONLY_TERMS = (
     "bundle job lot",
     "unit only",
     "no accessories",
-)
-
-SUSPICIOUS_PRODUCT_IDENTITY_TERMS = (
-    "macbook neo",
 )
 
 WATCH_PART_TERMS = (
@@ -901,15 +899,13 @@ def looks_like_partial_or_accessory_listing(
     if _requires_condition_manual_review(blob):
         return True
 
-    if any(term in blob for term in SUSPICIOUS_PRODUCT_IDENTITY_TERMS):
-        return True
-
     is_apple = "ebay-apple" in source_text or "apple-" in model_key_text or " apple " in f" {blob} "
     is_macbook = "macbook" in blob or "apple-macbook" in model_key_text
     if is_apple and _has_apple_lock_risk_language(blob):
         return True
 
-    if is_apple and is_macbook and re.search(r"\ba\d{1,2}\s*(pro|max|ultra)?\b", blob):
+    if (is_apple and is_macbook and not re.fullmatch(APPLE_MACBOOK_NEO_KEY_PATTERN, model_key_text)
+            and re.search(r"\ba\d{1,2}\s*(pro|max|ultra)?\b", blob)):
         return True
 
     is_watch = "watch" in source_text or "omega" in blob or "rolex" in blob or "seamaster" in blob
@@ -1304,11 +1300,13 @@ def has_investible_product_identity(
             or re.match(samsung_tab, mk)
         )
 
-    if mk.startswith("apple-iphone-") and not re.match(r"^apple-iphone-(se|x|xr|xs|\d+[es]?)\b", mk):
+    if mk.startswith("apple-iphone-") and not re.match(APPLE_IPHONE_KEY_PATTERN, mk):
         return False
 
     if mk.startswith(("apple-macbook", "apple-imac", "apple-mac-mini", "apple-mac-studio")):
-        if not re.search(r"-(m[1-9](pro|max|ultra)?|intel|core-i[3579]|core-m[357])(-|_)", mk):
+        if not re.fullmatch(APPLE_MACBOOK_NEO_KEY_PATTERN, mk) and not re.search(
+            r"-(m[1-9](pro|max|ultra)?|intel|core-i[3579]|core-m[357])(-|_)", mk
+        ):
             return False
 
     return True

@@ -29,6 +29,29 @@ EBAY_COMPAT_LEVEL = "967"   # compat level for GetItem
 UNKNOWN_KEY = "unknown"
 TRADING_ENRICHMENT_STATUS_KEY = "_trading_enrichment_status"
 TRADING_ENRICHED_AT_KEY = "_trading_enriched_at"
+TRADING_ENRICHABLE_SQL = """
+    CASE
+        WHEN raw_attrs IS NULL THEN true
+        WHEN jsonb_typeof(raw_attrs) = 'object' THEN
+            NOT (raw_attrs ? %s)
+            AND brand IS NULL AND model_name IS NULL AND storage_gb IS NULL
+            AND colour IS NULL AND epid IS NULL
+            AND NOT EXISTS (
+                SELECT 1
+                FROM jsonb_object_keys(raw_attrs) AS attr_key(key)
+                WHERE attr_key.key NOT LIKE 'Browse %%'
+            )
+        ELSE false
+    END
+"""
+APPLE_MISSING_KEY_SQL = """
+    source = 'ebay-apple'
+    AND (model_key IS NULL OR LOWER(BTRIM(model_key)) IN ('', 'unknown'))
+"""
+APPLE_ENRICHABLE_SQL = f"""
+    {APPLE_MISSING_KEY_SQL}
+    AND NULLIF(BTRIM(raw_attrs->>'{TRADING_ENRICHMENT_STATUS_KEY}'), '') IS NULL
+"""
 MAX_REASONABLE_STORAGE_GB = 65_536
 _STORAGE_WITH_UNIT_RE = re.compile(
     r"(?<![A-Za-z0-9])(\d+(?:[.,]\d+)?)\s*"
@@ -289,32 +312,34 @@ def _riskier_condition_grade(existing: Optional[str], incoming: Optional[str]) -
     return incoming
 
 
-def _load_candidates(limit: int) -> List[Tuple[int, str, str, str]]:
-    sql = """
+def _load_candidates(limit: int, *, apple_only: bool = False) -> List[Tuple[int, str, str, str]]:
+    eligibility = TRADING_ENRICHABLE_SQL
+    params: tuple[Any, ...] = (TRADING_ENRICHMENT_STATUS_KEY, limit)
+    order = "id DESC"
+    if apple_only:
+        eligibility = APPLE_ENRICHABLE_SQL
+        params = (limit,)
+        order = """
+            CASE
+                WHEN status = 'live' AND (end_time IS NULL OR end_time > now()) THEN 0
+                WHEN status = 'sold' AND final_price > 0 THEN 1
+                ELSE 2
+            END,
+            CASE WHEN status = 'live' AND end_time > now() THEN end_time END ASC NULLS LAST,
+            end_time DESC NULLS LAST,
+            id DESC
+        """
+    sql = f"""
         SELECT id, external_id, source, title
         FROM auction_listings
-        WHERE raw_attrs IS NULL
-           OR (
-                jsonb_typeof(raw_attrs) = 'object'
-                AND NOT (raw_attrs ? %s)
-                AND brand IS NULL
-                AND model_name IS NULL
-                AND storage_gb IS NULL
-                AND colour IS NULL
-                AND epid IS NULL
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM jsonb_object_keys(raw_attrs) AS attr_key(key)
-                    WHERE attr_key.key NOT LIKE 'Browse %%'
-                )
-           )
-        ORDER BY id DESC
+        WHERE {eligibility}
+        ORDER BY {order}
         LIMIT %s
     """
 
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(sql, (TRADING_ENRICHMENT_STATUS_KEY, limit))
+            cur.execute(sql, params)
             rows = cur.fetchall()
         conn.commit()
 
@@ -357,32 +382,11 @@ def _load_candidates_for_ids(item_ids: List[str], *, force: bool = False) -> Lis
     if not variants:
         return []
 
-    eligibility_sql = """
-        AND (
-              %s
-              OR raw_attrs IS NULL
-              OR (
-                    jsonb_typeof(raw_attrs) = 'object'
-                    AND NOT (raw_attrs ? %s)
-                    AND brand IS NULL
-                    AND model_name IS NULL
-                    AND storage_gb IS NULL
-                    AND colour IS NULL
-                    AND epid IS NULL
-                    AND NOT EXISTS (
-                        SELECT 1
-                        FROM jsonb_object_keys(raw_attrs) AS attr_key(key)
-                        WHERE attr_key.key NOT LIKE 'Browse %%'
-                    )
-              )
-        )
-    """
-
     sql = f"""
         SELECT id, external_id, source, title
         FROM auction_listings
         WHERE external_id = ANY(%s)
-        {eligibility_sql}
+          AND (%s OR {TRADING_ENRICHABLE_SQL})
         ORDER BY array_position(%s::text[], external_id), id DESC
     """
 
@@ -405,29 +409,52 @@ def _apply_attributes(
     epid: Optional[str],
     model_key: Optional[str],
     condition_grade: Optional[str] = None,
-) -> None:
+    *,
+    expected_apple_title: str | None = None,
+) -> tuple[bool, str | None]:
     fields: List[str] = []
     values: List[Any] = []
 
     with get_connection() as conn:
-        if raw_attrs is not None or condition_grade is not None:
+        if raw_attrs is not None or condition_grade is not None or expected_apple_title is not None:
             existing_raw_attrs: Any = None
             existing_condition_grade: Optional[str] = None
+            scope = ""
+            params: tuple[Any, ...] = (auction_id,)
+            if expected_apple_title is not None:
+                # Recheck after GetItem in case a collector or another enrichment run changed the row.
+                scope = f"""
+                    AND {APPLE_ENRICHABLE_SQL}
+                    AND COALESCE(title, '') = %s
+                    FOR UPDATE
+                """
+                params += (expected_apple_title,)
             with conn.cursor() as cur:
                 cur.execute(
-                    """
+                    f"""
                     SELECT raw_attrs, condition_grade
                     FROM auction_listings
                     WHERE id = %s
+                    {scope}
                     """,
-                    (auction_id,),
+                    params,
                 )
                 existing = cur.fetchone()
+            if existing is None and expected_apple_title is not None:
+                return False, None
             if existing:
                 existing_raw_attrs = existing[0]
                 existing_condition_grade = existing[1]
             raw_attrs = _merge_raw_attrs(existing_raw_attrs, raw_attrs)
             condition_grade = _riskier_condition_grade(existing_condition_grade, condition_grade)
+
+        if expected_apple_title is not None and model_key is not None:
+            # Classify the same evidence that will be stored, including earlier item specifics.
+            identity_attrs = {"brand": brand, "model_name": model_name, "storage_gb": storage_gb,
+                              "colour": colour, "epid": epid}
+            if isinstance(raw_attrs, dict):
+                identity_attrs.update(raw_attrs)
+            model_key = normalise_model(expected_apple_title, identity_attrs, "ebay-apple") or UNKNOWN_KEY
 
         # raw_attrs can be a dict OR the legacy sentinel False -> jsonb 'false'.
         if raw_attrs is not None:
@@ -463,7 +490,7 @@ def _apply_attributes(
             values.append(condition_grade)
 
         if not fields:
-            return
+            return False, None
 
         sql = f"""
             UPDATE auction_listings
@@ -474,7 +501,9 @@ def _apply_attributes(
 
         with conn.cursor() as cur:
             cur.execute(sql, values)
+            updated = cur.rowcount > 0
         conn.commit()
+        return updated, model_key if updated else None
 
 
 # -------------------------------------------------
@@ -486,6 +515,7 @@ class AttributesState(TypedDict, total=False):
     enable_api: bool
     target_ids: List[str]
     target_force: bool
+    apple_only: bool
 
     # work
     rows: List[Tuple[int, str, str, str]]
@@ -505,6 +535,7 @@ class AttributesState(TypedDict, total=False):
     processed: int
     marked_false: int
     retryable_failures: int
+    keys_assigned: int
     outcomes: List[Dict[str, Any]]
 
 
@@ -524,11 +555,12 @@ def _node_start(state: AttributesState) -> AttributesState:
             force=bool(state.get("target_force", False)),
         )
     else:
-        state["rows"] = _load_candidates(int(state.get("limit", 20)))
+        state["rows"] = _load_candidates(int(state.get("limit", 20)), apple_only=bool(state.get("apple_only")))
     state["idx"] = 0
     state["processed"] = 0
     state["marked_false"] = 0
     state["retryable_failures"] = 0
+    state["keys_assigned"] = 0
     state["outcomes"] = []
 
     logger.info(f"[maint.attributes] loaded {len(state['rows'])} candidate listings")
@@ -640,7 +672,8 @@ def _node_apply(state: AttributesState) -> AttributesState:
     key = normalise_model(title=title, attrs=identity_attrs, source=source) or UNKNOWN_KEY
     condition_grade = _derive_condition_grade(raw_map or attrs, title or "")
 
-    _apply_attributes(
+    apple_only = state.get("apple_only", False)
+    updated, saved_key = _apply_attributes(
         auction_id=auction_id,
         raw_attrs=_with_trading_marker(raw_map, "complete"),
         brand=attrs.get("brand"),
@@ -650,7 +683,10 @@ def _node_apply(state: AttributesState) -> AttributesState:
         epid=attrs.get("epid"),
         model_key=key,
         condition_grade=condition_grade,
+        expected_apple_title=(title or "") if apple_only else None,
     )
+    if apple_only and saved_key and saved_key != UNKNOWN_KEY:
+        state["keys_assigned"] = int(state.get("keys_assigned", 0)) + 1
 
     state["processed"] = int(state.get("processed", 0)) + 1
     outcomes = state.setdefault("outcomes", [])
@@ -658,7 +694,7 @@ def _node_apply(state: AttributesState) -> AttributesState:
         {
             "external_id": state.get("external_id"),
             "item_id": state.get("item_id"),
-            "status": "complete",
+            "status": "skipped_changed" if apple_only and not updated else "complete",
             "raw_attrs_added": sorted(raw_map.keys()),
         }
     )
@@ -695,7 +731,8 @@ def _node_mark_false(state: AttributesState) -> AttributesState:
         )
         return state
 
-    _apply_attributes(
+    apple_only = state.get("apple_only", False)
+    updated, _ = _apply_attributes(
         auction_id=auction_id,
         raw_attrs=_with_trading_marker({}, status),
         brand=None,
@@ -705,10 +742,14 @@ def _node_mark_false(state: AttributesState) -> AttributesState:
         epid=None,
         model_key=None,
         condition_grade=None,
+        expected_apple_title=(state.get("title") or "") if apple_only else None,
     )
 
     state["processed"] = int(state.get("processed", 0)) + 1
-    state["marked_false"] = int(state.get("marked_false", 0)) + 1
+    if apple_only and not updated:
+        status = "skipped_changed"
+    else:
+        state["marked_false"] = int(state.get("marked_false", 0)) + 1
     outcomes = state.setdefault("outcomes", [])
     outcomes.append(
         {
@@ -775,7 +816,7 @@ def save_graph_diagram(path: str = "attributes_graph.mmd") -> None:
 # -------------------------------------------------
 # Public entry
 # -------------------------------------------------
-def run(limit: int = 20, enable_api: bool = True) -> None:
+def run(limit: int = 20, enable_api: bool = True, *, apple_only: bool = False) -> None:
     """
     Run one bounded attributes maintenance pass.
 
@@ -785,8 +826,8 @@ def run(limit: int = 20, enable_api: bool = True) -> None:
     """
     app = build_graph()
     final = app.invoke(
-        {"limit": int(limit), "enable_api": bool(enable_api)},
-        config={"recursion_limit": 500},
+        {"limit": int(limit), "enable_api": bool(enable_api), "apple_only": apple_only},
+        config={"recursion_limit": max(500, int(limit) * 8 + 20)},
     )
 
     logger.info(
@@ -794,6 +835,8 @@ def run(limit: int = 20, enable_api: bool = True) -> None:
         f"(processed={final.get('processed', 0)}, marked_false={final.get('marked_false', 0)}, "
         f"retryable_failures={final.get('retryable_failures', 0)})"
     )
+    if apple_only:
+        logger.info("[maint.attributes] Apple model keys assigned: %d", final.get("keys_assigned", 0))
 
 
 def run_for_ids(item_ids: List[str], enable_api: bool = True, *, force: bool = False) -> Dict[str, Any]:

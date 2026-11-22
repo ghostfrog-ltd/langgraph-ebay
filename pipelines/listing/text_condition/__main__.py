@@ -15,6 +15,7 @@ from pipelines.listing.comps.graph import (
     _get_window_days,
     run as run_comps,
 )
+from utils.condition import APPLE_IPHONE_KEY_PATTERN, APPLE_MACBOOK_NEO_KEY_PATTERN
 from pipelines.listing.market_discovery.graph import (
     FEE_RATE,
     INBOUND_SHIP_GBP,
@@ -222,6 +223,8 @@ def enqueue_text_candidates(
         max(new_listing_minutes, 1),
         str(_get_window_days()),
         list(COMPS_BLOCKED_TEXT_PATTERNS),
+        APPLE_MACBOOK_NEO_KEY_PATTERN,
+        APPLE_IPHONE_KEY_PATTERN,
         APPLE_MAC_ALLOWED_CPU_PATTERN,
     ]
     if source:
@@ -364,6 +367,7 @@ def enqueue_text_candidates(
                       AND LOWER(COALESCE(a.title, '') || ' ' || COALESCE(a.raw_attrs::text, '')) NOT LIKE ALL(%s)
                       AND NOT (
                           a.source = 'ebay-apple'
+                          AND LOWER(COALESCE(a.model_key, '')) !~ %s
                           AND LOWER(COALESCE(a.title, '') || ' ' || COALESCE(a.raw_attrs::text, '')) LIKE '%%macbook%%'
                           AND LOWER(COALESCE(a.title, '') || ' ' || COALESCE(a.raw_attrs::text, '')) ~ '\\ma[0-9]{{1,2}}\\s*(pro|max|ultra)?\\M'
                       )
@@ -373,7 +377,7 @@ def enqueue_text_candidates(
                       )
                       AND NOT (
                           LOWER(COALESCE(a.model_key, '')) LIKE 'apple-iphone-%%'
-                          AND LOWER(COALESCE(a.model_key, '')) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+)(-|_)'
+                          AND LOWER(COALESCE(a.model_key, '')) !~ %s
                       )
                       AND NOT (
                           LOWER(COALESCE(a.model_key, '')) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'

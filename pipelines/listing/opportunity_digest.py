@@ -10,6 +10,7 @@ buys items, messages sellers, or writes to marketplace systems.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -21,6 +22,7 @@ from pipelines.listing.roi.graph import (
     _build_all_opps_for_roi,
     _comps_lookup,
 )
+from utils.condition import APPLE_MACBOOK_NEO_KEY_PATTERN
 import utils.db_schema as schema
 
 
@@ -236,7 +238,9 @@ def _is_low_interest_for_slack(opportunity: Any) -> bool:
             return True
         # MacBooks before Apple Silicon are not useful Slack interruptions for
         # this operator unless future preference rules explicitly allow them.
-        if not any(chip in blob for chip in (" m1", " m2", " m3", " m4", "-m1-", "-m2-", "-m3-", "-m4-")):
+        if not re.fullmatch(APPLE_MACBOOK_NEO_KEY_PATTERN, model_key) and not re.search(
+            r"\bm[1-5](?:pro|max)?\b", blob
+        ):
             return True
 
     if any(term in blob for term in LOW_INTEREST_APPLE_DEVICE_TERMS):

@@ -14,7 +14,7 @@ class ModelKeyRepairTests(unittest.TestCase):
 
         self.assertEqual(key, "apple-iphone-11-64gb")
 
-    def test_macbook_bad_ram_attribute_does_not_duplicate_storage(self):
+    def test_macbook_disk_size_in_ram_attribute_requires_review(self):
         key = normalise_model(
             title='Apple MacBook Air 13.6" M2 A2681 (2022) 16GB RAM 512GB SSD',
             attrs={
@@ -30,7 +30,7 @@ class ModelKeyRepairTests(unittest.TestCase):
             source="ebay-apple",
         )
 
-        self.assertEqual(key, "apple-macbook-air-a2681-136in-m2-16gb-512gb")
+        self.assertEqual(key, "unknown")
 
     def test_macbook_core_m3_is_not_apple_silicon_m3(self):
         key = normalise_model(

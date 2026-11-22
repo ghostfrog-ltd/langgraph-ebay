@@ -1,3 +1,31 @@
+2026-11-22 — Apple enrichment and comp refresh
+- The Apple-only `--apple` enrichment command targets missing keys. After
+  enrichment and the key rebuild, Apple unknowns fell from 41,976 to 41,333.
+  The follow-up replay and remaining identity defects are recorded in #23–#24.
+- Republished the Apple comp snapshot at 00:10 GMT. It has 1,992 model-and-grade
+  cohorts from 25,873 confirmed sale observations, including 461 cohorts with
+  at least 10 sales. All 6,617 other-market cohorts matched their prior values.
+
+2026-11-21 — Apple key rebuild and comp refresh
+- The 22:50 Apple rebuild reduced missing keys from 48,296 to 41,976. Follow-up
+  covers listings whose keys are still unknown or missing (#23–#24).
+- Refreshed the 365-day Apple comp snapshot at 23:13 GMT and verified
+  latest_comps. It has 1,973 model-and-grade cohorts from 25,420 sales, with
+  455 cohorts at 10 or more sales. The 6,617 other-market cohorts matched
+  their prior values.
+
+2026-11-21 — Apple unknown-key replay (#23–#24)
+- Replayed 75 stored Apple listings with unknown keys against the deployed
+  classifier and the working-copy fixes. Sixteen had evidence for a targeted
+  classifier repair, and 11 already parsed to a supported key. Six previous
+  keys were verified from matching retained rollout row versions.
+- Added MacBook Neo, M5 Air and M5 Pro family support and iPhone Duo identity,
+  with exact chassis, GPU and capacity checks where applicable. The named
+  £442.21 Neo reports incompatible CPU and GPU counts. The £1,025 M1 Max
+  replay now retains its explicitly advertised 32-core GPU.
+- Comp effects were measured in read-only PostgreSQL. Production recovery
+  awaits sufficient condition evidence for the individual sales.
+
 2026-11-21 — Apple model identity (#23–#29)
 - Deployed Apple identity rules and verified 8,200 live or sold key updates in
   PostgreSQL. Of these updates, 2,299 marked conflicting or insufficient

@@ -25,7 +25,7 @@ from .components import (
 )
 
 
-def _with_normalised_aliases(attrs: Mapping[str, Any]) -> Mapping[str, Any]:
+def _with_normalised_aliases(attrs: Mapping[str, Any], *, source: str) -> Mapping[str, Any]:
     """
     The live attributes graph stores a small normalised dict
     (`brand`, `model_name`, `storage_gb`, etc.), while the source-specific
@@ -45,7 +45,10 @@ def _with_normalised_aliases(attrs: Mapping[str, Any]) -> Mapping[str, Any]:
         merged["Model"] = merged.get("model_name")
     if merged.get("colour") and not merged.get("Colour"):
         merged["Colour"] = merged.get("colour")
-    if merged.get("storage_gb") and not merged.get("Storage Capacity"):
+    storage_fields = ("Storage Capacity",)
+    if source == "ebay-apple":
+        storage_fields += ("SSD Capacity", "Hard Drive Capacity", "Capacity")
+    if merged.get("storage_gb") and not any(merged.get(field) for field in storage_fields):
         merged["Storage Capacity"] = f"{merged.get('storage_gb')} GB"
     if merged.get("epid") and not merged.get("ePID"):
         merged["ePID"] = merged.get("epid")
@@ -101,7 +104,7 @@ def normalise_model(
         return None
 
     source = (source or "").strip().lower()
-    safe_attrs: Mapping[str, Any] = _with_normalised_aliases(attrs or {})
+    safe_attrs: Mapping[str, Any] = _with_normalised_aliases(attrs or {}, source=source)
 
     if source == "ebay-consoles":
         return _canonicalise_key(

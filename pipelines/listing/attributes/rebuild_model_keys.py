@@ -111,7 +111,7 @@ def rebuild_model_keys(
             listing_source = row["source"] or ""
             title = row["title"] or ""
             attrs_raw = _parse_raw_attrs(row.get("raw_attrs"))
-            attrs = _normalise_attrs(attrs_raw)
+            attrs = attrs_raw if listing_source.strip().lower() == 'ebay-apple' else _normalise_attrs(attrs_raw)
             key = normalise_model(title=title, attrs=attrs, source=listing_source) or UNKNOWN_KEY
             condition_grade = _derive_condition_grade(attrs or {}, title)
 

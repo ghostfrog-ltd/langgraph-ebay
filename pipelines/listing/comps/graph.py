@@ -7,6 +7,7 @@ from typing import Optional, TypedDict, cast
 
 from langgraph.graph import END, StateGraph
 
+from utils.condition import APPLE_IPHONE_KEY_PATTERN, APPLE_MACBOOK_NEO_KEY_PATTERN
 from utils.db_schema import ensure_utc_session
 from utils import db_connection
 from utils.logger import get_logger
@@ -94,7 +95,6 @@ COMPS_BLOCKED_TEXT_PATTERNS: tuple[str, ...] = (
     "%joblot%",
     "%unit only%",
     "%no accessories%",
-    "%macbook neo%",
 )
 
 CONSOLE_COMP_NON_HARDWARE_PATTERNS: tuple[str, ...] = (
@@ -189,7 +189,9 @@ LEGO_WHOLE_SET_TEXT_PATTERNS: tuple[str, ...] = (
     "%brand new sealed%",
 )
 
-APPLE_MAC_ALLOWED_CPU_PATTERN = r"-(m[1-9](pro|max|ultra)?|intel|core-i[3579]|core-m[357])(-|_)"
+APPLE_MAC_ALLOWED_CPU_PATTERN = (
+    APPLE_MACBOOK_NEO_KEY_PATTERN + r"|-(m[1-9](pro|max|ultra)?|intel|core-i[3579]|core-m[357])(-|_)"
+)
 
 # ---------------------------------
 # Tunable knobs
@@ -332,7 +334,7 @@ def _compute_daily_comps(
           AND LOWER(graded.model_key) !~ '_[a-d](-[a-d])?$'
           AND NOT (
               LOWER(graded.model_key) LIKE 'apple-iphone-%%'
-              AND LOWER(graded.model_key) !~ '^apple-iphone-(se|x|xr|xs|[0-9]+[es]?)(-|_)'
+              AND LOWER(graded.model_key) !~ %s
           )
           AND NOT (
               LOWER(graded.model_key) ~ '^apple-(macbook|imac|mac-mini|mac-studio)'
@@ -342,6 +344,7 @@ def _compute_daily_comps(
               LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) LIKE ANY(%s)
               OR (
                   graded.source = 'ebay-apple'
+                  AND LOWER(graded.model_key) !~ %s
                   AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) LIKE '%%macbook%%'
                   AND LOWER(COALESCE(graded.title, '') || ' ' || COALESCE(graded.raw_attrs::text, '')) ~ '\\ma[0-9]{{1,2}}\\s*(pro|max|ultra)?\\M'
               )
@@ -410,8 +413,10 @@ def _compute_daily_comps(
             sql,
             (
                 str(days),
+                APPLE_IPHONE_KEY_PATTERN,
                 APPLE_MAC_ALLOWED_CPU_PATTERN,
                 list(COMPS_BLOCKED_TEXT_PATTERNS),
+                APPLE_MACBOOK_NEO_KEY_PATTERN,
                 list(CONSOLE_COMP_NON_HARDWARE_PATTERNS),
                 list(CONSOLE_COMP_ACCESSORY_PATTERNS),
                 CONSOLE_COMP_HARDWARE_TITLE_PATTERN,

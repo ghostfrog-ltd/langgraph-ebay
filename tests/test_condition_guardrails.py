@@ -615,13 +615,21 @@ class ConditionGuardrailTests(unittest.TestCase):
             )
         )
 
-    def test_macbook_neo_is_identity_pollution(self):
+    def test_macbook_neo_allows_verified_hardware_and_rejects_parts_and_faults(self):
+        key = 'apple-macbook-neo-a3404-13in-a18pro-8gb-512gb'
+        title = 'NEW SEALED Apple MacBook Neo 13" A18 Pro 8GB 512GB SSD Touch ID'
         self.assertTrue(
-            looks_like_partial_or_accessory_listing(
-                'NEW SEALED Apple MacBook Neo 13" A18 Pro 8GB 512GB SSD Touch ID',
-                source="ebay-apple",
-                model_key="apple-macbook-pro-13in-8gb-512gb_a",
-            )
+            has_investible_product_identity(title, source='ebay-apple', model_key=key)
+        )
+        for suffix in (' logic board only', ' for spares or repair', ' issue'):
+            with self.subTest(suffix=suffix):
+                self.assertFalse(
+                    has_investible_product_identity(title + suffix, source='ebay-apple', model_key=key)
+                )
+
+    def test_iphone_duo_allows_verified_identity(self):
+        self.assertTrue(
+            has_investible_product_identity('iPhone Duo 256GB', source='ebay-apple', model_key='apple-iphone-duo-256gb')
         )
 
     def test_macbook_with_a_series_phone_chip_is_identity_pollution(self):
